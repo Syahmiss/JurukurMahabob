@@ -367,6 +367,9 @@ const CONTOUR='<svg class="contour" viewBox="0 0 520 300" aria-hidden="true" fil
 /* ================= HELPERS ================= */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* Untuk nilai dalam data-tip: getAttribute() decode entity sekali, lepas tu tip.innerHTML parse sekali lagi.
+   Jadi data luar (nama klien, pemegang peralatan dari Google Sheets) mesti di-escape DUA kali supaya kekal teks. */
+const escA=s=>esc(esc(s));
 const num=v=>{const n=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(n)?0:n;};
 const rm=n=>'RM '+Math.round(n||0).toLocaleString('en-MY');
 const rmK=n=>{n=n||0;return Math.abs(n)>=1e6?'RM '+(n/1e6).toFixed(2)+'j':Math.abs(n)>=1e3?'RM '+(n/1e3).toFixed(1)+'k':'RM '+Math.round(n);};
@@ -559,7 +562,7 @@ function groupBars(data,series){
   let b='';data.forEach((d,i)=>{const x0=pl+i*bw+(bw-inner)/2;
     series.forEach((s,j)=>{const v=+d[s.k]||0,h=Math.max(0,(v/top)*ih),x=x0+j*gw,y=pt+ih-h,w=gw-2,r=Math.min(4,h,w/2);
       const path=h>0?`M${x},${pt+ih}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${pt+ih}Z`:'';
-      b+=`<path d="${path}" fill="${s.c}"/><rect x="${x-1}" y="${pt}" width="${w+2}" height="${ih}" fill="transparent" data-tip="<b>${esc(d.m)}</b> · ${s.l}<br>RM ${(v*1000).toLocaleString('en-MY')}"/>`;});
+      b+=`<path d="${path}" fill="${s.c}"/><rect x="${x-1}" y="${pt}" width="${w+2}" height="${ih}" fill="transparent" data-tip="<b>${escA(d.m)}</b> · ${escA(s.l)}<br>RM ${(v*1000).toLocaleString('en-MY')}"/>`;});
     b+=`<text x="${pl+i*bw+bw/2}" y="${H-9}" font-size="11.5" fill="#484d66" text-anchor="middle">${esc(d.m)}</text>`;});
   // emphasise last period values
   const last=data[n-1];if(last){series.forEach((s,j)=>{const v=+last[s.k]||0,x=pl+(n-1)*bw+(bw-inner)/2+j*gw+(gw-2)/2,y=pt+ih-(v/top)*ih-5;b+=`<text x="${x}" y="${y}" font-size="10.5" font-weight="700" fill="#16182b" text-anchor="middle">${v}k</text>`;});}
@@ -567,9 +570,10 @@ function groupBars(data,series){
 }
 function hbStack(label,parts,total,valTxt){
   const sum=parts.reduce((a,p)=>a+p.v,0)||1;
-  return `<div class="hb"><div class="n" title="${esc(label)}">${esc(label)}</div><div class="track">${parts.filter(p=>p.v>0).map(p=>`<span style="width:${p.v/sum*100*(total?sum/total:1)}%;background:${p.c}" data-tip="<b>${esc(label)}</b><br>${esc(p.l)}: ${esc(p.t||p.v)}"></span>`).join('')}</div><div class="val">${valTxt}</div></div>`;
+  return `<div class="hb"><div class="n" title="${esc(label)}">${esc(label)}</div><div class="track">${parts.filter(p=>p.v>0).map(p=>`<span style="width:${p.v/sum*100*(total?sum/total:1)}%;background:${p.c}" data-tip="<b>${escA(label)}</b><br>${escA(p.l)}: ${escA(p.t||p.v)}"></span>`).join('')}</div><div class="val">${valTxt}</div></div>`;
 }
-function progCell(p,col){p=Math.max(0,Math.min(100,+p||0));col=col||(p>=100?'var(--ok)':'var(--royal)');return `<div class="prog"><div class="bar"><i style="width:${p}%;background:${col}"></i></div><b>${p}%</b></div>`;}
+/* FIX: default dulu var(--royal) yang tak wujud dalam :root → bar lutsinar. Guna indigo tema. */
+function progCell(p,col){p=Math.max(0,Math.min(100,+p||0));col=col||(p>=100?'var(--ok)':'var(--ind-600)');return `<div class="prog"><div class="bar"><i style="width:${p}%;background:${col}"></i></div><b>${p}%</b></div>`;}
 
 /* ================= RENDER ================= */
 let renderT=null;function scheduleRender(){clearTimeout(renderT);renderT=setTimeout(()=>{if(current==='home')render();},120);}
@@ -635,7 +639,8 @@ function render(){
    +kpi('ops:akaun','Kutipan diterima',`<small>RM</small>${Math.round(paid/1000).toLocaleString('en-MY')}k`,`${billed?Math.round(paid/billed*100):0}% daripada ${rmK(billed)} diinvois`,true)
    +kpi('ops:akaun','Belum dikutip',`<small>RM</small>${Math.round(outst/1000).toLocaleString('en-MY')}k`,`${INV.filter(i=>num(i.amt)-num(i.paid)>0).length} invois tertunggak`)
    +kpi('tracking','Fail tracking aktif',trkActive.length,trk.length?`${trkClosed.length} ditutup, purata ${trkAvg}%`:'Belum ada fail')
-   +kpi('app:inventory','Peralatan perlu tindakan',EXT.inv?invBad+invWarn:'–',`<span class="chip bad">${invBad} rosak</span><span class="chip warn">${invWarn} perhatian</span>`)
+   /* FIX: jangan tunjuk "0 rosak / 0 perhatian" bila CSV inventori belum load atau gagal */
+   +kpi('app:inventory','Peralatan perlu tindakan',EXT.inv?invBad+invWarn:'–',EXT.inv?`<span class="chip bad">${invBad} rosak</span><span class="chip warn">${invWarn} perhatian</span>`:`<span class="chip mute">${extMsg('inv')}</span>`)
    +kpi('quotation','Sebut harga semasa',q?`<small>RM</small>${Math.round(q.total).toLocaleString('en-MY')}`:'–',q?esc(q.ref||'Draf'):'Belum ada draf',true)
    +'</div></section>';
 
