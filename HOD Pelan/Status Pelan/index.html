@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ms" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Pelukis Pelan Ukur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Base design: JMC Operations Hub (navy sidebar + topbar, IBM Plex, royal/yellow) */
+:root{
+  --navy:#0f1f5c; --navy2:#13277a; --royal:#2a4fd6; --royal-600:#1f3fb8; --royal-50:#eef2fd;
+  --yellow:#f2b705;
+  --bg:#f5f6fa; --surface:#ffffff; --field:#ffffff; --line:#e4e7ef; --line2:#eef0f5;
+  --ink:#141a2e; --ink2:#454e69; --muted:#7c849c;
+  --ok:#15803d; --ok-50:#e8f5ed; --warn:#b45309; --warn-50:#fdf2e3; --bad:#c62828; --bad-50:#fdeceb;
+  --pur:#6d28d9; --pur-50:#f1ebfd;
+  --f-sans:'IBM Plex Sans','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  --sb:248px; --top:60px; --r:10px;
+}
+html[data-theme="dark"]{
+  --royal:#5577ff; --royal-600:#4466ee; --royal-50:#1a2558;
+  --bg:#0b1130; --surface:#131b40; --field:#0e1536; --line:#253063; --line2:#1b2450;
+  --ink:#e9ecf8; --ink2:#b4bbd8; --muted:#8a93b8;
+  --ok:#4ade80; --ok-50:#123322; --warn:#fbbf24; --warn-50:#3a2c0f; --bad:#f87171; --bad-50:#3e1719;
+  --pur:#b794f6; --pur-50:#2a1f4e;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{font-family:var(--f-sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;overflow:hidden}
+button,input,select,textarea{font-family:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+/* ---------- Sidebar ---------- */
+.sb{position:fixed;inset:0 auto 0 0;width:var(--sb);background:var(--navy);color:#c9d3f2;display:flex;flex-direction:column;z-index:60;transition:transform .2s}
+.brand{display:flex;gap:12px;align-items:center;padding:18px 18px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.mark{width:40px;height:40px;border-radius:8px;background:var(--yellow);color:var(--navy);display:grid;place-items:center;font-weight:700;font-size:15px;letter-spacing:.5px;flex:none}
+.brand b{display:block;color:#fff;font-size:13.5px;letter-spacing:.4px;line-height:1.2}
+.brand span{font-size:11px;color:#8f9cc9}
+.nav{flex:1;overflow:auto;padding:8px 10px 14px}
+.grp{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:#7381b3;padding:16px 10px 6px;font-weight:600}
+.nav button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:7px;font-size:13.5px;color:#c9d3f2;cursor:pointer;position:relative}
+.nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav button.on{background:var(--navy2);color:#fff;font-weight:600}
+.nav button.on::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--yellow)}
+.nav button:focus-visible{outline:2px solid var(--yellow)}
+.nav button.add{margin-top:8px;border:1px dashed rgba(255,255,255,.22);color:#dfe5fb;font-size:12.5px}
+.nav .tx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav .cnt{font-size:10.5px;font-weight:600;background:rgba(255,255,255,.1);padding:1px 7px;border-radius:10px;color:#dfe5fb}
+.nav svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.sbfoot{padding:12px 14px 16px;border-top:1px solid rgba(255,255,255,.08);display:grid;gap:8px}
+.sbfoot .row{display:flex;gap:6px}
+.sbbtn{flex:1;border:1px solid rgba(255,255,255,.16);background:transparent;color:#dfe5fb;border-radius:7px;padding:7px 8px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.sbbtn:hover{background:rgba(255,255,255,.08)}
+.sbbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sbfoot small{font-size:10.5px;color:#7381b3}
+
+/* ---------- Main ---------- */
+.main{position:fixed;inset:0 0 0 var(--sb);display:flex;flex-direction:column}
+.top{height:var(--top);flex:none;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 22px}
+.top h1{font-size:16.5px;font-weight:600;letter-spacing:.1px}
+.crumb{font-size:12px;color:var(--muted)}
+.sp{flex:1}
+.clock{font-family:var(--f-mono);font-size:12px;color:var(--ink2);white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;border-radius:7px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--royal);color:var(--royal)}
+.btn.p{background:var(--royal);border-color:var(--royal);color:#fff}
+.btn.p:hover{background:var(--royal-600);color:#fff}
+.btn.icon{padding:7px 9px}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.burger{display:none;border:0;background:none;padding:6px;margin-left:-6px}
+.burger svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:2}
+.content{flex:1;position:relative;min-height:0}
+#home{position:absolute;inset:0;overflow:auto;padding:22px 24px 40px;display:grid;gap:14px;align-content:start}
+
+/* ---------- Panels & KPI ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;min-width:0}
+.ph{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.ph h3{font-size:13.5px;font-weight:600}
+.ph .src{font-size:11px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px 13px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:block;width:100%}
+.kpi:hover{border-color:var(--royal)}
+.kpi.sel{border-color:var(--royal);box-shadow:inset 0 0 0 1px var(--royal)}
+.kpi.hl{border-top:3px solid var(--yellow);padding-top:12px}
+.kpi .l{font-size:11.5px;color:var(--muted);font-weight:500;letter-spacing:.2px}
+.kpi .v{font-size:23px;font-weight:600;margin-top:6px;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11.5px;color:var(--ink2);margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:20px;white-space:nowrap}
+.chip.ok{background:var(--ok-50);color:var(--ok)}.chip.warn{background:var(--warn-50);color:var(--warn)}.chip.bad{background:var(--bad-50);color:var(--bad)}.chip.info{background:var(--royal-50);color:var(--royal)}.chip.mute{background:var(--line2);color:var(--ink2)}.chip.pur{background:var(--pur-50);color:var(--pur)}
+.chip svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.link{all:unset;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--royal)}
+.link:hover{text-decoration:underline}
+.empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:12.5px}
+
+/* project outline */
+.ol-top{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.ol-top h2{font-size:18px;font-weight:600;letter-spacing:-.2px;text-wrap:balance}
+.ol-top p{font-size:12.5px;color:var(--muted);margin-top:2px}
+.ol-prog{min-width:220px;text-align:right}
+.ol-prog .l{font-size:11.5px;color:var(--muted)}
+.ol-prog .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--royal)}
+.bigbar{height:8px;background:var(--line2);border-radius:4px;overflow:hidden;margin-top:6px}
+.bigbar i{display:block;height:100%;background:var(--royal);border-radius:4px;transition:width .3s}
+.ol-meta{display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding-top:12px;margin-top:14px;border-top:1px solid var(--line2);font-size:12.5px;color:var(--ink2)}
+.ol-meta b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.ol-meta .sp{flex:1}
+
+/* toolbar */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.inp{border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:7px;padding:8px 10px;font-size:13px;min-width:0}
+.inp:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 3px var(--royal-50)}
+.search{position:relative;flex:1;min-width:220px}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--muted);fill:none;stroke-width:1.8;stroke-linecap:round}
+.search .inp{width:100%;padding-left:32px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--ink2);padding:7px 12px;font-size:12.5px;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--royal);color:#fff}
+.seg svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* tables */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line2);vertical-align:middle}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--bg)}
+tr:last-child td{border-bottom:0}
+.dwg{font-family:var(--f-mono);font-weight:600;font-size:12px;color:var(--royal)}
+.t1{font-weight:600}
+.sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+.prog{display:flex;align-items:center;gap:8px;min-width:130px}
+.prog input[type=range]{flex:1;min-width:80px;accent-color:var(--royal)}
+.prog .bar{flex:1;height:6px;background:var(--line2);border-radius:4px;overflow:hidden}
+.prog .bar i{display:block;height:100%;border-radius:4px;background:var(--royal)}
+.prog b{font-size:11.5px;font-weight:600;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.icb{border:0;background:none;padding:5px;border-radius:6px;color:var(--muted);display:inline-grid;place-items:center}
+.icb:hover{background:var(--line2);color:var(--royal)}
+.icb.del:hover{color:var(--bad)}
+.icb svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* kanban */
+.kanban{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kcol{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;min-width:0}
+.kcol h4{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--ink2)}
+.kcol h4 i{width:8px;height:8px;border-radius:50%;flex:none}
+.kcol h4 .sp{flex:1}
+.klist{display:grid;gap:8px;margin-top:10px;min-height:120px;align-content:start}
+.kcard{border:1px solid var(--line);border-radius:8px;padding:10px 11px;background:var(--bg);display:grid;gap:7px}
+.kc-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.kc-t{font-size:12.5px;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.kc-m{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.kc-m svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8}
+.kc-f{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:7px;font-size:11px;color:var(--muted)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(15,31,92,.45);display:none;z-index:110;padding:16px;overflow:auto}
+.modal.on{display:grid;place-items:center}
+.modal .box{background:var(--surface);color:var(--ink);border-radius:12px;width:100%;max-width:440px;margin:auto}
+.modal .box.lg{max-width:780px}
+.mh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.mh h4{font-size:15px;font-weight:600;flex:1}
+.mh p{font-size:12px;color:var(--muted);margin-top:2px}
+.mb{padding:18px 20px;display:grid;gap:14px}
+.mb>p{font-size:13px;color:var(--ink2)}
+.mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.fg{display:grid;gap:12px}
+.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.fld label{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.fld .req{color:var(--bad)}
+.fld .inp{width:100%}
+.subbox{background:var(--royal-50);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:10px}
+.subbox .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:600}
+.quick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.quick button{border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:7px;padding:6px;font-size:12px;font-weight:600}
+.quick button:hover{border-color:var(--royal);color:var(--royal)}
+.subbox input[type=range]{width:100%;accent-color:var(--royal)}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:120;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}
+.toast.on{opacity:1;transform:none}
+.scrim{display:none}
+
+@media (max-width:1100px){.kanban{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){
+  .sb{transform:translateX(-100%)}
+  body.nav-open .sb{transform:none}
+  body.nav-open .scrim{display:block;position:fixed;inset:0;background:rgba(15,31,92,.4);z-index:55}
+  .main{left:0}
+  .burger{display:block}
+  .crumb,.clock{display:none}
+  #home{padding:16px 16px 32px}
+  .top{padding:0 16px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .c3,.c4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ol-prog{text-align:left;min-width:0;width:100%}
+}
+@media (max-width:560px){.kanban,.c2,.c3,.c4{grid-template-columns:minmax(0,1fr)}.top .btn span{display:none}}
+@media print{
+  body{overflow:visible;background:#fff}
+  .sb,.top .btn,.burger,.toast,.toolbar,.icb{display:none!important}
+  .main{position:static}.content{position:static}#home{position:static;overflow:visible;padding:0}
+  .panel,.kpi{break-inside:avoid}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></symbol>
+</svg>
+
+<aside class="sb" id="sb">
+  <div class="brand">
+    <div class="mark">JM</div>
+    <div><b>JURUKUR MAHABOB</b><span>Laporan Pelukis Pelan Ukur</span></div>
+  </div>
+  <nav class="nav" id="nav">
+    <div class="grp">Projek</div>
+    <div id="projList"></div>
+    <button class="add" id="btnNewProj"><svg><use href="#i-plus"/></svg>Projek Baharu</button>
+  </nav>
+  <div class="sbfoot">
+    <div class="row"><button class="sbbtn" id="btnExport" title="Muat turun semua projek & lukisan dalam fail JSON"><svg><use href="#i-download"/></svg>Eksport JSON</button></div>
+    <small>Data disimpan dalam browser ini (localStorage). Eksport secara berkala.</small>
+  </div>
+</aside>
+<div class="scrim" id="scrim"></div>
+
+<div class="main">
+  <header class="top">
+    <button class="burger" id="burger" aria-label="Buka menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <div>
+      <h1>Laporan Pelukis Pelan Ukur</h1>
+      <div class="crumb">Pengurusan Kerja &amp; Produktiviti Pelukis Pelan</div>
+    </div>
+    <div class="sp"></div>
+    <span class="clock" id="clock"></span>
+    <button class="btn icon" id="btnTheme" title="Tukar Mod Terang/Gelap" aria-label="Tukar mod terang atau gelap"><svg id="icSun"><use href="#i-sun"/></svg><svg id="icMoon"><use href="#i-moon"/></svg></button>
+    <button class="btn p" id="btnAdd"><svg><use href="#i-plus"/></svg><span>Tambah Lukisan</span></button>
+  </header>
+
+  <div class="content">
+    <section id="home" aria-live="polite">
+      <div class="panel" id="outline"></div>
+      <div class="kpis" id="kpis"></div>
+
+      <div class="panel toolbar">
+        <div class="search">
+          <svg><use href="#i-search"/></svg>
+          <input type="text" id="search-input" class="inp" placeholder="Cari No. DWG, Tajuk, Pelukis Pelan…" aria-label="Carian">
+        </div>
+        <select id="status-filter" class="inp" aria-label="Penapis status">
+          <option value="ALL">Semua Status</option>
+          <option value="Belum Mula">Belum Mula</option>
+          <option value="Penyediaan Plan">Dalam Proses</option>
+          <option value="Dalam Semakan">Dalam Semakan</option>
+          <option value="Diluluskan">Diluluskan / Selesai</option>
+        </select>
+        <div class="seg" role="group" aria-label="Pandangan">
+          <button data-view="table" class="on"><svg><use href="#i-list"/></svg>Jadual</button>
+          <button data-view="kanban"><svg><use href="#i-kanban"/></svg>Kanban</button>
+        </div>
+      </div>
+
+      <div class="panel" id="view-table">
+        <div class="ph"><h3>Log rekod terkini helaian lukisan</h3><span class="src" id="rec-count"></span></div>
+        <div class="tw">
+          <table>
+            <thead><tr>
+              <th>No. DWG / Helaian</th><th>Tajuk Lukisan</th><th>Pelukis Pelan</th><th>Kemajuan</th>
+              <th>Skala</th><th>Status</th><th class="num">Tarikh Mula / Siap</th><th class="num">Tindakan</th>
+            </tr></thead>
+            <tbody id="drawing-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="kanban" id="view-kanban" hidden></div>
+    </section>
+  </div>
+</div>
+
+<!-- Modal: Projek Baharu -->
+<div class="modal" id="project-modal" role="dialog" aria-modal="true" aria-labelledby="pm-title">
+  <form class="box" id="project-form">
+    <div class="mh"><h4 id="pm-title">Cipta folder projek baharu</h4><button type="button" class="icb" data-close aria-label="Tutup"><svg><use href="#i-x"/></svg></button></div>
+    <div class="mb">
+      <div class="fld"><label for="project-name-input">Nama Projek <span class="req">*</span></label><input type="text" id="project-name-input" class="inp" required placeholder="Cth: Penukaran Paip Lama SATU"></div>
+      <div class="fld"><label for="project-desc-input">Penerangan Ringkas Projek</label><textarea id="project-desc-input" class="inp" rows="2" placeholder="Cth: Projek ukur topo &amp; pengesanan utiliti…"></textarea></div>
+      <div class="fld"><label for="project-deadline-input">Tarikh Akhir Projek (Deadline) <span class="req">*</span></label><input type="date" id="project-deadline-input" class="inp" required></div>
+    </div>
+    <div class="mf"><button type="button" class="btn" data-close>Batal</button><button type="submit" class="btn p">Tambah Projek</button></div>
+  </form>
+</div>
+
+<!-- Modal: Tambah / Kemaskini Lukisan -->
+<div class="modal" id="drawing-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <form class="box lg" id="drawing-form">
+    <input type="hidden" id="edit-id">
+    <div class="mh">
+      <div style="flex:1">
+        <h4 id="modal-title">Kemaskini Kerja Harian</h4>
+        <p>Borang pelaporan kemajuan kerja pelukis pelan</p>
+      </div>
+      <button type="button" class="icb" data-close aria-label="Tutup"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <div class="mb">
+      <div class="subbox">
+        <div class="hd"><span>Pengiraan helaian mengikut jarak (km)</span><span class="chip info" id="km-badge">–</span></div>
+        <div class="fg c2">
+          <div class="fld"><label for="form-km-input">Jarak Jalur Tapak (km)</label><input type="number" step="0.01" min="0" id="form-km-input" class="inp" value="3.40" placeholder="Cth: 3.40"></div>
+          <div class="fld"><label for="form-chainage-select">Chainage <span class="req">*</span></label><select id="form-chainage-select" class="inp"></select></div>
+        </div>
+      </div>
+
+      <div class="fg c2">
+        <div class="fld"><label for="form-drafter">Nama Pelukis Pelan <span class="req">*</span></label><input type="text" id="form-drafter" class="inp" required placeholder="Cth: Ahmad Zulkarnain"></div>
+        <div class="fld"><label for="form-scale">Skala Lukisan &amp; Sasaran <span class="req">*</span></label>
+          <select id="form-scale" class="inp">
+            <option value="1:500">1:500 (1 Helaian = 300m | Sasaran: 2 Helaian / Hari)</option>
+            <option value="1:1000">1:1000 (1 Helaian = 600m | Sasaran: 1 Helaian / Hari)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fg c3">
+        <div class="fld"><label for="form-dwg-no">No. Helaian Lukisan <span class="req">*</span></label><input type="text" id="form-dwg-no" class="inp" required placeholder="Cth: MCP20682026-KMM-1"></div>
+        <div class="fld"><label for="form-title">Tajuk Lukisan <span class="req">*</span></label><input type="text" id="form-title" class="inp" required placeholder="Cth: Pelan Utiliti Jalan Paman Ibok"></div>
+        <div class="fld"><label for="form-chainage">Rantaian (Chainage) <span class="req">*</span></label><input type="text" id="form-chainage" class="inp" required placeholder="Cth: CH 0m hingga CH 300m"></div>
+      </div>
+
+      <div class="fg c4">
+        <div class="fld"><label for="form-status">Status Kerja <span class="req">*</span></label>
+          <select id="form-status" class="inp">
+            <option value="Belum Mula">Belum Mula</option>
+            <option value="Penyediaan Plan">Dalam Proses</option>
+            <option value="Dalam Semakan">Dalam Semakan</option>
+            <option value="Diluluskan">Selesai</option>
+          </select>
+        </div>
+        <div class="fld"><label for="form-duration">Masa (Jam) <span class="req">*</span></label><input type="number" step="0.5" min="0" id="form-duration" class="inp" required placeholder="Cth: 8.0"></div>
+        <div class="fld"><label for="form-date">Tarikh Mula Kerja <span class="req">*</span></label><input type="date" id="form-date" class="inp" required></div>
+        <div class="fld"><label for="form-comp-date">Tarikh Siap</label><input type="date" id="form-comp-date" class="inp"></div>
+      </div>
+
+      <div class="subbox">
+        <div class="hd"><span>Peratus siap (%)</span><span class="chip info" id="form-progress-val">50%</span></div>
+        <div class="quick">
+          <button type="button" data-q="0">0%</button><button type="button" data-q="25">25%</button><button type="button" data-q="50">50%</button><button type="button" data-q="75">75%</button><button type="button" data-q="100">100%</button>
+        </div>
+        <input type="range" id="form-progress" min="0" max="100" value="50" step="5" aria-label="Peratus siap">
+      </div>
+
+      <div class="fld"><label for="form-notes-dropdown">Catatan Peringkat Kerja (Notes) <span class="req">*</span></label>
+        <select id="form-notes-dropdown" class="inp">
+          <option value="Draft">Draft (Dalam Penyediaan Pelan)</option>
+          <option value="Semak">Semak (Peringkat Semakan QA/QC)</option>
+          <option value="Pembetulan">Pembetulan (Perlu Pembetulan / Correction)</option>
+          <option value="Final">Final (Selesai &amp; Disahkan)</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf"><button type="button" class="btn" data-close>Batal</button><button type="submit" class="btn p">Hantar &amp; Simpan Rekod Kemajuan</button></div>
+  </form>
+</div>
+
+<!-- Modal: Pengesahan -->
+<div class="modal" id="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="cf-title">
+  <div class="box">
+    <div class="mh"><h4 id="cf-title">Padam rekod?</h4></div>
+    <div class="mb"><p id="cf-txt"></p></div>
+    <div class="mf"><button class="btn" id="cf-no">Batal</button><button class="btn p" id="cf-yes">Ya, padam</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const KP='drafter_projects_data', KD='drafter_drawings_data', KT='theme';
+const STATUS={
+  'Belum Mula':['Belum Mula','mute','#9aa3bd'],
+  'Penyediaan Plan':['Dalam Proses','warn','var(--warn)'],
+  'Dalam Semakan':['Dalam Semakan','pur','var(--pur)'],
+  'Diluluskan':['Diluluskan','ok','var(--ok)']
+};
+
+/* ---------- Data asal (sama seperti versi lama) ---------- */
+let projects=[
+  {id:'proj-1',name:'Pusat Komersial Utama',description:'Kompleks Pejabat & Pusat Beli-belah 12 Tingkat',deadline:'2026-12-31'},
+  {id:'proj-2',name:'Kondominium Heights',description:'Menara Kediaman Mewah Blok A & B',deadline:'2026-11-15'}
+];
+let drawings=[
+  {id:'1',projectId:'proj-1',dwgNo:'MCP20682026-KMM-1',title:'Pelan Utiliti Jalan Paman Ibok',drafter:'Siti Nurhaliza',progress:85,rev:'1:500',status:'Penyediaan Plan',targetDate:'2026-11-05',notes:'Semak'},
+  {id:'2',projectId:'proj-1',dwgNo:'MCP20682026-KMM-2',title:'Pelan Ukur Cadastral & Topo',drafter:'Ahmad Razak',progress:100,rev:'1:1000',status:'Diluluskan',targetDate:'2026-10-28',notes:'Final'}
+];
+let activeProjectId='proj-1', currentView='table';
+
+/* ---------- Helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const parseD=s=>{if(!s||!/^\d{4}-\d{2}-\d{2}/.test(s))return null;const d=new Date(s.slice(0,10)+'T00:00:00');return isNaN(d)?null:d;};
+const dmy=d=>d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear():'–';
+const pct=v=>Math.max(0,Math.min(100,parseInt(v,10)||0));
+function lsGet(k){try{const r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return null;}}
+function saveData(){
+  try{localStorage.setItem(KP,JSON.stringify(projects));localStorage.setItem(KD,JSON.stringify(drawings));}
+  catch(e){toast('Gagal simpan — storan browser mungkin penuh');}
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2500);}
+function dueOf(d){return parseD(d.compDate)||parseD(d.targetDate);}
+function isOverdue(d){const due=dueOf(d);return !!due&&due<today()&&pct(d.progress)<100;}
+
+/* ---------- Tema ---------- */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  $('#icSun').style.display=t==='dark'?'':'none';
+  $('#icMoon').style.display=t==='dark'?'none':'';
+}
+$('#btnTheme').onclick=()=>{
+  const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  applyTheme(t);try{localStorage.setItem(KT,t);}catch(e){}
+};
+
+/* ---------- Projek (sidebar) ---------- */
+function renderProjectList(){
+  $('#projList').innerHTML=projects.map(p=>{
+    const n=drawings.filter(d=>d.projectId===p.id).length;
+    return `<button data-proj="${esc(p.id)}" class="${p.id===activeProjectId?'on':''}" title="${esc(p.name)}"><svg><use href="#i-folder"/></svg><span class="tx">${esc(p.name)}</span><span class="cnt">${n}</span></button>`;
+  }).join('')||'<div style="padding:8px 10px;font-size:12px;color:#7381b3">Belum ada projek.</div>';
+}
+$('#projList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-proj]');if(!b)return;
+  activeProjectId=b.dataset.proj;renderProjectList();renderAll();document.body.classList.remove('nav-open');
+});
+$('#btnNewProj').onclick=()=>{$('#project-form').reset();openM('project-modal');setTimeout(()=>$('#project-name-input').focus(),50);};
+$('#project-form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('#project-name-input').value.trim();
+  if(!name){toast('Sila isi nama projek');return;}
+  const p={id:'proj-'+Date.now(),name:name,description:$('#project-desc-input').value.trim(),deadline:$('#project-deadline-input').value};
+  projects.push(p);activeProjectId=p.id;saveData();closeM('project-modal');renderProjectList();renderAll();
+  toast(`Projek "${name}" berjaya ditambah`);
+});
+
+/* ---------- Render ---------- */
+function getFiltered(){
+  const q=$('#search-input').value.toLowerCase().trim();
+  const st=$('#status-filter').value;
+  return drawings.filter(d=>d.projectId===activeProjectId
+    &&(!q||String(d.dwgNo||'').toLowerCase().includes(q)||String(d.title||'').toLowerCase().includes(q)||String(d.drafter||'').toLowerCase().includes(q))
+    &&(st==='ALL'||d.status===st));
+}
+function renderAll(){
+  const pd=drawings.filter(d=>d.projectId===activeProjectId);
+  renderOutline(pd);renderStats(pd);
+  const f=getFiltered();
+  $('#rec-count').textContent=`${f.length} daripada ${pd.length} helaian`;
+  if(currentView==='table')renderTable(f);else renderKanban(f);
+}
+function renderOutline(pd){
+  const p=projects.find(x=>x.id===activeProjectId)||{name:'Tiada Projek',description:'',deadline:''};
+  const avg=pd.length?Math.round(pd.reduce((s,d)=>s+pct(d.progress),0)/pd.length):0;
+  const dl=parseD(p.deadline);
+  let rem='–',remCls='mute';
+  if(dl){const dd=Math.round((dl-today())/864e5);
+    if(dd<0){rem=Math.abs(dd)+' hari lewat (tamat)';remCls='bad';}
+    else{rem=dd+' hari';remCls=dd<=14?'warn':'info';}}
+  const over=pd.filter(isOverdue).length;
+  $('#outline').innerHTML=`
+    <div class="ol-top">
+      <div style="flex:1;min-width:220px"><h2>${esc(p.name)}</h2><p>${esc(p.description||'Tiada penerangan projek disediakan.')}</p></div>
+      <div class="ol-prog"><div class="l">Kemajuan keseluruhan projek</div><div class="v">${avg}%</div><div class="bigbar"><i style="width:${avg}%"></i></div></div>
+    </div>
+    <div class="ol-meta">
+      <span>Tarikh akhir projek: <b>${dl?dmy(dl):'Belum ditetapkan'}</b></span>
+      <span>Baki tempoh: <span class="chip ${remCls}">${esc(rem)}</span></span>
+      <span class="sp"></span>
+      <span class="chip ${over?'bad':'ok'}"><svg><use href="#i-alert"/></svg>Kerja lewat: ${over} helaian</span>
+    </div>`;
+}
+function renderStats(pd){
+  const st=$('#status-filter').value;
+  const c=s=>pd.filter(d=>d.status===s).length;
+  const k=(f,l,v,s,hl,col)=>`<button class="kpi${hl?' hl':''}${st===f?' sel':''}" data-filter="${f}"><div class="l">${l}</div><div class="v"${col?` style="color:${col}"`:''}>${v}</div><div class="s">${s}</div></button>`;
+  $('#kpis').innerHTML=
+    k('ALL','Jumlah helaian',pd.length,'Keseluruhan helaian',true)
+   +k('Diluluskan','Helaian siap',c('Diluluskan'),'Diluluskan',false,'var(--ok)')
+   +k('Penyediaan Plan','Dalam proses / QA',c('Penyediaan Plan'),'Drafting aktif',false,'var(--warn)')
+   +k('Dalam Semakan','Dalam semakan',c('Dalam Semakan'),'Semakan lanjut',false,'var(--pur)');
+}
+$('#kpis').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(!b)return;$('#status-filter').value=b.dataset.filter;renderAll();});
+
+function badge(s){const x=STATUS[s]||STATUS['Belum Mula'];return `<span class="chip ${x[1]}">${x[0]}</span>`;}
+function renderTable(data){
+  const tb=$('#drawing-table-body');
+  if(!data.length){tb.innerHTML='<tr><td colspan="8" class="empty">Tiada rekod lukisan dijumpai untuk projek ini mengikut kriteria carian.</td></tr>';return;}
+  tb.innerHTML=data.map(d=>{
+    const p=pct(d.progress),start=parseD(d.targetDate),comp=parseD(d.compDate),over=isOverdue(d);
+    return `<tr>
+      <td><span class="dwg">${esc(d.dwgNo)}</span></td>
+      <td><div class="t1">${esc(d.title)}</div><div class="sub">${d.chainage?esc(d.chainage)+' · ':''}Nota: ${esc(d.notes||'Draft')}${d.duration?' · '+esc(d.duration)+' jam':''}</div></td>
+      <td style="font-weight:500">${esc(d.drafter||'Belum Ditugaskan')}</td>
+      <td><div class="prog"><input type="range" min="0" max="100" value="${p}" data-prog="${esc(d.id)}" aria-label="Kemajuan ${esc(d.dwgNo)}"><b>${p}%</b></div></td>
+      <td><span class="chip info">${esc(d.rev||'–')}</span></td>
+      <td>${badge(d.status)}</td>
+      <td class="num">${dmy(start)}<div class="sub" style="${over?'color:var(--bad);font-weight:600':''}">${comp?'Siap '+dmy(comp):''}${over?(comp?' · ':'')+'Lewat':''}</div></td>
+      <td class="num" style="white-space:nowrap"><button class="icb" data-edit="${esc(d.id)}" title="Edit" aria-label="Edit"><svg><use href="#i-edit"/></svg></button><button class="icb del" data-del="${esc(d.id)}" title="Padam" aria-label="Padam"><svg><use href="#i-trash"/></svg></button></td>
+    </tr>`;}).join('');
+}
+function renderKanban(data){
+  $('#view-kanban').innerHTML=Object.keys(STATUS).map(s=>{
+    const items=data.filter(d=>d.status===s);
+    const label=s==='Diluluskan'?'Diluluskan / Selesai':STATUS[s][0];
+    return `<div class="kcol"><h4><i style="background:${STATUS[s][2]}"></i>${label}<span class="sp"></span><span class="chip ${STATUS[s][1]}">${items.length}</span></h4><div class="klist">${
+      items.length?items.map(d=>{const p=pct(d.progress),over=isOverdue(d);return `<div class="kcard">
+        <div class="kc-top"><span class="dwg">${esc(d.dwgNo)}</span><span class="chip info">${esc(d.rev||'–')}</span></div>
+        <div class="kc-t">${esc(d.title)}</div>
+        <div class="kc-m"><svg><use href="#i-user"/></svg>${esc(d.drafter||'Belum Ditugaskan')}</div>
+        <div class="prog"><div class="bar"><i style="width:${p}%;${p>=100?'background:var(--ok)':''}"></i></div><b>${p}%</b></div>
+        <div class="kc-f"><span style="${over?'color:var(--bad);font-weight:600':''}">${dmy(dueOf(d))}${over?' · Lewat':''}</span><button class="link" data-edit="${esc(d.id)}">Edit</button></div>
+      </div>`;}).join(''):'<div class="empty" style="padding:14px 4px">Tiada helaian</div>'
+    }</div></div>`;}).join('');
+}
+
+/* ---------- Pandangan & penapis ---------- */
+document.querySelector('.seg').addEventListener('click',e=>{
+  const b=e.target.closest('[data-view]');if(!b)return;currentView=b.dataset.view;
+  document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));
+  $('#view-table').hidden=currentView!=='table';$('#view-kanban').hidden=currentView!=='kanban';renderAll();
+});
+$('#search-input').addEventListener('input',renderAll);
+$('#status-filter').addEventListener('change',renderAll);
+
+/* ---------- Tindakan pada jadual / kanban ---------- */
+$('#drawing-table-body').addEventListener('change',e=>{const r=e.target.closest('[data-prog]');if(r)quickUpdateProgress(r.dataset.prog,r.value);});
+$('#drawing-table-body').addEventListener('input',e=>{const r=e.target.closest('[data-prog]');if(r)r.nextElementSibling.textContent=r.value+'%';});
+$('#home').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');if(ed){openDrawing(ed.dataset.edit);return;}
+  const dl=e.target.closest('[data-del]');if(dl)deleteDrawing(dl.dataset.del);
+});
+function quickUpdateProgress(id,val){
+  const d=drawings.find(x=>x.id===id);if(!d)return;
+  d.progress=pct(val);
+  if(d.progress===100&&d.status!=='Diluluskan')d.status='Dalam Semakan';
+  else if(d.progress>0&&d.status==='Belum Mula')d.status='Penyediaan Plan';
+  saveData();renderAll();toast(`Kemajuan DWG ${d.dwgNo} dikemaskini ke ${d.progress}%`);
+}
+function deleteDrawing(id){
+  const d=drawings.find(x=>x.id===id);if(!d)return;
+  askConfirm(`Rekod ${d.dwgNo} akan dipadam terus. Tindakan ini tak boleh diundur.`,()=>{
+    drawings=drawings.filter(x=>x.id!==id);saveData();renderProjectList();renderAll();toast('Rekod lukisan dipadamkan');
+  });
+}
+
+/* ---------- Borang lukisan ---------- */
+function setChainageText(val){
+  if(!val)return;const p=val.split('-');
+  $('#form-chainage').value=p.length===2?`CH ${p[0]}m hingga CH ${p[1]}m`:`CH ${val}`;
+}
+function buildChainage(selected){
+  const km=parseFloat($('#form-km-input').value)||0;
+  const m=Math.ceil(km*1000),scale=$('#form-scale').value,len=scale==='1:1000'?600:300;
+  const n=Math.max(1,Math.ceil(m/len));
+  const sel=$('#form-chainage-select');sel.innerHTML='';
+  for(let i=0;i<n;i++){const a=i*len,b=(i+1)*len,o=document.createElement('option');o.value=a+'-'+b;o.textContent=`Helaian ${i+1}: CH ${a}m - ${b}m (${scale})`;sel.appendChild(o);}
+  $('#km-badge').textContent=`${n} Helaian (${km.toFixed(2)} km @ ${scale})`;
+  if(selected&&[...sel.options].some(o=>o.value===selected))sel.value=selected;
+  setChainageText(sel.value);
+}
+$('#form-km-input').addEventListener('input',()=>buildChainage());
+$('#form-scale').addEventListener('change',()=>buildChainage());
+$('#form-chainage-select').addEventListener('change',e=>setChainageText(e.target.value));
+function setProg(v){v=pct(v);$('#form-progress').value=v;$('#form-progress-val').textContent=v+'%';}
+$('#form-progress').addEventListener('input',e=>setProg(e.target.value));
+document.querySelector('.quick').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(b)setProg(b.dataset.q);});
+
+function openDrawing(id){
+  const d=id?drawings.find(x=>x.id===id):null;
+  if(id&&!d)return;
+  if(!projects.some(p=>p.id===activeProjectId)){toast('Cipta projek dahulu');return;}
+  $('#drawing-form').reset();$('#edit-id').value='';
+  $('#modal-title').textContent=d?'Kemaskini helaian lukisan':'Kemaskini kerja harian';
+  $('#form-km-input').value=d&&d.km!=null&&d.km!==''?d.km:'3.40';
+  $('#form-scale').value=d&&d.rev?d.rev:'1:500';
+  buildChainage(d?d.chainageSel:null);
+  if(d){
+    $('#edit-id').value=d.id;
+    $('#form-dwg-no').value=d.dwgNo||'';$('#form-title').value=d.title||'';$('#form-drafter').value=d.drafter||'';
+    if(d.chainage)$('#form-chainage').value=d.chainage;
+    $('#form-status').value=d.status||'Belum Mula';$('#form-duration').value=d.duration!=null?d.duration:'';
+    $('#form-date').value=d.targetDate||'';$('#form-comp-date').value=d.compDate||'';
+    $('#form-notes-dropdown').value=d.notes||'Draft';
+  }
+  setProg(d?d.progress:50);
+  openM('drawing-modal');
+}
+$('#btnAdd').onclick=()=>openDrawing();
+$('#drawing-form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const editId=$('#edit-id').value,prev=editId?drawings.find(x=>x.id===editId):null;
+  const start=$('#form-date').value,comp=$('#form-comp-date').value;
+  if(start&&comp&&comp<start){toast('Tarikh siap tak boleh sebelum tarikh mula');return;}
+  const obj={
+    id:editId||Date.now().toString(),
+    projectId:prev?prev.projectId:activeProjectId,
+    dwgNo:$('#form-dwg-no').value.trim(),
+    title:$('#form-title').value.trim(),
+    drafter:$('#form-drafter').value.trim(),
+    rev:$('#form-scale').value,
+    km:$('#form-km-input').value,
+    chainageSel:$('#form-chainage-select').value,
+    chainage:$('#form-chainage').value.trim(),
+    progress:pct($('#form-progress').value),
+    status:$('#form-status').value,
+    duration:$('#form-duration').value,
+    targetDate:start,
+    compDate:comp,
+    notes:$('#form-notes-dropdown').value
+  };
+  if(prev)drawings[drawings.indexOf(prev)]=obj;else drawings.push(obj);
+  saveData();closeM('drawing-modal');renderProjectList();renderAll();
+  toast(prev?'Lukisan berjaya dikemaskini':'Lukisan baharu ditambah');
+});
+
+/* ---------- Modal ---------- */
+let lastFocus=null;
+function openM(id){lastFocus=document.activeElement;$('#'+id).classList.add('on');}
+function closeM(id){$('#'+id).classList.remove('on');if(id==='drawing-modal')$('#edit-id').value='';if(lastFocus&&lastFocus.focus)lastFocus.focus();}
+document.querySelectorAll('.modal').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-close]'))closeM(m.id);});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const m=document.querySelector('.modal.on');if(m)closeM(m.id);}});
+let cfAction=null;
+function askConfirm(txt,fn){$('#cf-txt').textContent=txt;cfAction=fn;openM('confirm-modal');}
+$('#cf-no').onclick=()=>{cfAction=null;closeM('confirm-modal');};
+$('#cf-yes').onclick=()=>{const f=cfAction;cfAction=null;closeM('confirm-modal');if(f)f();};
+
+/* ---------- Eksport ---------- */
+$('#btnExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify({projects,drawings},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  const d=new Date();a.download=`Kemajuan_Lukisan_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast('Eksport dimuat turun');
+};
+
+/* ---------- Topbar / mobile ---------- */
+function tick(){const d=new Date();$('#clock').textContent=dmy(d)+' · '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+$('#burger').onclick=()=>document.body.classList.toggle('nav-open');
+$('#scrim').onclick=()=>document.body.classList.remove('nav-open');
+
+/* ---------- Init ---------- */
+let t=null;try{t=localStorage.getItem(KT);}catch(e){}
+applyTheme(t==='dark'?'dark':'light');
+const sp=lsGet(KP),sd=lsGet(KD);
+if(Array.isArray(sp))projects=sp;
+if(Array.isArray(sd))drawings=sd;
+if(projects.length&&!projects.some(p=>p.id===activeProjectId))activeProjectId=projects[0].id;
+tick();setInterval(tick,30000);
+renderProjectList();renderAll();
+})();
+</script>
+</body>
+</html>
