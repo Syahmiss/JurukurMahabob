@@ -313,6 +313,11 @@ tr:last-child td{border-bottom:0}
         <div class="sbox" id="modal-status-box"><div class="l">Status semakan QC</div><div class="v" id="modal-status">-</div></div>
         <div class="sbox" id="modal-rework-box"><div class="l">Status rework (semak semula)</div><div class="v" id="modal-rework">-</div></div>
       </div>
+      <div class="kvg" style="margin-top:4px">
+        <div><div class="l">Jumlah Hari Kerja</div><div class="v" id="modal-hari">-</div></div>
+        <div><div class="l">PO. Freelance</div><div class="v" id="modal-po">-</div></div>
+      </div>
+      <div class="blk"><div class="l">Catatan Bayaran</div><div class="t" id="modal-bayaran">-</div></div>
     </div>
     <div class="mf"><button class="btn" data-close>Tutup</button></div>
   </div>
@@ -324,22 +329,18 @@ tr:last-child td{border-bottom:0}
 <script>
 (function(){
 'use strict';
-/* ================= CONFIG (sama seperti versi lama) ================= */
-const SHEET_BASE_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vT9VxT7lq3YC30mu8I2jIDQoorMyxaegkRkHD6geR5KEAmuf9sO88LIzGgw3a83aiYA7H-egUhcbex/pub?output=csv';
-const CSV_SOURCES=[
-  {name:'ENGINEERING',url:`${SHEET_BASE_URL}&gid=399274151`,defaultCategory:'ENGINEERING'},
-  {name:'TITLE',url:`${SHEET_BASE_URL}&gid=1201764382`,defaultCategory:'TITLE'},
-  {name:'UMAP',url:`${SHEET_BASE_URL}&gid=421455856`,defaultCategory:'UMAP'}
-];
+
+/* Google Apps Script Published Web App Execution URL */
+const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3aoOlGBmiQ1apyb09elf1AXyTRWKL75LclWAsO3yLvgS7bsNsdjnWYJ9ZPL0poaYXYg/exec';
+
 const SAMPLE_DATA=[
-  {MAKLUMAT:'ENGINEERING',TARIKH:'2026-02-03','NO. FAIL':'JMB/ENG/2026/005',PERKARA:'Ukur Aras Terperinci & Topografi Tapak Projek',TETUAN:'Jabatan Kerja Raya (JKR)','NAMA SURVEYOR':'Sr. Ahmad Zaki','TARIKH MULA':'2026-02-04','TARIKH AKHIR':'2026-02-11',STATUS:'LULUS',REWORK:'TIADA'},
-  {MAKLUMAT:'TITLE',TARIKH:'2026-01-15','NO. FAIL':'JMB/TTL/2026/014',PERKARA:'Ukur Penentuan Sempadan Lot 40822 Mukim Pekan',TETUAN:'Perbadanan Kemajuan Negeri Pahang','NAMA SURVEYOR':'Sr. Khairul Anuar','TARIKH MULA':'2026-01-16','TARIKH AKHIR':'2026-01-22',STATUS:'LULUS',REWORK:'TIADA'},
-  {MAKLUMAT:'TITLE',TARIKH:'2026-01-18','NO. FAIL':'JMB/TTL/2026/018',PERKARA:'Ukur Pecah Sempadan Bangunan Kondominium Vista',TETUAN:'Tropicana Land Corp','NAMA SURVEYOR':'Sr. Ahmad Zaki','TARIKH MULA':'2026-01-19','TARIKH AKHIR':'2026-02-05',STATUS:'DALAM PROSES QC',REWORK:'TIADA'},
-  {MAKLUMAT:'UMAP',TARIKH:'2026-02-01','NO. FAIL':'JMB/UMP/2026/001',PERKARA:'Pemetaan Sempadan Zon UMAP & GIS Koridor Paip',TETUAN:'Petronas Gas Berhad','NAMA SURVEYOR':'Hafizuddin Bakar','TARIKH MULA':'2026-02-02','TARIKH AKHIR':'2026-02-10',STATUS:'LULUS',REWORK:'TIADA'},
-  {MAKLUMAT:'TITLE',TARIKH:'2026-02-04','NO. FAIL':'JMB/TTL/2026/029',PERKARA:'Ukur Penandaan Sempadan Lot Industri Gebeng',TETUAN:'BASF Petronas Chemicals','NAMA SURVEYOR':'Sr. Khairul Anuar','TARIKH MULA':'2026-02-05','TARIKH AKHIR':'2026-02-12',STATUS:'LULUS',REWORK:'TIADA'},
-  {MAKLUMAT:'UMAP',TARIKH:'2026-02-08','NO. FAIL':'JMB/UMP/2026/003',PERKARA:'Pengumpulan Data Spasial & Pemetaan GIS UMAP',TETUAN:'Pihak Berkuasa Tempatan','NAMA SURVEYOR':'Siti Nurhaliza QC','TARIKH MULA':'2026-02-09','TARIKH AKHIR':'2026-02-18',STATUS:'DALAM PROSES QC',REWORK:'TIADA'}
+  {MAKLUMAT:'ENGINEERING',TARIKH:'2026-02-03','NO. FAIL':'JMB/ENG/2026/005',PERKARA:'Ukur Aras Terperinci & Topografi Tapak Projek',TETUAN:'Jabatan Kerja Raya (JKR)','NAMA SURVEYOR':'Sr. Ahmad Zaki','TARIKH MULA':'2026-02-04','TARIKH AKHIR':'2026-02-11',STATUS:'LULUS',REWORK:'TIADA','JUMLAH HARI':'7','PO. FREELANCE':'-','CATATAN BAYARAN':'Selesai'},
+  {MAKLUMAT:'TITLE',TARIKH:'2026-01-15','NO. FAIL':'JMB/TTL/2026/014',PERKARA:'Ukur Penentuan Sempadan Lot 40822 Mukim Pekan',TETUAN:'Perbadanan Kemajuan Negeri Pahang','NAMA SURVEYOR':'Sr. Khairul Anuar','TARIKH MULA':'2026-01-16','TARIKH AKHIR':'2026-01-22',STATUS:'LULUS',REWORK:'TIADA','JUMLAH HARI':'6','PO. FREELANCE':'PO-2026-089','CATATAN BAYARAN':'Diproses'},
+  {MAKLUMAT:'UMAP',TARIKH:'2026-02-01','NO. FAIL':'JMB/UMP/2026/001',PERKARA:'Pemetaan Sempadan Zon UMAP & GIS Koridor Paip',TETUAN:'Petronas Gas Berhad','NAMA SURVEYOR':'Hafizuddin Bakar','TARIKH MULA':'2026-02-02','TARIKH AKHIR':'2026-02-10',STATUS:'LULUS',REWORK:'TIADA','JUMLAH HARI':'8','CATATAN BAYARAN':'Lulus'},
+  {MAKLUMAT:'FOC & AMAL',TARIKH:'2026-02-10','NO. FAIL':'JMB/FOC/2026/002',PERKARA:'Ukur Amali Kebajikan Masjid Kuantan',TETUAN:'AJK Masjid Negeri','NAMA SURVEYOR':'Sr. Ahmad Zaki','TARIKH MULA':'2026-02-11','TARIKH AKHIR':'2026-02-12',STATUS:'LULUS',REWORK:'TIADA','JUMLAH HARI':'2','CATATAN BAYARAN':'Amal'}
 ];
-const PREFERRED_TAB_ORDER=['ENGINEERING','TITLE','UMAP'];
+
+const PREFERRED_TAB_ORDER=['ENGINEERING','TITLE','UMAP','FOC & AMAL'];
 const ST_META={'LULUS':['ok','Lulus / Selesai','var(--c-ok)'],'DALAM PROSES QC':['warn','Dalam Proses QC','var(--c-prog)'],'REWORK REQUIRED':['bad','Rework Required','var(--c-bad)']};
 
 let rawData=[],filteredData=[],dynamicTabs=[],currentTab='main',loading=false;
@@ -352,54 +353,47 @@ const fmtDate=s=>{if(s&&/^\d{4}-\d{2}-\d{2}/.test(s)){const d=new Date(s.slice(0
 const hasRework=i=>i.REWORK!=='TIADA'||i.STATUS==='REWORK REQUIRED';
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2400);}
 
-/* CSV parser (ganti PapaParse) — sokong quote, koma & baris baru dalam sel */
-function parseCSV(txt){
-  txt=txt.replace(/^\uFEFF/,'');
-  const rows=[];let row=[],cur='',q=false;
-  for(let i=0;i<txt.length;i++){const ch=txt[i];
-    if(q){if(ch==='"'){if(txt[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
-    else if(ch==='"')q=true;
-    else if(ch===','){row.push(cur);cur='';}
-    else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
-    else if(ch!=='\r')cur+=ch;}
-  if(cur!==''||row.length){row.push(cur);rows.push(row);}
-  if(!rows.length)return [];
-  const hdr=rows[0].map(h=>h.trim());
-  return rows.slice(1).filter(r=>r.join('').trim()!=='').map(r=>{const o={};hdr.forEach((h,j)=>{if(h)o[h]=r[j]==null?'':r[j];});return o;});
-}
-async function fetchCSV(url){
-  const r=await fetch(url,{cache:'no-store'});
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  const txt=await r.text();
-  if(/^\s*</.test(txt))throw new Error('Respons bukan CSV (Sheet belum diterbitkan?)');
-  return parseCSV(txt);
-}
-
-/* ================= FETCH ================= */
 async function fetchData(){
   if(loading)return;loading=true;
   $('#refresh-icon').classList.add('spin');$('#btnRefresh').disabled=true;
-  showBanner('Sedang memuat turun data QC daripada tab Google Sheets (ENGINEERING, TITLE & UMAP)…','info');
+  showBanner('Sedang memuat turun data QC secara terus daripada Apps Script Web App API…','info');
   setLive('','Menyambung…');
-  const res=await Promise.allSettled(CSV_SOURCES.map(s=>fetchCSV(s.url).then(rows=>cleanData(rows,s.defaultCategory,s.name))));
-  let combined=[];const fails=[];
-  res.forEach((r,i)=>{if(r.status==='fulfilled')combined=combined.concat(r.value);else{fails.push(CSV_SOURCES[i].name);console.error('Fetch error for tab '+CSV_SOURCES[i].name+':',r.reason);}});
-  if(combined.length&&!fails.length){
-    rawData=combined;showBanner(`Berjaya memuatkan ${rawData.length} rekod data secara terus daripada Google Sheet.`,'success');setLive('ok','Live data disambung');
-  }else if(combined.length){
-    rawData=combined;showBanner(`Hanya sebahagian data berjaya dimuatkan (${rawData.length} rekod). Tab gagal: ${fails.join(', ')}.`,'warning');setLive('warn','Sebahagian data sahaja');
-  }else{
-    rawData=cleanData(SAMPLE_DATA,'ENGINEERING','SAMPLE');
-    showBanner(fails.length===CSV_SOURCES.length?'Sambungan ke Google Sheets terputus. Menampilkan dataset tempatan.':'Menggunakan data sampel ukur tanah (Google Sheet belum awam atau kosong).','warning');
-    setLive('bad','Data sampel (offline)');
+
+  try {
+    const response = await fetch(APPSCRIPT_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const resData = await response.json();
+
+    if (resData && resData.status === 'success' && Array.isArray(resData.data) && resData.data.length > 0) {
+      rawData = cleanData(resData.data);
+      showBanner(`Berjaya memuatkan ${rawData.length} rekod data daripada Google Apps Script Web App API.`, 'success');
+      setLive('ok', 'API live disambung');
+    } else {
+      throw new Error('Respons JSON Apps Script tiada rekod atau tidak valid');
+    }
+  } catch (err) {
+    console.warn('Apps Script API fetch error:', err);
+    rawData = cleanData(SAMPLE_DATA, 'ENGINEERING', 'SAMPLE');
+    showBanner('Gagal menyambung ke Apps Script Web App API. Menampilkan dataset sampel tempatan. (Pastikan capaian Web App ditetapkan kepada "Anyone")', 'warning');
+    setLive('bad', 'Data sampel (offline)');
   }
+
   initDashboard();
   $('#refresh-icon').classList.remove('spin');$('#btnRefresh').disabled=false;loading=false;
 }
+
 function setLive(cls,txt){$('#liveDot').className='dot '+cls;$('#liveTxt').textContent=txt;}
 
-/* ================= CLEAN (logik sama, dengan pembetulan status/rework) ================= */
-function cleanData(data,defaultCat,srcName){
+function showBanner(msg, type='info') {
+  const b = $('#data-status-banner');
+  if(!b) return;
+  b.className = `banner ${type}`;
+  $('#status-message').textContent = msg;
+  b.hidden = false;
+}
+
+function cleanData(data, defaultCat='ENGINEERING', srcName='API'){
   return data.map((item,idx)=>{
     const keys=Object.keys(item);
     const getVal=possible=>{
@@ -435,17 +429,24 @@ function cleanData(data,defaultCat,srcName){
       'TARIKH MULA':getVal(['TARIKHMULA','TARIKH MULA','START DATE'])||'2026-01-01',
       'TARIKH AKHIR':getVal(['TARIKHAKHIR','TARIKH AKHIR','END DATE'])||'2026-01-10',
       STATUS:status,
-      REWORK:rework
+      REWORK:rework,
+      'JUMLAH HARI':getVal(['JUMLAH HARI','JUMLAH HARI KERJA','DAYS'])||'-',
+      'PO. FREELANCE':getVal(['PO FREELANCE','PO. FREELANCE','PO'])||'-',
+      'CATATAN BAYARAN':getVal(['CATATAN BAYARAN','BAYARAN','REMARKS'])||'-'
     };
   });
 }
 
-/* ================= DASHBOARD ================= */
+/* ================= DASHBOARD & LOGIC ================= */
 function initDashboard(){
   extractDynamicTabs();
   if(currentTab!=='main'&&!dynamicTabs.includes(currentTab))currentTab='main';
-  renderNav();populateFilterDropdowns();updateTitle();applyFilters();
+  renderNav();
+  populateFilterDropdowns();
+  updateTitle();
+  applyFilters();
 }
+
 function extractDynamicTabs(){
   const cats=new Set(rawData.map(i=>i.MAKLUMAT).filter(Boolean));
   dynamicTabs=[...cats].sort((a,b)=>{
@@ -453,171 +454,292 @@ function extractDynamicTabs(){
     if(ia!==-1&&ib!==-1)return ia-ib;if(ia!==-1)return -1;if(ib!==-1)return 1;return a.localeCompare(b);
   });
 }
-function tabIcon(n){if(n.includes('TITLE')||n.includes('HAKMILIK'))return 'i-contract';if(n.includes('UMAP')||n.includes('GIS'))return 'i-map';if(n.includes('ENGINEERING')||n.includes('KEJURUTERAAN'))return 'i-ruler';return 'i-folder';}
+
+function tabIcon(n){
+  if(n.includes('TITLE')||n.includes('HAKMILIK'))return 'i-contract';
+  if(n.includes('UMAP')||n.includes('GIS'))return 'i-map';
+  if(n.includes('ENGINEERING')||n.includes('KEJURUTERAAN'))return 'i-ruler';
+  if(n.includes('AMAL')||n.includes('FOC'))return 'i-check';
+  return 'i-folder';
+}
+
 function renderNav(){
   const btn=(id,label,icon,n)=>`<button data-tab="${esc(id)}" class="${currentTab===id?'on':''}"><svg><use href="#${icon}"/></svg><span class="tx">${esc(label)}</span><span class="cnt">${n}</span></button>`;
   $('#nav').innerHTML='<div class="grp">Utama</div>'+btn('main','Dashboard Utama','i-home',rawData.length)
     +'<div class="grp">Bidang QC</div>'+dynamicTabs.map(t=>btn(t,t,tabIcon(t),rawData.filter(i=>i.MAKLUMAT===t).length)).join('');
 }
-$('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)switchTab(b.dataset.tab);});
+
+$('#nav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-tab]');
+  if(b) switchTab(b.dataset.tab);
+});
+
 function switchTab(t){
-  currentTab=t;document.querySelectorAll('#nav [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
-  updateTitle();applyFilters();document.body.classList.remove('nav-open');
+  currentTab=t;
+  document.querySelectorAll('#nav [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  updateTitle();
+  applyFilters();
+  document.body.classList.remove('nav-open');
 }
-function updateTitle(){$('#current-tab-title').textContent=currentTab==='main'?'Semakan Data QC - Semua Bidang':`Semakan Data QC - Tab ${currentTab}`;}
+
+function updateTitle(){
+  $('#current-tab-title').textContent=currentTab==='main'?'Semakan Data QC - Semua Bidang':`Semakan Data QC - Tab ${currentTab}`;
+}
 
 function populateFilterDropdowns(){
-  const fill=(sel,vals,allLabel)=>{const el=$(sel),cur=el.value;
+  const fill=(sel,vals,allLabel)=>{
+    const el=$(sel),cur=el.value;
     el.innerHTML=`<option value="ALL">${allLabel}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
-    el.value=vals.includes(cur)?cur:'ALL';};
+    el.value=vals.includes(cur)?cur:'ALL';
+  };
   fill('#filter-status',[...new Set(rawData.map(i=>i.STATUS))],'Semua Status');
   fill('#filter-surveyor',[...new Set(rawData.map(i=>i['NAMA SURVEYOR']))].sort((a,b)=>a.localeCompare(b)),'Semua Surveyor');
 }
+
 function applyFilters(){
   const q=$('#filter-search').value.toLowerCase().trim();
-  const fs=$('#filter-status').value,fv=$('#filter-surveyor').value,fr=$('#filter-rework').value;
+  const fs=$('#filter-status').value, fv=$('#filter-surveyor').value, fr=$('#filter-rework').value;
+  
   filteredData=rawData.filter(i=>{
     if(currentTab!=='main'&&i.MAKLUMAT!==currentTab)return false;
     if(q&&![i['NO. FAIL'],i.PERKARA,i.TETUAN,i['NAMA SURVEYOR']].some(v=>String(v).toLowerCase().includes(q)))return false;
     if(fs!=='ALL'&&i.STATUS!==fs)return false;
     if(fv!=='ALL'&&i['NAMA SURVEYOR']!==fv)return false;
     if(fr==='YES'&&i.REWORK==='TIADA')return false;
-    if(fr==='NO'&&i.REWORK!=='TIADA')return false;
+    if(fr==='NO'&&hasRework(i))return false;
     return true;
   });
-  updateMetrics();renderTable();renderCharts();
-}
-['#filter-search'].forEach(s=>$(s).addEventListener('input',applyFilters));
-['#filter-status','#filter-surveyor','#filter-rework'].forEach(s=>$(s).addEventListener('change',applyFilters));
-function resetFilters(){$('#filter-search').value='';['#filter-status','#filter-surveyor','#filter-rework'].forEach(s=>$(s).value='ALL');applyFilters();}
-$('#btnReset').onclick=resetFilters;
 
-function updateMetrics(){
+  renderKPIs();
+  renderCharts();
+  renderTable();
+}
+
+function renderKPIs(){
   const total=filteredData.length;
-  const passed=filteredData.filter(i=>i.STATUS==='LULUS').length;
-  const prog=filteredData.filter(i=>i.STATUS==='DALAM PROSES QC').length;
-  const rework=filteredData.filter(hasRework).length;
-  const sv=new Set(filteredData.map(i=>i['NAMA SURVEYOR'])).size;
-  const pr=total?Math.round(passed/total*100):0,rr=total?Math.round(rework/total*100):0;
-  const k=(l,v,s,col,hl)=>`<div class="kpi${hl?' hl':''}"><div class="l">${l}</div><div class="v"${col?` style="color:${col}"`:''}>${v}</div><div class="s">${s}</div></div>`;
-  $('#kpis').innerHTML=
-    k('Jumlah fail semakan',total,'Dalam rekod terkini','',true)
-   +k('Status: Lulus / Siap',passed,`Kadar lulus <span class="chip ok">${pr}%</span>`,'var(--ok)')
-   +k('Dalam proses QC',prog,'Semakan aktif','var(--warn)')
-   +k('Kes rework (QC reject)',rework,`Kadar semak semula <span class="chip ${rr?'bad':'ok'}">${rr}%</span>`,'var(--bad)')
-   +k('Petugas surveyor',sv,'Pegawai ukur & QC');
+  const lulus=filteredData.filter(i=>i.STATUS==='LULUS').length;
+  const proses=filteredData.filter(i=>i.STATUS==='DALAM PROSES QC').length;
+  const reworkReq=filteredData.filter(i=>i.STATUS==='REWORK REQUIRED').length;
+  const totalRework=filteredData.filter(hasRework).length;
+
+  const pct = n => total ? Math.round((n/total)*100)+'%' : '0%';
+
+  $('#kpis').innerHTML=`
+    <div class="kpi hl">
+      <div class="l">JUMLAH FAIL QC</div>
+      <div class="v">${total}</div>
+      <div class="s"><span class="chip info">Rekod Aktif</span></div>
+    </div>
+    <div class="kpi">
+      <div class="l">LULUS / SELESAI</div>
+      <div class="v">${lulus}</div>
+      <div class="s"><span class="chip ok">${pct(lulus)}</span> dari jumlah</div>
+    </div>
+    <div class="kpi">
+      <div class="l">DALAM PROSES QC</div>
+      <div class="v">${proses}</div>
+      <div class="s"><span class="chip warn">${pct(proses)}</span> dalam semakan</div>
+    </div>
+    <div class="kpi">
+      <div class="l">PERLU REWORK (STATUS)</div>
+      <div class="v">${reworkReq}</div>
+      <div class="s"><span class="chip bad">${pct(reworkReq)}</span> gagal QC</div>
+    </div>
+    <div class="kpi">
+      <div class="l">JUMLAH REWORK KENA BAIKI</div>
+      <div class="v">${totalRework}</div>
+      <div class="s"><span class="chip ${totalRework?'bad':'ok'}">${pct(totalRework)}</span> kes rework</div>
+    </div>
+  `;
+}
+
+function renderCharts(){
+  const total=filteredData.length;
+  const lulus=filteredData.filter(i=>i.STATUS==='LULUS').length;
+  const proses=filteredData.filter(i=>i.STATUS==='DALAM PROSES QC').length;
+  const rework=filteredData.filter(i=>i.STATUS==='REWORK REQUIRED').length;
+
+  if(!total){
+    $('#statusChart').innerHTML='<div class="empty">Tiada data untuk carta.</div>';
+    $('#surveyorChart').innerHTML='<div class="empty">Tiada data untuk carta.</div>';
+    return;
+  }
+
+  const pL=lulus/total, pP=proses/total, pR=rework/total;
+  const r=65, c=2*Math.PI*r;
+  const dashL=pL*c, dashP=pP*c, dashR=pR*c;
+
+  $('#statusChart').innerHTML=`
+    <div class="donut">
+      <svg viewBox="0 0 170 170">
+        <circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--line2)" stroke-width="22"/>
+        ${pL > 0 ? `<circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--c-ok)" stroke-width="22" stroke-dasharray="${dashL} ${c-dashL}" stroke-dashoffset="0" transform="rotate(-90 85 85)"/>` : ''}
+        ${pP > 0 ? `<circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--c-prog)" stroke-width="22" stroke-dasharray="${dashP} ${c-dashP}" stroke-dashoffset="-${dashL}" transform="rotate(-90 85 85)"/>` : ''}
+        ${pR > 0 ? `<circle cx="85" cy="85" r="${r}" fill="none" stroke="var(--c-bad)" stroke-width="22" stroke-dasharray="${dashR} ${c-dashR}" stroke-dashoffset="-${dashL+dashP}" transform="rotate(-90 85 85)"/>` : ''}
+        <text x="85" y="80" text-anchor="middle" font-size="22" font-weight="700" fill="var(--ink)">${total}</text>
+        <text x="85" y="100" text-anchor="middle" font-size="11" fill="var(--muted)">JUMLAH</text>
+      </svg>
+      <div class="lgd">
+        <div><i style="background:var(--c-ok)"></i>Lulus: <b>${lulus}</b></div>
+        <div><i style="background:var(--c-prog)"></i>Dalam Proses: <b>${proses}</b></div>
+        <div><i style="background:var(--c-bad)"></i>Rework Required: <b>${rework}</b></div>
+      </div>
+    </div>
+  `;
+
+  const survMap={};
+  filteredData.forEach(i=>{
+    const s=i['NAMA SURVEYOR']||'Tidak Dinyatakan';
+    if(!survMap[s])survMap[s]={total:0,rework:0};
+    survMap[s].total++;
+    if(hasRework(i))survMap[s].rework++;
+  });
+
+  const sortedSurv=Object.entries(survMap).sort((a,b)=>b[1].total-a[1].total);
+  const maxVal=Math.max(...sortedSurv.map(s=>s[1].total),1);
+
+  $('#surveyorChart').innerHTML=`
+    <div class="hbs">
+      ${sortedSurv.map(([name,stat])=>{
+        const pctTotal=(stat.total/maxVal)*100;
+        return `
+          <div class="hb">
+            <span class="n" title="${esc(name)}">${esc(name)}</span>
+            <div class="track" title="${stat.total} fail (${stat.rework} rework)">
+              <span style="width:${pctTotal}%;background:var(--royal);"></span>
+            </div>
+            <div class="val">${stat.total} ${stat.rework?`<small>(${stat.rework} Rework)</small>`:''}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
 }
 
 function renderTable(){
   const tb=$('#table-body');
-  $('#records-count').textContent=`Papar ${filteredData.length} daripada ${rawData.length} rekod`;
-  $('#empty-state').hidden=filteredData.length>0;
-  tb.innerHTML=filteredData.map((i,n)=>{
-    const m=ST_META[i.STATUS]||ST_META['DALAM PROSES QC'];
-    const rw=i.REWORK!=='TIADA'?`<span class="chip bad" title="${esc(i.REWORK)}"><svg><use href="#i-alert"/></svg>Rework</span>`:'<span class="chip mute">Tiada</span>';
-    return `<tr>
-      <td class="sub">${n+1}</td>
-      <td><span class="chip info">${esc(i.MAKLUMAT)}</span></td>
-      <td class="nw">${esc(fmtDate(i.TARIKH))}</td>
-      <td><span class="fno">${esc(i['NO. FAIL'])}</span></td>
-      <td style="font-weight:500">${esc(i.PERKARA)}</td>
-      <td style="color:var(--ink2)">${esc(i.TETUAN)}</td>
-      <td class="nw">${esc(i['NAMA SURVEYOR'])}</td>
-      <td class="nw sub">${esc(fmtDate(i['TARIKH MULA']))} – ${esc(fmtDate(i['TARIKH AKHIR']))}</td>
-      <td class="c"><span class="chip ${m[0]}">${esc(i.STATUS)}</span></td>
-      <td class="c">${rw}</td>
-      <td class="c"><button class="icb" data-view="${esc(i.id)}" title="Papar perincian" aria-label="Papar perincian"><svg><use href="#i-eye"/></svg></button></td>
-    </tr>`;}).join('');
+  const empty=$('#empty-state');
+  
+  $('#records-count').textContent=`Menampilkan ${filteredData.length} daripada ${rawData.length} rekod fail`;
+
+  if(!filteredData.length){
+    tb.innerHTML='';
+    empty.hidden=false;
+    return;
+  }
+  empty.hidden=true;
+
+  tb.innerHTML=filteredData.map((item,idx)=>{
+    const meta=ST_META[item.STATUS]||['mute',item.STATUS];
+    const isRw=hasRework(item);
+    return `
+      <tr>
+        <td>${idx+1}</td>
+        <td><span class="chip info">${esc(item.MAKLUMAT)}</span></td>
+        <td class="nw">${fmtDate(item.TARIKH)}</td>
+        <td class="fno">${esc(item['NO. FAIL'])}</td>
+        <td><b>${esc(item.PERKARA)}</b></td>
+        <td>${esc(item.TETUAN)}</td>
+        <td>${esc(item['NAMA SURVEYOR'])}</td>
+        <td class="nw">${fmtDate(item['TARIKH MULA'])} - ${fmtDate(item['TARIKH AKHIR'])}</td>
+        <td class="c"><span class="chip ${meta[0]}">${meta[1]}</span></td>
+        <td class="c"><span class="chip ${isRw?'bad':'ok'}">${isRw?esc(item.REWORK):'TIADA'}</span></td>
+        <td class="c">
+          <button class="icb btn-view" data-id="${item.id}" title="Lihat Perincian"><svg><use href="#i-eye"/></svg></button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.btn-view').forEach(b=>{
+    b.addEventListener('click',e=>{
+      const id=e.currentTarget.dataset.id;
+      const item=rawData.find(i=>i.id===id);
+      if(item)openModal(item);
+    });
+  });
 }
 
-/* ================= CHARTS (SVG, ikut gaya template) ================= */
-function arc(cx,cy,R,r,a0,a1){
-  const lg=a1-a0>Math.PI?1:0,p=(rad,a)=>(cx+rad*Math.cos(a)).toFixed(2)+' '+(cy+rad*Math.sin(a)).toFixed(2);
-  return `M${p(R,a0)} A${R} ${R} 0 ${lg} 1 ${p(R,a1)} L${p(r,a1)} A${r} ${r} 0 ${lg} 0 ${p(r,a0)} Z`;
-}
-function renderCharts(){
-  // Doughnut: ikut STATUS sahaja supaya segmen tak bertindih (jumlah = jumlah fail)
-  const segs=Object.keys(ST_META).map(k=>({l:ST_META[k][1],v:filteredData.filter(i=>i.STATUS===k).length,c:ST_META[k][2]}));
-  const tot=segs.reduce((a,s)=>a+s.v,0),cx=85,cy=85,R=78,r=50;
-  let paths='',a=-Math.PI/2;
-  if(!tot)paths=`<circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="#eef0f5" stroke-width="${R-r}"/>`;
-  segs.forEach(s=>{if(!s.v)return;const f=s.v/tot,tip=`${esc(s.l)}: ${s.v} fail (${Math.round(f*100)}%)`;
-    if(f>=0.9999)paths+=`<circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="${s.c}" stroke-width="${R-r}" data-tip="${tip}"/>`;
-    else{const a1=a+f*2*Math.PI;paths+=`<path d="${arc(cx,cy,R,r,a,a1)}" fill="${s.c}" stroke="#fff" stroke-width="2" data-tip="${tip}"/>`;a=a1;}});
-  paths+=`<text x="${cx}" y="${cy+2}" font-size="26" font-weight="600" fill="#141a2e" text-anchor="middle">${tot}</text><text x="${cx}" y="${cy+20}" font-size="10" fill="#7c849c" text-anchor="middle" letter-spacing="1">FAIL</text>`;
-  $('#statusChart').innerHTML=`<div class="donut"><svg viewBox="0 0 170 170" role="img" aria-label="Agihan status semakan">${paths}</svg><div class="lgd">${segs.map(s=>`<span><i style="background:${s.c}"></i>${esc(s.l)}<b>${s.v}</b></span>`).join('')}</div></div>`;
+function openModal(item){
+  $('#modal-file-no').textContent = item['NO. FAIL'];
+  $('#modal-category').textContent = 'Maklumat QC Ukur Tanah - Bidang ' + item.MAKLUMAT;
+  $('#modal-tetuan').textContent = item.TETUAN || '-';
+  $('#modal-surveyor').textContent = item['NAMA SURVEYOR'] || '-';
+  $('#modal-tarikh').textContent = fmtDate(item.TARIKH);
+  $('#modal-tempoh').textContent = `${fmtDate(item['TARIKH MULA'])} hingga ${fmtDate(item['TARIKH AKHIR'])}`;
+  $('#modal-perkara').textContent = item.PERKARA || '-';
 
-  // Surveyor: bar mendatar — jumlah projek, bahagian rework ditanda merah
-  const map={};
-  filteredData.forEach(i=>{const k=i['NAMA SURVEYOR']||'Unknown';map[k]=map[k]||{t:0,r:0};map[k].t++;if(hasRework(i))map[k].r++;});
-  const rows=Object.entries(map).sort((x,y)=>y[1].t-x[1].t||y[1].r-x[1].r);
-  const max=Math.max(1,...rows.map(x=>x[1].t));
-  $('#surveyorChart').innerHTML=rows.length
-    ?`<div class="hbs">${rows.map(([n,v])=>`<div class="hb"><div class="n" title="${esc(n)}">${esc(n)}</div><div class="track" style="width:${v.t/max*100}%">${v.t-v.r>0?`<span style="width:${(v.t-v.r)/v.t*100}%;background:var(--royal)" data-tip="<b>${esc(esc(n))}</b><br>Tanpa rework: ${v.t-v.r}"></span>`:''}${v.r?`<span style="width:${v.r/v.t*100}%;background:var(--c-bad)" data-tip="<b>${esc(esc(n))}</b><br>Kes rework: ${v.r}"></span>`:''}</div><div class="val">${v.t}${v.r?` <small>· ${v.r} rework</small>`:''}</div></div>`).join('')}</div>
-      <div class="lgd"><span><i style="background:var(--royal)"></i>Projek tanpa rework</span><span><i style="background:var(--c-bad)"></i>Kes rework</span><span style="margin-left:auto">${rows.length} surveyor</span></div>`
-    :'<div class="empty">Tiada data untuk dipaparkan.</div>';
-}
+  const sBox = $('#modal-status-box');
+  const rBox = $('#modal-rework-box');
+  const st = item.STATUS;
+  const rw = hasRework(item) ? item.REWORK : 'TIADA';
 
-/* ================= MODAL ================= */
-let lastFocus=null;
-$('#table-body').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)openModal(b.dataset.view);});
-function openModal(id){
-  const r=rawData.find(i=>i.id===id);if(!r)return;
-  lastFocus=document.activeElement;
-  $('#modal-file-no').textContent=r['NO. FAIL'];
-  $('#modal-category').textContent=`Bidang: Ukur ${r.MAKLUMAT} (Kategori QC)`;
-  $('#modal-tetuan').textContent=r.TETUAN;
-  $('#modal-surveyor').textContent=r['NAMA SURVEYOR'];
-  $('#modal-tarikh').textContent=fmtDate(r.TARIKH);
-  $('#modal-tempoh').textContent=`${fmtDate(r['TARIKH MULA'])} hingga ${fmtDate(r['TARIKH AKHIR'])}`;
-  $('#modal-perkara').textContent=r.PERKARA;
-  $('#modal-status').textContent=r.STATUS;
-  $('#modal-status-box').className='sbox '+(ST_META[r.STATUS]||ST_META['DALAM PROSES QC'])[0];
-  $('#modal-rework').textContent=r.REWORK;
-  $('#modal-rework-box').className='sbox'+(r.REWORK!=='TIADA'?' bad':'');
+  $('#modal-status').textContent = st;
+  sBox.className = 'sbox ' + (st === 'LULUS' ? 'ok' : st === 'REWORK REQUIRED' ? 'bad' : 'warn');
+
+  $('#modal-rework').textContent = rw;
+  rBox.className = 'sbox ' + (rw === 'TIADA' ? 'ok' : 'bad');
+
+  $('#modal-hari').textContent = item['JUMLAH HARI'] || '-';
+  $('#modal-po').textContent = item['PO. FREELANCE'] || '-';
+  $('#modal-bayaran').textContent = item['CATATAN BAYARAN'] || '-';
+
   $('#detail-modal').classList.add('on');
 }
-function closeModal(){$('#detail-modal').classList.remove('on');if(lastFocus&&lastFocus.focus)lastFocus.focus();}
-$('#detail-modal').addEventListener('click',e=>{if(e.target.id==='detail-modal'||e.target.closest('[data-close]'))closeModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#detail-modal').classList.contains('on'))closeModal();});
 
-/* ================= EXPORT / PRINT ================= */
-function exportCSV(){
-  if(!filteredData.length){showBanner('Tiada data untuk dieksport berdasarkan penapis semasa.','warning');return;}
-  const head=['Kategori','Tarikh','No Fail','Perkara','Tetuan','Surveyor','Tarikh Mula','Tarikh Akhir','Status QC','Rework'];
-  const q=v=>{v=String(v==null?'':v);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';};
-  const lines=[head.map(q).join(',')].concat(filteredData.map(i=>[i.MAKLUMAT,i.TARIKH,i['NO. FAIL'],i.PERKARA,i.TETUAN,i['NAMA SURVEYOR'],i['TARIKH MULA'],i['TARIKH AKHIR'],i.STATUS,i.REWORK].map(q).join(',')));
-  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  const d=new Date();a.download=`QC_Laporan_Mahabob_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
-  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast(`${filteredData.length} rekod dieksport`);
+function closeModal(){
+  $('#detail-modal').classList.remove('on');
 }
-$('#btnCSV').onclick=exportCSV;
-$('#btnPrint').onclick=()=>window.print();
-$('#btnRefresh').onclick=fetchData;
 
-/* ================= BANNER ================= */
-function showBanner(msg,type){
-  const b=$('#data-status-banner');b.className='banner'+(type==='success'?' success':type==='warning'?' warning':'');
-  $('#banner-icon').innerHTML=`<use href="#${type==='success'?'i-check':type==='warning'?'i-alert':'i-info'}"/>`;
-  $('#status-message').textContent=msg;b.hidden=false;
+document.querySelectorAll('[data-close]').forEach(el=>{
+  el.addEventListener('click', closeModal);
+});
+
+$('#detail-modal').addEventListener('click', e=>{
+  if(e.target === $('#detail-modal')) closeModal();
+});
+
+/* Event Listeners */
+$('#burger').addEventListener('click',()=>document.body.classList.toggle('nav-open'));
+$('#scrim').addEventListener('click',()=>document.body.classList.remove('nav-open'));
+$('#btnRefresh').addEventListener('click',()=>fetchData());
+$('#btnDismiss').addEventListener('click',()=>$('#data-status-banner').hidden=true);
+$('#btnPrint').addEventListener('click',()=>window.print());
+$('#btnReset').addEventListener('click',()=>{
+  $('#filter-search').value='';
+  $('#filter-status').value='ALL';
+  $('#filter-surveyor').value='ALL';
+  $('#filter-rework').value='ALL';
+  applyFilters();
+});
+
+['input','change'].forEach(ev=>{
+  $('#filter-search').addEventListener(ev,applyFilters);
+  $('#filter-status').addEventListener(ev,applyFilters);
+  $('#filter-surveyor').addEventListener(ev,applyFilters);
+  $('#filter-rework').addEventListener(ev,applyFilters);
+});
+
+$('#btnCSV').addEventListener('click',()=>{
+  if(!filteredData.length){toast('Tiada rekod untuk dieksport');return;}
+  const keys=['MAKLUMAT','TARIKH','NO. FAIL','PERKARA','TETUAN','NAMA SURVEYOR','TARIKH MULA','TARIKH AKHIR','STATUS','REWORK','JUMLAH HARI','PO. FREELANCE','CATATAN BAYARAN'];
+  const csv=[keys.join(','),...filteredData.map(i=>keys.map(k=>`"${String(i[k]||'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`QC_Laporan_${currentTab}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Fail CSV berjaya dimuat turun');
+});
+
+/* Clock ticker */
+function updateClock(){
+  const now=new Date();
+  $('#clock').textContent=now.toLocaleDateString('ms-MY',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
-$('#btnDismiss').onclick=()=>{$('#data-status-banner').hidden=true;};
+setInterval(updateClock,1000);updateClock();
 
-/* ================= TOOLTIP / TOPBAR ================= */
-const tip=$('#tip');
-document.addEventListener('mousemove',e=>{const t=e.target.closest&&e.target.closest('[data-tip]');
-  if(!t){tip.classList.remove('on');return;}
-  tip.innerHTML=t.getAttribute('data-tip');tip.classList.add('on');
-  const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;
-  if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;
-  tip.style.left=x+'px';tip.style.top=y+'px';});
-function tick(){const d=new Date();$('#clock').textContent=dmy(d)+' · '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
-$('#burger').onclick=()=>document.body.classList.toggle('nav-open');
-$('#scrim').onclick=()=>document.body.classList.remove('nav-open');
-
-tick();setInterval(tick,30000);
+/* Initial Fetch on Load */
 fetchData();
+
 })();
 </script>
 </body>
