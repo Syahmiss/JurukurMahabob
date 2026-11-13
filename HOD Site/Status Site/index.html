@@ -1,309 +1,382 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Progres Kerja Ukur | JURUKUR MAHABOB</title>
-    <!-- Tailwind CSS (CDN). Untuk production: guna assets/tailwind.css (npm run build:css) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Urbanist', 'Inter', 'sans-serif']
-                    },
-                    colors: {
-                        brand: 'rgb(var(--brand-rgb) / <alpha-value>)',
-                        brand2: 'rgb(var(--brand2-rgb) / <alpha-value>)',
-                        gold: 'rgb(var(--gold-rgb) / <alpha-value>)',
-                        ink: 'rgb(var(--ink-rgb) / <alpha-value>)',
-                        canvas: 'rgb(var(--canvas-rgb) / <alpha-value>)',
-                        line: 'rgb(var(--line-rgb) / <alpha-value>)'
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Urbanist:wght@600;700;800&display=swap" rel="stylesheet">
-    <style>
-        /* ===== Token warna: tukar di sini sahaja (nilai RGB) ===== */
-        :root {
-            --brand-rgb: 34 34 211;     /* biru royal  #2222D3 */
-            --brand2-rgb: 79 82 232;    /* biru terang #4F52E8 */
-            --gold-rgb: 255 229 0;      /* kuning      #FFE500 */
-            --ink-rgb: 17 24 39;        /* teks utama  #111827 */
-            --canvas-rgb: 245 246 250;  /* latar halaman */
-            --line-rgb: 229 231 235;    /* garisan / border */
-        }
-        body { font-family: 'Inter', sans-serif; background-color: rgb(var(--canvas-rgb)); color: rgb(var(--ink-rgb)); }
-        h1, h2, h3, .font-display { font-family: 'Urbanist', 'Inter', sans-serif; letter-spacing: -0.01em; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: rgb(var(--canvas-rgb)); }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
-        input[type="date"], input[type="time"] { color-scheme: light; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Progres Kerja Ukur | JURUKUR MAHABOB</title>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
+<style>
+/* ============================================================
+   Status Site — UI ikut template Operations Hub (GEO-STAT: light, indigo + kuning).
+   Token warna SAMA dengan index.html hub. Tukar warna di :root sahaja.
+   ============================================================ */
+:root{
+  --ind-950:#17154a; --ind-900:#1f1c63; --ind-800:#272483; --ind-600:#4338ca; --ind-500:#5b51e0; --ind-100:#e2e3fb; --ind-50:#eef0ff;
+  --yel:#f5c518; --yel-600:#d9a400; --yel-50:#fff8d6; --yel-ink:#2a2100;
+  --bg:#f6f7fb; --surface:#ffffff; --line:#e3e5ef; --line2:#eef0f6;
+  --ink:#16182b; --ink2:#484d66; --muted:#757a94;
+  --ok:#0f7a43; --ok-50:#e5f4ec; --warn:#b45309; --warn-50:#fdf1e1; --bad:#c52a2a; --bad-50:#fdeaea;
+  --f:'Archivo','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  --r-lg:16px; --r-md:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--f);font-stretch:100%;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--yel);outline-offset:2px}
+::selection{background:var(--ind-600);color:#fff}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.sm{font-size:11.5px}
+.num{font-variant-numeric:tabular-nums}
+.sp{flex:1}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.warn-t{color:var(--warn);font-weight:600}
+b.g{color:var(--ok)}
+/* saiz ikon lucide (class disalin ke <svg>) */
+svg.lucide{flex:none;stroke-width:1.9}
+.i12{width:12px;height:12px}.i14{width:14px;height:14px}.i16{width:16px;height:16px}.i18{width:18px;height:18px}.i24{width:24px;height:24px}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:#cdd0e2;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#a3a6c2}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=date],input[type=time]{color-scheme:light}
 
-        /* Hero biru dengan corak grid ukur */
-        .hero {
-            background:
-                repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 48px),
-                repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 48px),
-                linear-gradient(115deg, rgb(var(--brand2-rgb)) 0%, rgb(var(--brand-rgb)) 70%);
-        }
-        .hero::after {
-            content: ""; position: absolute; right: -80px; top: -80px; width: 360px; height: 360px;
-            border-radius: 9999px; border: 1px solid rgba(255,255,255,0.15);
-            box-shadow: 0 0 0 40px rgba(255,255,255,0.03), 0 0 0 80px rgba(255,255,255,0.03);
-            pointer-events: none;
-        }
-        /* Kad KPI kuning / biru silih ganti */
-        .kpi-gold { background: rgb(var(--gold-rgb)); color: rgb(var(--ink-rgb)); }
-        .kpi-blue { background: linear-gradient(135deg, rgb(var(--brand2-rgb)), rgb(var(--brand-rgb))); color: #fff; }
-        .kpi { transition: transform .2s ease, box-shadow .2s ease; }
-        .kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(17, 24, 39, .35); }
-        @keyframes pulseAccent {
-            0%, 100% { border-color: rgb(var(--brand-rgb)); box-shadow: 0 0 0 3px rgba(34, 34, 211, 0.15); }
-            50% { border-color: rgb(var(--gold-rgb)); box-shadow: 0 0 0 3px rgba(255, 229, 0, 0.35); }
-        }
-        .new-card-highlight { animation: pulseAccent 2.5s infinite; }
-        /* Senarai kerja dalam kad: sembunyi penanda lalai <summary> */
-        details > summary::-webkit-details-marker { display: none; }
-    </style>
+.wrap{flex:1;width:100%;max-width:1360px;margin:0 auto;padding:22px 26px 40px}
+
+/* ---------- Hero + KPI + tab ---------- */
+.hero{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px}
+.hero .contour{position:absolute;right:-40px;top:-60px;width:520px;height:300px;pointer-events:none;color:var(--ind-600);opacity:.13}
+.hero-head{position:relative;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:20px 24px 18px}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:650;color:var(--ind-600);margin-bottom:6px}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--yel)}
+.hero-head h1{font-size:26px;font-weight:780;font-stretch:118%;letter-spacing:-.4px;line-height:1.1;color:var(--ind-950)}
+.hero-head p{font-size:12.5px;color:var(--muted);margin-top:6px;max-width:68ch}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;transition:border-color .15s,color .15s,background .15s}
+.btn:hover{border-color:var(--ind-600);color:var(--ind-600)}
+.btn.p{background:var(--ind-600);border-color:var(--ind-600);color:#fff}
+.btn.p:hover{background:var(--ind-800);border-color:var(--ind-800);color:#fff}
+.btn.y{background:var(--yel);border-color:var(--yel);color:var(--yel-ink)}
+.btn.y:hover{background:var(--yel-600);border-color:var(--yel-600);color:var(--yel-ink)}
+.btn:disabled{opacity:.65;cursor:progress}
+.ri{display:inline-flex}
+.animate-spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.kpis{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);background:linear-gradient(var(--surface),var(--bg))}
+.kpi{padding:15px 18px 16px;border-left:1px solid var(--line);min-width:0}
+.kpi:first-child{border-left:0}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:500}
+.kpi .v{font-size:27px;font-weight:720;font-stretch:112%;margin-top:4px;letter-spacing:-.6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+.kpi .s{font-size:11.5px;color:var(--ink2);margin-top:6px}
+.kpi.hl .v{display:inline-block;max-width:100%;background:linear-gradient(transparent 66%,var(--yel) 66%,var(--yel) 92%,transparent 92%)}
+.tabs{display:flex;gap:2px;padding:0 14px;border-top:1px solid var(--line);overflow-x:auto;background:var(--surface)}
+.tab{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:11px 12px 10px;font-size:13px;font-weight:600;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--ind-600)}
+.tab.on{color:var(--ind-800);border-bottom-color:var(--yel)}
+.tab:focus-visible{outline:2px solid var(--ind-600);outline-offset:-2px}
+
+/* ---------- Panel ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;min-width:0;margin-bottom:16px}
+.ph{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ph h3,.ph h2{font-size:14.5px;font-weight:700;font-stretch:106%;display:flex;align-items:center;gap:9px}
+.ph h3::before,.ph h2::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--yel)}
+.ph .src{font-size:11.5px;color:var(--muted);padding:2px 8px;border-radius:6px;background:var(--bg)}
+.ph .src.ok{background:var(--ok-50);color:var(--ok)}.ph .src.info{background:var(--ind-50);color:var(--ind-600)}
+.ph-sub{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:-6px;padding-left:13px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.inp{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:13px;transition:border-color .15s,box-shadow .15s}
+.inp:focus{outline:none;border-color:var(--ind-600);box-shadow:0 0 0 3px var(--ind-50)}
+.inp::placeholder{color:#a3a6c2}
+.search{position:relative;width:260px;display:block}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search .inp{padding-left:34px}
+select.inp{width:auto;min-width:160px;padding-right:30px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23757a94' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:14px}
+.form select.inp{width:100%}
+.empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:12.5px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty b{color:var(--ink2);font-weight:650}
+.empty.full{grid-column:1/-1}
+.spin{width:26px;height:26px;border:3px solid var(--ind-100);border-top-color:var(--ind-600);border-radius:50%;animation:spin .8s linear infinite}
+.spin.sm{width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.35);border-top-color:#fff}
+
+/* ---------- Chip & tag ---------- */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;padding:2px 8px;border-radius:20px;white-space:nowrap;flex:none}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip.ok{background:var(--ok-50);color:var(--ok)}.chip.warn{background:var(--warn-50);color:var(--warn)}.chip.bad{background:var(--bad-50);color:var(--bad)}.chip.info{background:var(--ind-50);color:var(--ind-600)}.chip.mute{background:var(--line2);color:var(--ink2)}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:11px;font-weight:650;padding:2px 8px;border-radius:6px;background:var(--ind-50);color:var(--ind-600)}
+.tag.mute{background:var(--line2);color:var(--ink2)}
+.qty{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.qty b{color:var(--ind-600);font-weight:650}
+.person{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:550;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--ink2);background:var(--surface)}
+.person svg{color:var(--ind-600)}
+.people{display:flex;flex-wrap:wrap;gap:5px}
+
+/* ---------- Kad progres fail ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;align-items:start}
+.fc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:13px;transition:border-color .15s,box-shadow .15s;min-width:0}
+.fc:hover{border-color:var(--ind-100);box-shadow:0 12px 26px -20px rgba(23,21,74,.5)}
+.fc.late{box-shadow:inset 0 3px 0 var(--bad)}
+.fc-h{display:flex;align-items:flex-start;gap:11px}
+.fc-ic{width:38px;height:38px;border-radius:10px;background:var(--yel);color:var(--ind-950);display:grid;place-items:center;flex:none}
+.fc-t{min-width:0;flex:1}
+.fc-t h3{font-size:16px;font-weight:720;font-stretch:110%;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.fc-t span{font-size:11.5px;color:var(--muted)}
+.big{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.big b{font-size:26px;font-weight:720;font-stretch:112%;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
+.big span{font-size:11.5px;color:var(--muted)}
+.bar{height:8px;background:var(--line2);border-radius:5px;overflow:hidden}
+.bar.lg{height:10px}.bar.sm{height:6px}
+.bar i{display:block;height:100%;border-radius:5px;background:var(--ind-600);transition:width .6s ease}
+.lbl{font-size:11.5px;font-weight:650;color:var(--muted);margin-bottom:6px}
+.box{background:var(--bg);border-radius:var(--r-md);padding:10px 12px;display:grid;gap:8px}
+.task{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);min-width:0}
+.task span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task svg{color:var(--ind-600)}
+details.kl summary{list-style:none;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;color:var(--ind-600)}
+details.kl summary::-webkit-details-marker{display:none}
+details.kl summary .chev{transition:transform .15s}
+details.kl[open] summary .chev{transform:rotate(90deg)}
+details.kl ul{list-style:none;margin-top:4px}
+details.kl li{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+details.kl li:first-child{border-top:0}
+details.kl .t{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.kl .m{font-size:11.5px;color:var(--muted)}
+.min{min-width:0}
+.mini{flex:none;display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--surface);font-size:11.5px;font-weight:650;color:var(--ind-600);transition:background .15s,border-color .15s}
+button.mini:hover{background:var(--ind-50);border-color:var(--ind-100)}
+.mini.dashed{border-style:dashed;color:var(--muted);font-weight:500;cursor:help}
+.kws{display:grid;gap:8px}
+.kw{border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px}
+.kw.nokey{border-style:dashed;border-color:#efc77a;background:var(--warn-50)}
+.kw .row{margin-bottom:7px}
+.kw-n{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;min-width:0}
+.kw-n span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kw-n svg{color:var(--ind-600)}.kw.nokey .kw-n svg{color:var(--warn)}
+.kw .pct{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.kw .meta{font-size:11.5px;color:var(--muted);margin-top:6px}
+.kw .meta b{color:var(--ink2);font-weight:650}
+.cats{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);display:grid;gap:7px}
+.cr .row{font-size:12px;margin-bottom:4px}
+.cr-n{display:flex;align-items:center;gap:6px;color:var(--ink2);font-weight:550;min-width:0}
+.cr-n::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--ind-500);flex:none}
+.cr-v{display:flex;align-items:center;gap:8px;flex:none;font-size:11px;color:var(--muted)}
+.cr-v b{font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
+.fc-f{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:11px;border-top:1px solid var(--line2);font-size:11.5px;color:var(--muted)}
+.fc-f span{display:inline-flex;align-items:center;gap:5px}
+.fc-f b{color:var(--ink2);font-weight:650;font-variant-numeric:tabular-nums}
+.fc-f em{font-style:normal;font-weight:650}
+.fc-f em.bad{color:var(--bad)}.fc-f em.warn{color:var(--warn)}
+@keyframes pulseAccent{0%,100%{border-color:var(--ind-600);box-shadow:0 0 0 3px var(--ind-50)}50%{border-color:var(--yel);box-shadow:0 0 0 3px var(--yel-50)}}
+.new-card-highlight{animation:pulseAccent 2.5s infinite}
+
+/* ---------- Borang ---------- */
+.form-panel{max-width:860px;margin:0 auto 16px}
+.form{display:grid;gap:18px}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.flab{display:block;font-size:12px;font-weight:650;color:var(--ink2);margin-bottom:6px}
+.hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+.ms-wrap{position:relative}
+.ms{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none}
+.ms:hover{border-color:var(--ind-100)}
+.ms-v{color:#a3a6c2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-v.on{color:var(--ind-600);font-weight:600}
+.menu{position:absolute;z-index:30;left:0;right:0;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:0 16px 36px -16px rgba(23,21,74,.35);padding:6px;max-height:240px;overflow:auto}
+.opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:550;cursor:pointer}
+.opt:hover{background:var(--ind-50)}
+.opt input{width:15px;height:15px;accent-color:var(--ind-600)}
+.banner{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r-md);background:var(--yel-50);border:1px solid #f1dc84;color:var(--yel-ink);font-size:12.5px;margin-bottom:16px}
+.form-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:16px;border-top:1px solid var(--line2)}
+.form-foot .btn{padding:10px 16px;font-size:13px}
+
+/* ---------- Jadual ---------- */
+.tw{overflow-x:auto;margin:0 -6px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+th{font-size:11.5px;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface);position:sticky;top:0}
+td{padding:9px 10px;border-bottom:1px solid var(--line2);color:var(--ink2);vertical-align:top}
+tbody tr:hover td{background:#fafaff}
+tr:last-child td{border-bottom:0}
+
+/* ---------- Toast & footer ---------- */
+.toast{position:fixed;top:18px;right:18px;z-index:60;display:flex;align-items:flex-start;gap:10px;max-width:380px;background:var(--ind-950);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;border-left:4px solid var(--yel);box-shadow:0 12px 30px -10px rgba(23,21,74,.45);opacity:0;transform:translateY(-6px);transition:opacity .2s,transform .2s;pointer-events:none}
+.toast.on{opacity:1;transform:none}
+.toast.ok{border-left-color:#3fcf8e}.toast.bad{border-left-color:#ff7a7a}
+.toast #toastIcon{display:inline-flex;margin-top:1px}
+.foot{font-size:11.5px;color:var(--muted);text-align:center;padding:0 16px 22px}
+
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(3){border-left:0}.kpi:nth-child(n+3){border-top:1px solid var(--line)}}
+@media (max-width:640px){
+  .wrap{padding:16px 16px 28px}
+  .hero-head{padding:16px 16px 14px}.hero-head h1{font-size:22px}
+  .hero .contour{width:360px;right:-140px}
+  .kpi .v{font-size:22px}
+  .cards{grid-template-columns:minmax(0,1fr)}
+  .fgrid{grid-template-columns:minmax(0,1fr)}
+  .search{width:100%}.tools{width:100%}select.inp{flex:1}
+  .panel{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
 </head>
-<body class="min-h-screen flex flex-col bg-canvas text-ink selection:bg-brand selection:text-white">
+<body>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<main class="wrap">
 
-        <!-- TAB 1: DASHBOARD -->
-        <div id="view-dashboard" class="view-section space-y-8">
-
-                        <section class="hero relative overflow-hidden rounded-lg text-white">
-                <div class="relative z-10 p-6 sm:p-10 lg:p-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-                    <div class="max-w-2xl">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gold mb-3">Integrasi Google Sheets &amp; Apps Script</p>
-                        <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">Progres Kerja Ukur<br>Mengikut Fail</h1>
-                        <p class="mt-4 text-sm sm:text-base text-white/85 leading-relaxed">Kad progres dijana daripada rekod kerja lapangan, manakala peratus siap diselaraskan terus daripada laporan statistik surveyor.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        <button onclick="refreshAllData()" id="btnRefresh" class="px-5 py-3 rounded-md bg-white/10 border border-white/30 text-white font-semibold text-sm hover:bg-white/20 transition flex items-center gap-2"><span id="refreshIcon" class="inline-flex"><i data-lucide="refresh-cw" class="w-4 h-4"></i></span> Muat Semula</button>
-                        <button onclick="switchTab('tambah')" class="px-5 py-3 rounded-md bg-gold text-ink font-semibold text-sm hover:brightness-95 transition flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Tambah Kerja Baru</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Metric Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div class="kpi kpi-gold rounded-lg p-6 flex gap-4">
-                    <i data-lucide="folder-kanban" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Fail Kerja</p>
-                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statTotalFiles">0</div>
-                        <p class="text-sm mt-1 opacity-80">Kad progres aktif</p>
-                    </div>
-                </div>
-                <div class="kpi kpi-blue rounded-lg p-6 flex gap-4">
-                    <i data-lucide="trending-up" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Purata Progres</p>
-                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statAvgProgress">0%</div>
-                        <p class="text-sm mt-1 opacity-80">Sumber: sheet statistik</p>
-                    </div>
-                </div>
-                <div class="kpi kpi-gold rounded-lg p-6 flex gap-4">
-                    <i data-lucide="layers" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Kategori Aktif</p>
-                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statTotalCategories">0</div>
-                        <p class="text-sm mt-1 opacity-80"><span id="statTotalTasksText">0 rekod tugasan lapangan</span></p>
-                    </div>
-                </div>
-                <div class="kpi kpi-blue rounded-lg p-6 flex gap-4">
-                    <i data-lucide="users" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Surveyor Terlibat</p>
-                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statTotalSurveyors">0</div>
-                        <p class="text-sm mt-1 opacity-80">Mengikut kategori &amp; fail</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Kad Progres Mengikut Fail -->
-            <div class="bg-white border border-line rounded-lg shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-lg font-bold text-ink">Kad Progres Mengikut Fail</h3>
-                        <p class="text-xs text-slate-500">Kad kerja yang ditambah berserta peratusan siap daripada data statistik</p>
-                    </div>
-                    <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <div class="relative flex-1 sm:w-64">
-                            <i data-lucide="search" class="absolute left-3.5 top-3 w-4 h-4 text-slate-400"></i>
-                            <input type="text" id="searchInput" oninput="renderDashboardCards()" placeholder="Cari No File / Kawasan / Surveyor..." class="w-full pl-10 pr-4 py-2 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
-                        </div>
-                        <select id="filterKategoriSelect" onchange="renderDashboardCards()" class="px-4 py-2 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
-                            <option value="ALL">Semua Kategori</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="fileCardsContainer" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-                    <div class="col-span-full py-12 text-center text-slate-500">
-                        <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                        <p class="text-sm">Memuatkan kad progres fail dan peratusan kerja...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 2: TAMBAH KERJA -->
-        <div id="view-tambah" class="view-section hidden max-w-3xl mx-auto">
-            <div class="bg-white border border-line rounded-lg shadow-sm p-8">
-                <div class="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-line">
-                    <div class="flex items-center gap-3">
-                        <div class="p-3 rounded-md bg-gold text-ink">
-                            <i data-lucide="file-plus-2" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <h2 id="formTitle" class="text-xl font-bold text-ink">Borang Tambah Kerja Lapangan</h2>
-                            <p id="formSubtitle" class="text-xs text-slate-500">Data dihantar ke Google Sheets melalui Apps Script dan menjana kad progres secara automatik</p>
-                        </div>
-                    </div>
-                    <button type="button" onclick="switchTab('dashboard')" class="hidden sm:flex px-4 py-2 rounded-md bg-canvas border border-line text-slate-600 font-medium text-sm hover:bg-canvas transition items-center gap-2">
-                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali
-                    </button>
-                </div>
-
-                <div id="editBanner" class="hidden mb-6 p-3 rounded-md border border-amber-300 bg-amber-50 text-amber-800 text-xs flex items-start gap-2">
-                    <i data-lucide="pencil" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                    <span id="editBannerText">Mod edit</span>
-                </div>
-
-                <form id="fieldWorkForm" onsubmit="submitForm(event)" class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">No File</label>
-                            <input type="text" id="idFile" required placeholder="Cth: MCP 001/26" list="existingFilesList" autocomplete="off" oninput="updateKawasanSuggestions()" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
-                            <datalist id="existingFilesList"></datalist>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kawasan Lapangan</label>
-                            <input type="text" id="kawasan" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mangkuk" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
-                            <datalist id="kawasanList"></datalist>
-                            <p class="mt-1.5 text-[11px] text-slate-400">Satu No File boleh ada beberapa kawasan. Pilih dari cadangan supaya ejaan sama.</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tarikh Kerja</label>
-                            <input type="date" id="tarikh" required class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div class="relative">
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kategori (Pilihan Pelbagai)</label>
-                            <div id="kategoriDropdownToggle" onclick="toggleDropdown('kategori')" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-sm cursor-pointer flex justify-between items-center select-none hover:border-brand/50 transition">
-                                <span id="kategoriSelectedText" class="text-slate-500 truncate">Pilih Kategori...</span>
-                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 ml-2 shrink-0"></i>
-                            </div>
-                            <div id="kategoriDropdownMenu" class="hidden absolute z-30 mt-1.5 w-full bg-white border border-line rounded-md shadow-lg p-2 max-h-60 overflow-y-auto space-y-1"></div>
-                        </div>
-
-                        <div class="relative">
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Surveyor (Pilihan Pelbagai)</label>
-                            <div id="surveyorDropdownToggle" onclick="toggleDropdown('surveyor')" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-sm cursor-pointer flex justify-between items-center select-none hover:border-brand/50 transition">
-                                <span id="surveyorSelectedText" class="text-slate-500 truncate">Pilih Surveyor...</span>
-                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 ml-2 shrink-0"></i>
-                            </div>
-                            <div id="surveyorDropdownMenu" class="hidden absolute z-30 mt-1.5 w-full bg-white border border-line rounded-md shadow-lg p-2 max-h-60 overflow-y-auto space-y-1"></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tugas / Deskripsi</label>
-                        <input type="text" id="tugas" required placeholder="Cth: Cerapan Sempadan" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kuantiti</label>
-                            <input type="number" id="kuantiti" step="any" required placeholder="0.00" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Unit</label>
-                            <select id="unit" required class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
-                                <option value="" disabled selected>Pilih Unit...</option>
-                                <option value="Lot">Lot</option>
-                                <option value="Ekar">Ekar</option>
-                                <option value="Meter">Meter</option>
-                                <option value="Point">Point</option>
-                                <option value="Stesen">Stesen</option>
-                                <option value="Kawasan">Kawasan</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tarikh Jangka Siap</label>
-                        <input type="date" id="jangkaSiap" required class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
-                    </div>
-
-                    <div class="flex justify-end gap-3 pt-4 border-t border-line">
-                        <button type="button" id="cancelBtn" onclick="switchTab('dashboard')" class="px-6 py-3 rounded-md bg-canvas border border-line text-slate-600 font-medium text-sm hover:bg-canvas transition">Batal</button>
-                        <button type="submit" id="submitBtn" class="px-6 py-3 rounded-md bg-gold text-ink font-semibold text-sm hover:brightness-95 transition flex items-center gap-2">
-                            <i data-lucide="send" class="w-4 h-4"></i> <span>Simpan & Jana Kad Progres</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- TAB 3: DATA SHEET -->
-        <div id="view-statistik" class="view-section hidden space-y-6">
-            <div class="bg-white border border-line rounded-lg shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-line">
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">Sumber URL 2 (Peratus Kerja)</span>
-                    <h3 class="text-lg font-bold text-ink mt-2">Jadual Statistik & Peratusan Progres</h3>
-                </div>
-                <div id="statsTableContainer" class="w-full overflow-x-auto">
-                    <p class="text-slate-400 text-sm py-8 text-center">Memuatkan jadual statistik...</p>
-                </div>
-            </div>
-
-            <div class="bg-white border border-line rounded-lg shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-line">
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/30">Sumber URL 1 (Rekod Kerja Lapangan)</span>
-                    <h3 class="text-lg font-bold text-ink mt-2">Jadual Rekod Kerja</h3>
-                </div>
-                <div id="recordsTableContainer" class="w-full overflow-x-auto">
-                    <p class="text-slate-400 text-sm py-8 text-center">Memuatkan jadual rekod kerja...</p>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <footer class="mt-12 bg-ink text-white/70">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row justify-between gap-2 text-xs">
-            <span>&copy; <span id="footerYear"></span> JURUKUR MAHABOB &middot; Sistem Statistik Jurukur Tanah</span>
-            <span>Data diselaraskan daripada Google Sheets</span>
-        </div>
-        <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
-    </footer>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-6 right-6 z-50 px-4 py-3 rounded-md shadow-sm border text-sm flex items-center gap-3 transition-all transform translate-y-2 opacity-0 hidden max-w-sm">
-        <i id="toastIcon" class="w-5 h-5 shrink-0"></i>
-        <span id="toastMsg">Mesej notifikasi...</span>
+  <!-- HERO + KPI + TAB (kekal untuk semua tab) -->
+  <section class="hero">
+    <svg class="contour" viewBox="0 0 520 300" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M400.6 150.0 L402.1 152.5 L402.5 155.2 L402.0 157.8 L400.6 160.2 L398.5 162.4 L396.0 164.4 L393.3 166.1 L390.6 167.7 L387.8 169.2 L385.0 170.6 L382.2 171.9 L379.2 173.0 L376.1 173.8 L372.8 174.2 L369.4 174.3 L366.1 173.9 L362.9 173.2 L360.0 172.4 L357.3 171.6 L354.7 170.9 L352.0 170.5 L349.2 170.5 L345.9 170.8 L342.2 171.2 L338.1 171.6 L333.7 171.6 L329.3 171.2 L325.2 170.1 L321.9 168.4 L319.6 166.1 L318.4 163.4 L318.4 160.4 L319.4 157.5 L321.1 154.7 L323.2 152.2 L325.2 150.0 L327.0 148.0 L328.3 146.1 L329.2 144.3 L329.8 142.4 L330.2 140.4 L330.7 138.4 L331.6 136.3 L332.8 134.3 L334.5 132.4 L336.6 130.8 L339.0 129.3 L341.5 127.9 L344.2 126.7 L347.0 125.4 L349.9 124.1 L353.0 122.7 L356.4 121.4 L360.0 120.4 L363.8 119.8 L367.8 119.7 L371.5 120.3 L375.0 121.7 L377.8 123.7 L379.9 126.2 L381.3 129.0 L382.1 131.8 L382.6 134.4 L383.0 136.7 L383.7 138.6 L384.9 140.1 L386.8 141.4 L389.3 142.6 L392.3 144.0 L395.4 145.7 L398.3 147.7 L400.6 150.0Z"/><path d="M444.4 150.0 L445.8 155.2 L445.0 160.3 L442.2 165.2 L437.9 169.6 L432.6 173.4 L426.9 176.6 L421.2 179.5 L415.6 182.2 L410.4 184.7 L405.2 187.2 L400.1 189.5 L394.7 191.5 L389.1 193.1 L383.3 194.1 L377.3 194.5 L371.3 194.3 L365.5 193.7 L360.0 193.1 L354.6 192.5 L349.2 192.4 L343.4 192.7 L337.0 193.5 L329.9 194.5 L322.1 195.3 L313.8 195.5 L305.5 194.8 L297.8 192.9 L291.4 189.7 L286.8 185.4 L284.4 180.1 L284.2 174.4 L285.9 168.6 L289.0 163.1 L292.7 158.2 L296.4 153.8 L299.4 150.0 L301.3 146.5 L302.2 143.0 L302.2 139.3 L301.7 135.4 L301.2 131.1 L301.4 126.6 L302.4 122.2 L304.6 117.9 L307.8 114.0 L312.0 110.6 L316.9 107.6 L322.2 104.9 L327.9 102.5 L333.7 100.1 L339.8 97.9 L346.1 95.8 L352.9 94.1 L360.0 93.1 L367.2 92.9 L374.3 93.9 L380.9 96.1 L386.6 99.5 L391.2 103.8 L394.6 108.7 L397.0 113.6 L398.7 118.2 L400.3 122.2 L402.4 125.4 L405.6 128.0 L409.9 130.1 L415.6 132.1 L422.1 134.4 L429.0 137.2 L435.5 140.8 L440.8 145.1 L444.4 150.0Z"/><path d="M490.7 150.0 L489.8 157.8 L485.6 165.3 L478.9 172.0 L470.5 177.7 L461.4 182.6 L452.4 186.8 L444.0 190.6 L436.4 194.2 L429.4 197.9 L422.8 201.7 L416.2 205.4 L409.2 208.8 L401.7 211.7 L393.7 213.9 L385.4 215.4 L376.9 216.1 L368.4 216.5 L360.0 216.7 L351.5 217.2 L342.6 218.1 L333.1 219.3 L322.7 220.7 L311.4 221.9 L299.5 222.2 L287.6 221.3 L276.5 218.6 L267.1 214.0 L260.2 207.8 L256.3 200.1 L255.4 191.6 L257.4 183.0 L261.3 174.8 L266.1 167.4 L270.8 160.8 L274.3 155.2 L276.1 150.0 L276.0 144.9 L274.3 139.6 L271.6 133.7 L268.8 127.1 L266.9 120.1 L266.5 112.8 L268.2 105.7 L272.0 99.1 L277.7 93.2 L284.9 88.3 L293.1 84.1 L301.9 80.6 L311.0 77.6 L320.3 74.8 L329.8 72.4 L339.6 70.4 L349.7 69.0 L360.0 68.7 L370.2 69.7 L379.9 72.3 L388.6 76.4 L396.1 81.7 L402.1 87.7 L406.8 94.1 L410.7 100.0 L414.5 105.2 L418.9 109.4 L424.6 112.6 L432.1 115.2 L441.3 117.6 L451.9 120.5 L462.9 124.2 L473.4 129.0 L482.1 135.1 L488.1 142.3 L490.7 150.0Z"/><path d="M534.0 150.0 L528.4 160.2 L519.2 169.4 L507.6 177.3 L495.0 183.9 L482.8 189.5 L471.7 194.5 L462.2 199.4 L454.1 204.5 L447.0 210.0 L440.2 215.9 L433.0 221.9 L424.9 227.5 L415.8 232.5 L405.7 236.6 L394.8 239.6 L383.5 241.7 L371.8 243.3 L360.0 244.6 L347.8 246.0 L335.1 247.6 L321.5 249.1 L307.1 250.3 L292.1 250.5 L277.0 249.1 L262.8 245.7 L250.6 239.9 L241.1 232.0 L235.3 222.2 L233.2 211.2 L234.5 200.0 L238.3 189.1 L243.3 179.3 L248.0 170.7 L251.1 163.2 L251.8 156.5 L249.8 150.0 L245.3 143.1 L239.3 135.3 L233.0 126.5 L228.0 116.9 L225.2 106.7 L225.6 96.5 L229.4 86.9 L236.4 78.5 L246.0 71.4 L257.5 65.7 L270.0 61.3 L282.8 57.8 L295.7 54.9 L308.5 52.4 L321.3 50.3 L334.1 48.7 L347.1 48.0 L360.0 48.6 L372.6 50.8 L384.4 54.5 L395.0 59.8 L404.3 66.1 L412.2 72.8 L419.1 79.4 L425.9 85.1 L433.2 89.8 L442.1 93.4 L453.0 96.2 L466.0 98.8 L480.6 102.0 L495.9 106.3 L510.3 112.3 L522.5 120.0 L531.0 129.2 L534.9 139.4 L534.0 150.0Z"/><path d="M568.3 150.0 L556.8 161.9 L542.3 172.2 L526.7 180.8 L511.6 188.0 L498.3 194.5 L487.5 200.8 L479.2 207.5 L472.6 215.1 L466.8 223.6 L460.6 232.7 L453.2 241.8 L444.0 250.4 L432.9 257.8 L420.1 263.9 L406.0 268.4 L391.1 271.6 L375.7 273.9 L360.0 275.7 L343.9 277.1 L327.2 278.4 L309.9 279.1 L292.0 278.8 L274.3 276.8 L257.3 272.7 L242.3 266.0 L230.2 256.7 L221.9 245.2 L217.7 232.3 L217.3 218.9 L219.8 205.8 L223.6 193.9 L227.2 183.3 L228.8 174.2 L227.4 166.1 L222.5 158.3 L214.5 150.0 L204.4 140.6 L193.9 129.8 L184.9 117.6 L179.1 104.6 L177.6 91.4 L181.1 78.8 L189.3 67.6 L201.5 58.3 L216.6 51.1 L233.2 45.8 L250.3 41.9 L267.1 39.1 L283.4 36.7 L299.1 34.6 L314.4 32.7 L329.7 31.3 L344.9 30.8 L360.0 31.7 L374.7 34.1 L388.6 38.1 L401.4 43.4 L413.1 49.5 L423.8 55.7 L434.2 61.3 L445.2 66.1 L457.6 69.8 L472.1 72.7 L488.7 75.5 L507.1 78.9 L526.2 83.8 L544.3 90.7 L559.6 99.9 L570.6 111.1 L575.8 123.8 L575.0 137.0 L568.3 150.0Z"/><path d="M590.3 150.0 L573.7 162.9 L555.6 173.8 L538.5 183.0 L523.8 191.1 L512.7 199.1 L505.1 207.8 L500.1 217.7 L496.5 229.0 L492.7 241.5 L487.2 254.6 L479.0 267.2 L467.7 278.7 L453.4 288.2 L436.8 295.5 L418.5 300.6 L399.3 303.8 L379.7 305.6 L360.0 306.6 L340.1 306.9 L319.9 306.7 L299.6 305.5 L279.4 302.8 L259.9 298.0 L242.2 290.7 L227.2 280.8 L215.9 268.4 L208.7 254.4 L205.4 239.5 L205.1 224.8 L206.4 211.1 L207.5 199.1 L206.5 188.5 L202.0 179.2 L193.6 170.2 L181.5 160.8 L166.9 150.0 L151.9 137.4 L138.7 123.1 L129.5 107.4 L126.0 91.3 L129.0 75.7 L138.4 61.8 L153.3 50.2 L172.2 41.3 L193.3 35.1 L215.1 30.9 L236.2 28.0 L256.0 25.8 L274.5 23.6 L292.0 21.1 L308.9 18.5 L325.8 16.2 L342.8 14.7 L360.0 14.6 L377.0 16.0 L393.5 19.1 L409.2 23.4 L424.2 28.4 L438.9 33.4 L453.9 37.8 L470.1 41.6 L488.1 44.7 L508.1 47.9 L529.7 51.8 L552.0 57.3 L573.1 65.1 L591.2 75.6 L604.3 88.7 L611.0 103.6 L610.6 119.5 L603.2 135.3 L590.3 150.0Z"/><path d="M601.1 150.0 L582.0 163.4 L563.9 174.8 L549.1 184.9 L538.6 194.8 L532.8 205.6 L530.6 217.9 L530.3 232.3 L529.9 248.3 L527.4 265.4 L521.1 282.4 L510.4 298.1 L495.1 311.4 L476.0 321.6 L454.3 328.6 L431.0 332.6 L407.1 334.3 L383.4 334.3 L360.0 333.3 L337.0 331.6 L314.2 329.2 L291.7 325.7 L270.0 320.6 L249.6 313.3 L231.5 303.5 L216.6 291.2 L205.5 277.0 L198.0 261.7 L193.6 246.3 L191.0 231.6 L188.2 218.4 L183.4 206.8 L175.2 196.4 L162.8 186.4 L146.5 176.0 L127.5 164.0 L108.1 150.0 L90.9 133.8 L78.4 115.8 L72.9 96.9 L75.4 78.6 L86.0 61.9 L103.6 47.9 L126.5 37.2 L152.3 29.8 L178.8 25.0 L204.2 22.0 L227.6 19.6 L248.6 16.9 L267.7 13.5 L285.6 9.1 L303.4 4.2 L321.5 -0.6 L340.4 -4.4 L360.0 -6.7 L379.9 -7.1 L399.8 -5.7 L419.3 -2.7 L438.6 1.1 L458.0 5.1 L478.0 9.0 L499.4 12.7 L522.3 16.6 L546.6 21.3 L571.3 27.7 L594.8 36.6 L615.1 48.4 L630.2 63.1 L638.5 80.1 L639.0 98.4 L632.0 116.9 L618.7 134.4 L601.1 150.0Z"/><path d="M330 150h60M360 128v44" stroke-width="1.6"/></svg>
+    <div class="hero-head">
+      <div>
+        <div class="eyebrow">HOD Site · Google Sheets &amp; Apps Script</div>
+        <h1>Progres kerja ukur mengikut fail</h1>
+        <p>Kad progres dijana daripada rekod kerja lapangan. Peratus siap diselaraskan terus daripada laporan statistik surveyor.</p>
+      </div>
+      <div class="sp"></div>
+      <div class="actions">
+        <button type="button" class="btn" id="btnRefresh" onclick="refreshAllData()"><span id="refreshIcon" class="ri"><i data-lucide="refresh-cw" class="i16"></i></span><span>Muat semula</span></button>
+        <button type="button" class="btn p" onclick="switchTab('tambah')"><i data-lucide="plus" class="i16"></i><span>Tambah kerja</span></button>
+      </div>
     </div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Fail kerja</div><div class="v" id="statTotalFiles">0</div><div class="s">Kad progres aktif</div></div>
+      <div class="kpi hl"><div class="l">Purata progres</div><div class="v" id="statAvgProgress">0%</div><div class="s">Sumber: sheet statistik</div></div>
+      <div class="kpi"><div class="l">Kategori aktif</div><div class="v" id="statTotalCategories">0</div><div class="s" id="statTotalTasksText">0 rekod kerja aktif</div></div>
+      <div class="kpi"><div class="l">Surveyor terlibat</div><div class="v" id="statTotalSurveyors">0</div><div class="s">Mengikut kategori &amp; fail</div></div>
+    </div>
+    <nav class="tabs" aria-label="Bahagian">
+      <button type="button" id="nav-dashboard" class="tab on" onclick="switchTab('dashboard')"><i data-lucide="layout-grid" class="i16"></i>Kad progres</button>
+      <button type="button" id="nav-tambah" class="tab" onclick="switchTab('tambah')"><i data-lucide="file-plus-2" class="i16"></i>Tambah kerja</button>
+      <button type="button" id="nav-statistik" class="tab" onclick="switchTab('statistik')"><i data-lucide="table-2" class="i16"></i>Data sheet</button>
+    </nav>
+  </section>
+
+  <!-- TAB 1: DASHBOARD -->
+  <div id="view-dashboard" class="view-section">
+    <section class="panel">
+      <div class="ph">
+        <h3>Kad progres mengikut fail</h3>
+        <span class="src">Rekod kerja + statistik surveyor</span>
+        <div class="sp"></div>
+        <div class="tools">
+          <label class="search"><i data-lucide="search" class="i16"></i><input type="text" id="searchInput" class="inp" oninput="renderDashboardCards()" placeholder="Cari no. fail, kawasan, surveyor…" aria-label="Cari kad progres"></label>
+          <select id="filterKategoriSelect" class="inp" onchange="renderDashboardCards()" aria-label="Tapis kategori"><option value="ALL">Semua Kategori</option></select>
+        </div>
+      </div>
+      <div id="fileCardsContainer" class="cards">
+        <div class="empty full"><div class="spin"></div>Memuatkan kad progres fail dan peratusan kerja…</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- TAB 2: TAMBAH KERJA -->
+  <div id="view-tambah" class="view-section hidden">
+    <section class="panel form-panel">
+      <div class="ph">
+        <h2 id="formTitle">Borang Tambah Kerja Lapangan</h2>
+        <div class="sp"></div>
+        <button type="button" class="btn" onclick="switchTab('dashboard')"><i data-lucide="arrow-left" class="i16"></i><span>Kembali</span></button>
+        <p class="ph-sub" id="formSubtitle">Data dihantar ke Google Sheets melalui Apps Script dan menjana kad progres secara automatik</p>
+      </div>
+
+      <div id="editBanner" class="banner hidden"><i data-lucide="pencil" class="i16"></i><span id="editBannerText">Mod edit</span></div>
+
+      <form id="fieldWorkForm" class="form" onsubmit="submitForm(event)">
+        <div class="fgrid">
+          <div>
+            <label class="flab" for="idFile">No File</label>
+            <input type="text" id="idFile" class="inp" required placeholder="Cth: MCP 001/26" list="existingFilesList" autocomplete="off" oninput="updateKawasanSuggestions()">
+            <datalist id="existingFilesList"></datalist>
+          </div>
+          <div>
+            <label class="flab" for="kawasan">Kawasan lapangan</label>
+            <input type="text" id="kawasan" class="inp" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mangkuk">
+            <datalist id="kawasanList"></datalist>
+            <p class="hint">Satu No File boleh ada beberapa kawasan. Pilih dari cadangan supaya ejaan sama.</p>
+          </div>
+          <div>
+            <label class="flab" for="tarikh">Tarikh kerja</label>
+            <input type="date" id="tarikh" class="inp" required>
+          </div>
+          <div>
+            <label class="flab" for="jangkaSiap">Tarikh jangka siap</label>
+            <input type="date" id="jangkaSiap" class="inp" required>
+          </div>
+        </div>
+
+        <div class="fgrid">
+          <div class="ms-wrap">
+            <span class="flab">Kategori (pilihan pelbagai)</span>
+            <div id="kategoriDropdownToggle" class="inp ms" role="button" tabindex="0" onclick="toggleDropdown('kategori')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDropdown('kategori')}">
+              <span id="kategoriSelectedText" class="ms-v">Pilih Kategori...</span>
+              <i data-lucide="chevron-down" class="i16 muted"></i>
+            </div>
+            <div id="kategoriDropdownMenu" class="menu hidden"></div>
+          </div>
+          <div class="ms-wrap">
+            <span class="flab">Surveyor (pilihan pelbagai)</span>
+            <div id="surveyorDropdownToggle" class="inp ms" role="button" tabindex="0" onclick="toggleDropdown('surveyor')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDropdown('surveyor')}">
+              <span id="surveyorSelectedText" class="ms-v">Pilih Surveyor...</span>
+              <i data-lucide="chevron-down" class="i16 muted"></i>
+            </div>
+            <div id="surveyorDropdownMenu" class="menu hidden"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="flab" for="tugas">Tugas / deskripsi</label>
+          <input type="text" id="tugas" class="inp" required placeholder="Cth: Cerapan Sempadan">
+        </div>
+
+        <div class="fgrid">
+          <div>
+            <label class="flab" for="kuantiti">Kuantiti</label>
+            <input type="number" id="kuantiti" class="inp" step="any" required placeholder="0.00">
+          </div>
+          <div>
+            <label class="flab" for="unit">Unit</label>
+            <select id="unit" class="inp" required>
+              <option value="" disabled selected>Pilih Unit...</option>
+              <option value="Lot">Lot</option>
+              <option value="Ekar">Ekar</option>
+              <option value="Meter">Meter</option>
+              <option value="Point">Point</option>
+              <option value="Stesen">Stesen</option>
+              <option value="Kawasan">Kawasan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-foot">
+          <button type="button" id="cancelBtn" class="btn" onclick="switchTab('dashboard')">Batal</button>
+          <button type="submit" id="submitBtn" class="btn p"><i data-lucide="send" class="i16"></i> <span>Simpan & Jana Kad Progres</span></button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- TAB 3: DATA SHEET -->
+  <div id="view-statistik" class="view-section hidden">
+    <section class="panel">
+      <div class="ph"><h3>Jadual statistik &amp; peratusan progres</h3><span class="src ok">Sumber URL 2 · Peratus kerja</span></div>
+      <div id="statsTableContainer" class="tw"><div class="empty">Memuatkan jadual statistik…</div></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h3>Jadual rekod kerja</h3><span class="src info">Sumber URL 1 · Rekod kerja lapangan</span></div>
+      <div id="recordsTableContainer" class="tw"><div class="empty">Memuatkan jadual rekod kerja…</div></div>
+    </section>
+  </div>
+
+</main>
+
+<footer class="foot">&copy; <span id="footerYear"></span> JURUKUR MAHABOB · Sistem Statistik Jurukur Tanah · Data diselaraskan daripada Google Sheets</footer>
+<script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast hidden" role="status" aria-live="polite"><span id="toastIcon"></span><span id="toastMsg">Mesej notifikasi...</span></div>
 
     <script>
         // 1. URL Google Apps Script Web App (Integrasi Active Sheet)
@@ -328,8 +401,8 @@
             'lidar': 'Lidar', 'tls': 'TLS', 'strata': 'Strata'
         };
 
-        const NAV_ACTIVE = "nav-btn px-2 sm:px-3 py-2 text-sm sm:text-[15px] font-semibold border-b-2 transition flex items-center gap-2 border-brand text-brand";
-        const NAV_INACTIVE = "nav-btn px-2 sm:px-3 py-2 text-sm sm:text-[15px] font-semibold border-b-2 transition flex items-center gap-2 border-transparent text-ink hover:text-brand";
+        const NAV_ACTIVE = "tab on";
+        const NAV_INACTIVE = "tab";
 
         let rawRekodRows = [];
         let rawStatRows = [];
@@ -478,10 +551,9 @@
 
         function renderDropdownMenus(kategoriOptions, surveyorOptions) {
             const optionHtml = (type, value, isChecked) => `
-                <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-canvas cursor-pointer transition text-sm text-slate-700">
-                    <input type="checkbox" value="${escapeHtml(value)}" ${isChecked ? 'checked' : ''} onchange="onMultiSelectChange('${type}', this)"
-                        class="w-4 h-4 rounded accent-brand">
-                    <span class="font-medium">${escapeHtml(value)}</span>
+                <label class="opt">
+                    <input type="checkbox" value="${escapeHtml(value)}" ${isChecked ? 'checked' : ''} onchange="onMultiSelectChange('${type}', this)">
+                    <span>${escapeHtml(value)}</span>
                 </label>
             `;
 
@@ -508,7 +580,7 @@
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.innerText = list.length ? list.join(', ') : placeholder;
-                el.className = list.length ? 'text-brand font-medium truncate' : 'text-slate-500 truncate';
+                el.className = list.length ? 'ms-v on' : 'ms-v';
             });
         }
 
@@ -523,10 +595,10 @@
                 const labelEl = document.getElementById('kategoriSelectedText');
                 if (selectedKategoriList.length > 0) {
                     labelEl.innerText = selectedKategoriList.join(', ');
-                    labelEl.className = 'text-brand font-medium truncate';
+                    labelEl.className = 'ms-v on';
                 } else {
                     labelEl.innerText = 'Pilih Kategori...';
-                    labelEl.className = 'text-slate-500 truncate';
+                    labelEl.className = 'ms-v';
                 }
             } else {
                 if (checkbox.checked) {
@@ -537,10 +609,10 @@
                 const labelEl = document.getElementById('surveyorSelectedText');
                 if (selectedSurveyorList.length > 0) {
                     labelEl.innerText = selectedSurveyorList.join(', ');
-                    labelEl.className = 'text-brand font-medium truncate';
+                    labelEl.className = 'ms-v on';
                 } else {
                     labelEl.innerText = 'Pilih Surveyor...';
-                    labelEl.className = 'text-slate-500 truncate';
+                    labelEl.className = 'ms-v';
                 }
             }
         }
@@ -1173,6 +1245,36 @@
             };
         }
 
+        // Ringkasan untuk Operations Hub (Dashboard Utama). Hub muat app ini dalam iframe dan baca mesej ini,
+        // jadi kiraan progres hanya ada di SATU tempat (app ini). Hub bergantung pada medan di bawah: tukar dengan berhati-hati.
+        function publishSummary(groups, totalRecords, surveyorCount, avgProgress) {
+            // Jangan tulis ganti ringkasan lama dengan "0 fail" bila CSV belum/gagal dimuat
+            if (!rawRekodRows.length && !rawStatRows.length && !localAddedRecords.length) return;
+            const summary = {
+                v: 1,
+                at: new Date().toISOString(),
+                totalFiles: groups.length,
+                avgProgress: avgProgress,
+                totalRecords: totalRecords,
+                surveyorCount: surveyorCount,
+                files: groups.map(g => ({
+                    idFile: g.idFile,
+                    kawasan: g.kawasanLabels,
+                    progress: Math.min(100, Math.max(0, Math.round(isNaN(g.progress) ? 0 : g.progress))),
+                    jangkaSiap: tarikhToIso(g.jangkaSiap),
+                    surveyors: g.surveyorsArr,
+                    kategori: g.categoriesArr
+                }))
+            };
+            try { localStorage.setItem('jm_status_site_v1', JSON.stringify(summary)); } catch (e) {}
+            try {
+                if (window.parent !== window) {
+                    const o = location.origin;
+                    window.parent.postMessage({ jmStatusSite: summary }, o && o !== 'null' ? o : '*');
+                }
+            } catch (e) {}
+        }
+
         function renderDashboardCards() {
             const container = document.getElementById('fileCardsContainer');
             if (!container || !window.__processedData) return;
@@ -1339,6 +1441,8 @@
                 ? Math.round(fileGroups.reduce((sum, g) => sum + g.progress, 0) / fileGroups.length)
                 : 0;
 
+            publishSummary(fileGroups, combinedRecords.length, allSurveyorsGlobal.size, avgProgressGlobal);
+
             document.getElementById('statTotalFiles').innerText = fileGroups.length;
             document.getElementById('statAvgProgress').innerText = `${avgProgressGlobal}%`;
             document.getElementById('statTotalCategories').innerText = allCategoriesGlobal.size;
@@ -1360,57 +1464,68 @@
 
             if (fileGroups.length === 0) {
                 container.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-slate-400">
-                        <i data-lucide="folder-open" class="w-8 h-8 mx-auto mb-3 text-slate-600"></i>
-                        <p class="text-sm font-medium text-slate-600">Tiada Kad Progres Dijumpai</p>
-                        <p class="text-xs mt-1">Sila tambah kerja baru atau ubah kata kunci carian.</p>
+                    <div class="empty full">
+                        <i data-lucide="folder-open" class="i24"></i>
+                        <b>Tiada kad progres dijumpai</b>
+                        <span>Tambah kerja baru atau ubah kata kunci carian.</span>
                     </div>
                 `;
                 refreshIcons();
                 return;
             }
 
+            const todayIso = todayLocalIso();
+            const daysUntil = iso => Math.round((new Date(iso + 'T00:00:00') - new Date(todayIso + 'T00:00:00')) / 864e5);
+
             container.innerHTML = fileGroups.map(grp => {
                 const rawPct = isNaN(grp.progress) ? 0 : grp.progress;
                 const pct = Math.min(100, Math.max(0, Math.round(rawPct)));
 
-                const badgeStatus = pct >= 100
-                    ? `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 shrink-0">Selesai</span>`
-                    : pct > 0
-                        ? `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-brand/15 text-brand border border-brand/30 shrink-0">Dalam Progres</span>`
-                        : `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-600 border border-blue-500/30 shrink-0">Baru Direkod</span>`;
+                // Status sama dengan Dashboard Utama hub: lewat = jangka siap dah lepas & belum 100%
+                const jangkaIso = tarikhToIso(grp.jangkaSiap);
+                const isLate = pct < 100 && jangkaIso && jangkaIso < todayIso;
+                const st = pct >= 100 ? ['Selesai', 'ok']
+                    : isLate ? ['Lewat jangka siap', 'bad']
+                    : pct > 0 ? ['Dalam progres', 'info']
+                    : ['Baru direkod', 'mute'];
+                const barCol = pct >= 100 ? 'var(--ok)' : isLate ? 'var(--bad)' : 'var(--ind-600)';
+                let dueTxt = '';
+                if (jangkaIso && pct < 100) {
+                    const dd = daysUntil(jangkaIso);
+                    dueTxt = ` <em class="${dd < 0 ? 'bad' : dd <= 14 ? 'warn' : ''}">· ${dd < 0 ? Math.abs(dd) + ' hari lewat' : dd === 0 ? 'hari ini' : dd + ' hari lagi'}</em>`;
+                }
 
                 const surveyorDisplay = grp.surveyorsArr.length > 0
-                    ? grp.surveyorsArr.map(s => `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-canvas/50 border border-line text-slate-700 text-xs font-medium"><i data-lucide="user-check" class="w-3 h-3 text-brand"></i>${escapeHtml(s)}</span>`).join(' ')
-                    : `<span class="text-xs text-slate-400 italic">Tiada nama surveyor</span>`;
+                    ? grp.surveyorsArr.map(s => `<span class="person"><i data-lucide="user-check" class="i12"></i>${escapeHtml(s)}</span>`).join('')
+                    : `<span class="muted sm"><em>Tiada nama surveyor</em></span>`;
 
                 const kategoriDisplay = grp.categoriesArr.length > 0
-                    ? grp.categoriesArr.map(k => `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand/10 text-brand border border-brand/20 inline-block">${escapeHtml(k)}</span>`).join(' ')
-                    : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-canvas text-slate-500 border border-line inline-block">Umum</span>`;
+                    ? grp.categoriesArr.map(k => `<span class="tag">${escapeHtml(k)}</span>`).join('')
+                    : `<span class="tag mute">Umum</span>`;
 
                 const qtySummary = Object.entries(grp.quantitiesByUnit)
-                    .map(([u, val]) => `<span class="px-2.5 py-1 rounded-lg bg-canvas border border-line text-xs font-semibold text-ink">${val} <span class="text-brand">${escapeHtml(u)}</span></span>`)
-                    .join(' ');
+                    .map(([u, val]) => `<span class="qty">${val} <b>${escapeHtml(u)}</b></span>`)
+                    .join('');
 
                 const latestTask = grp.tasks.length > 0 ? grp.tasks[0].tugas : 'Kerja ukur lapangan direkodkan';
 
                 // Senarai kerja (setiap baris Tambah Kerja) dengan butang Edit
                 const kerjaListHtml = grp.rekodEntries.map(r => {
                     const meta = [
-                        r.kawasan ? escapeHtml(r.kawasan) : '<span class="text-amber-600">Tiada kawasan</span>',
+                        r.kawasan ? escapeHtml(r.kawasan) : '<span class="warn-t">Tiada kawasan</span>',
                         escapeHtml([...new Set(splitMultiValues(r.kategori))].join(', ') || 'Umum'),
                         r.kuantiti > 0 ? `${r.kuantiti} ${escapeHtml(r.unit || 'Unit')}` : '',
                         r.jangkaSiap ? `Siap ${escapeHtml(formatTarikh(r.jangkaSiap))}` : ''
                     ].filter(Boolean).join(' · ');
                     const canEdit = /^[A-Za-z0-9-]{6,64}$/.test(r.id || '');
                     const btn = canEdit
-                        ? `<button type="button" data-id="${escapeHtml(r.id)}" onclick="openEditKerja(this.dataset.id)" class="shrink-0 px-2.5 py-1.5 rounded-md border border-line bg-white text-xs font-semibold text-brand hover:bg-brand/10 transition flex items-center gap-1" aria-label="Edit kerja ${escapeHtml(r.tugas || '')}"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Edit</button>`
-                        : `<span class="shrink-0 px-2.5 py-1.5 rounded-md border border-dashed border-line text-[10px] text-slate-400" title="Rekod belum ada ID. Jalankan setup() dalam Apps Script Progres, atau tunggu CSV dikemas kini.">Tiada ID</span>`;
+                        ? `<button type="button" class="mini" data-id="${escapeHtml(r.id)}" onclick="openEditKerja(this.dataset.id)" aria-label="Edit kerja ${escapeHtml(r.tugas || '')}"><i data-lucide="pencil" class="i12"></i>Edit</button>`
+                        : `<span class="mini dashed" title="Rekod belum ada ID. Jalankan setup() dalam Apps Script Progres, atau tunggu CSV dikemas kini.">Tiada ID</span>`;
                     return `
-                        <li class="flex items-start justify-between gap-2 py-2">
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-ink truncate">${escapeHtml(r.tugas || 'Tanpa tugas')}</p>
-                                <p class="text-[11px] text-slate-500">${meta}</p>
+                        <li>
+                            <div class="min">
+                                <p class="t">${escapeHtml(r.tugas || 'Tanpa tugas')}</p>
+                                <p class="m">${meta}</p>
                             </div>
                             ${btn}
                         </li>`;
@@ -1420,123 +1535,95 @@
                 const categoryBars = list => (list || []).map(catProg => {
                     const cPct = Math.min(100, Math.max(0, Math.round(catProg.percentage || 0)));
                     const cBarWidth = catProg.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0;
-                    const cBarColor = cPct >= 80
-                        ? 'from-emerald-500 to-emerald-400'
-                        : cPct >= 40
-                            ? 'from-brand2 to-brand'
-                            : 'from-blue-600 to-blue-400';
-
+                    const cBarColor = cPct >= 80 ? 'var(--ok)' : cPct >= 40 ? 'var(--ind-600)' : 'var(--ind-500)';
                     const cFractionText = catProg.targetQty > 0
-                        ? `<span class="text-[10px] text-slate-500">Siap: <strong class="text-emerald-600">${catProg.doneQty}</strong> / <strong class="text-slate-700">${catProg.targetQty} ${escapeHtml(catProg.unit)}</strong></span>`
-                        : (catProg.doneQty > 0 ? `<span class="text-[10px] text-slate-500">Siap: <strong class="text-emerald-600">${catProg.doneQty}</strong></span>` : '');
-
+                        ? `<span>Siap <b class="g">${catProg.doneQty}</b> / ${catProg.targetQty} ${escapeHtml(catProg.unit)}</span>`
+                        : (catProg.doneQty > 0 ? `<span>Siap <b class="g">${catProg.doneQty}</b></span>` : '');
                     return `
-                        <div class="space-y-1.5 py-1">
-                            <div class="flex justify-between items-center gap-2 text-xs">
-                                <span class="text-slate-600 font-medium flex items-center gap-1.5 truncate">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-brand shrink-0"></span>
-                                    <span class="truncate">${escapeHtml(catProg.kategori)}</span>
-                                </span>
-                                <div class="flex items-center gap-2 shrink-0">
-                                    ${cFractionText}
-                                    ${catProg.hasTarget ? `<span class="font-bold text-ink">${cPct}%</span>` : `<span class="text-[10px] font-semibold text-slate-400">Tiada sasaran</span>`}
-                                </div>
+                        <div class="cr">
+                            <div class="row">
+                                <span class="cr-n"><span>${escapeHtml(catProg.kategori)}</span></span>
+                                <span class="cr-v">${cFractionText}${catProg.hasTarget ? `<b>${cPct}%</b>` : `<span>Tiada sasaran</span>`}</span>
                             </div>
-                            <div class="w-full h-2 bg-canvas rounded-full overflow-hidden">
-                                <div class="h-full bg-gradient-to-r ${cBarColor} rounded-full transition-all duration-700" style="width: ${cBarWidth}%"></div>
-                            </div>
+                            <div class="bar sm"><i style="width:${cBarWidth}%;background:${cBarColor}"></i></div>
                         </div>
                     `;
                 }).join('');
 
                 const kawasanHtml = grp.kawasanProgress.map(kw => {
                     const kPct = Math.min(100, Math.max(0, Math.round(kw.percentage || 0)));
-                    const kBarColor = kPct >= 80 ? 'bg-emerald-500' : 'bg-brand';
+                    const kBarColor = kPct >= 80 ? 'var(--ok)' : 'var(--ind-600)';
                     const kQty = kw.mixedUnits
                         ? `${kw.categoryProgressList.length} kategori, unit berbeza: lihat pecahan di bawah`
                         : kw.targetQty > 0
-                        ? `Siap <strong class="text-emerald-600">${kw.doneQty}</strong> / <strong class="text-slate-700">${kw.targetQty} ${escapeHtml(kw.unit)}</strong>`
+                        ? `Siap <b class="g">${kw.doneQty}</b> / <b>${kw.targetQty} ${escapeHtml(kw.unit)}</b>`
                         : (kw.doneQty > 0
-                            ? `Siap <strong class="text-emerald-600">${kw.doneQty}${kw.unit && kw.unit !== 'Unit' ? ' ' + escapeHtml(kw.unit) : ''}</strong> · ${kw.key && kw.tugasCount === 0 ? '<span class="text-amber-600 font-medium">kawasan ini tiada dalam Tambah Kerja, semak ejaan</span>' : 'tiada sasaran dalam rekod kerja'}`
+                            ? `Siap <b class="g">${kw.doneQty}${kw.unit && kw.unit !== 'Unit' ? ' ' + escapeHtml(kw.unit) : ''}</b> · ${kw.key && kw.tugasCount === 0 ? '<span class="warn-t">kawasan ini tiada dalam Tambah Kerja, semak ejaan</span>' : 'tiada sasaran dalam rekod kerja'}`
                             : 'Belum ada laporan');
-                    const kJangka = kw.jangkaSiap ? ` · Jangka siap <strong class="text-slate-700">${escapeHtml(formatTarikh(kw.jangkaSiap))}</strong>` : '';
+                    const kJangka = kw.jangkaSiap ? ` · Jangka siap <b>${escapeHtml(formatTarikh(kw.jangkaSiap))}</b>` : '';
                     return `
-                        <div class="p-3 rounded-md border ${kw.key ? 'border-line bg-canvas/40' : 'border-dashed border-amber-400/60 bg-amber-50/50'}">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="text-sm font-semibold text-ink flex items-center gap-1.5 min-w-0">
-                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 ${kw.key ? 'text-brand' : 'text-amber-500'} shrink-0"></i>
-                                    <span class="truncate">${escapeHtml(kw.label)}</span>
-                                </span>
-                                ${kw.hasTarget
-                                    ? `<span class="text-sm font-bold text-ink shrink-0">${kPct}%</span>`
-                                    : `<span class="text-[11px] font-semibold text-slate-400 shrink-0">Tiada sasaran</span>`}
+                        <div class="kw${kw.key ? '' : ' nokey'}">
+                            <div class="row">
+                                <span class="kw-n"><i data-lucide="map-pin" class="i14"></i><span>${escapeHtml(kw.label)}</span></span>
+                                ${kw.hasTarget ? `<span class="pct">${kPct}%</span>` : `<span class="muted sm">Tiada sasaran</span>`}
                             </div>
-                            <div class="w-full h-2.5 bg-white border border-line rounded-full overflow-hidden mt-2">
-                                <div class="h-full ${kBarColor} rounded-full transition-all duration-700" style="width: ${kw.hasTarget && kPct > 0 ? Math.max(kPct, 3) : 0}%"></div>
-                            </div>
-                            <p class="text-[11px] text-slate-500 mt-1.5">${kQty}${kJangka}</p>
-                            ${kw.categoryProgressList.length > 1 ? `<div class="mt-2 pt-2 border-t border-line">${categoryBars(kw.categoryProgressList)}</div>` : ''}
+                            <div class="bar"><i style="width:${kw.hasTarget && kPct > 0 ? Math.max(kPct, 3) : 0}%;background:${kBarColor}"></i></div>
+                            <p class="meta">${kQty}${kJangka}</p>
+                            ${kw.categoryProgressList.length > 1 ? `<div class="cats">${categoryBars(kw.categoryProgressList)}</div>` : ''}
                         </div>
                     `;
                 }).join('');
 
+                const subtitle = 'No. fail projek' + (grp.kawasanLabels.length > 1
+                    ? ` · ${grp.kawasanLabels.length} kawasan`
+                    : (grp.kawasanLabels.length === 1 ? ` · ${escapeHtml(grp.kawasanLabels[0])}` : ''));
+
                 return `
-                    <div class="bg-white border border-line rounded-lg p-6 shadow-sm flex flex-col gap-4 hover:border-brand/40 transition ${highlightClass}">
-                        <div class="space-y-4">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-10 h-10 rounded-md bg-gold flex items-center justify-center text-ink shrink-0">
-                                        <i data-lucide="folder-kanban" class="w-5 h-5"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <h3 class="text-ink font-semibold text-base truncate">${escapeHtml(grp.idFile)}</h3>
-                                        <span class="text-xs text-slate-500">No. Fail Projek${grp.kawasanLabels.length > 1 ? ` · ${grp.kawasanLabels.length} kawasan` : (grp.kawasanLabels.length === 1 ? ` · ${escapeHtml(grp.kawasanLabels[0])}` : '')}</span>
-                                    </div>
-                                </div>
-                                ${badgeStatus}
+                    <article class="fc${isLate ? ' late' : ''} ${highlightClass}">
+                        <div class="fc-h">
+                            <div class="fc-ic"><i data-lucide="folder-kanban" class="i18"></i></div>
+                            <div class="fc-t">
+                                <h3 title="${escapeHtml(grp.idFile)}">${escapeHtml(grp.idFile)}</h3>
+                                <span>${subtitle}</span>
                             </div>
-
-                            <div class="flex flex-wrap gap-1.5">${kategoriDisplay}</div>
-
-                            <div>
-                                <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Surveyor Bertugas</h4>
-                                <div class="flex flex-wrap gap-1.5">${surveyorDisplay}</div>
-                            </div>
-
-                            <div class="p-3 rounded-md bg-canvas/50 border border-line space-y-2">
-                                <div class="flex items-center justify-between text-xs gap-2">
-                                    <span class="text-slate-600 truncate flex items-center gap-1.5"><i data-lucide="briefcase" class="w-3.5 h-3.5 text-brand shrink-0"></i>${escapeHtml(latestTask)}</span>
-                                    <span class="text-slate-400 shrink-0">${grp.tasks.length} Tugas</span>
-                                </div>
-                                ${qtySummary ? `<div class="flex flex-wrap gap-1.5">${qtySummary}</div>` : ''}
-                                ${kerjaListHtml ? `
-                                <details class="group/kerja pt-1">
-                                    <summary class="cursor-pointer select-none text-xs font-semibold text-brand flex items-center gap-1 list-none">
-                                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 transition-transform group-open/kerja:rotate-90"></i>
-                                        Senarai kerja &amp; edit (${grp.rekodEntries.length})
-                                    </summary>
-                                    <ul class="mt-1 divide-y divide-line">${kerjaListHtml}</ul>
-                                </details>` : ''}
-                            </div>
+                            <span class="chip ${st[1]}">${st[0]}</span>
                         </div>
 
-                        <div class="space-y-3">
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Progres Kawasan (${grp.kawasanProgress.length})</h4>
-                                    <span class="text-xs font-semibold text-brand">Keseluruhan: ${pct}%</span>
-                                </div>
-                                <div class="space-y-2">
-                                    ${kawasanHtml}
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-line">
-                                <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>Mula: <strong class="text-slate-600">${escapeHtml(formatTarikh(grp.tarikhMula))}</strong></span>
-                                <span class="flex items-center gap-1"><i data-lucide="flag" class="w-3.5 h-3.5 text-brand"></i>Siap: <strong class="text-slate-600">${escapeHtml(formatTarikh(grp.jangkaSiap))}</strong></span>
-                            </div>
+                        <div>
+                            <div class="big"><b>${pct}%</b><span>progres keseluruhan</span></div>
+                            <div class="bar lg"><i style="width:${pct}%;background:${barCol}"></i></div>
                         </div>
-                    </div>
+
+                        <div class="tags">${kategoriDisplay}</div>
+
+                        <div>
+                            <div class="lbl">Surveyor bertugas</div>
+                            <div class="people">${surveyorDisplay}</div>
+                        </div>
+
+                        <div class="box">
+                            <div class="row">
+                                <span class="task"><i data-lucide="briefcase" class="i14"></i><span>${escapeHtml(latestTask)}</span></span>
+                                <span class="muted sm" style="flex:none">${grp.tasks.length} tugas</span>
+                            </div>
+                            ${qtySummary ? `<div class="tags">${qtySummary}</div>` : ''}
+                            ${kerjaListHtml ? `
+                            <details class="kl">
+                                <summary><i data-lucide="chevron-right" class="i14 chev"></i>Senarai kerja &amp; edit (${grp.rekodEntries.length})</summary>
+                                <ul>${kerjaListHtml}</ul>
+                            </details>` : ''}
+                        </div>
+
+                        <div>
+                            <div class="lbl">Progres kawasan (${grp.kawasanProgress.length})</div>
+                            <div class="kws">${kawasanHtml}</div>
+                        </div>
+
+                        <div class="fc-f">
+                            <span><i data-lucide="calendar" class="i14"></i>Mula <b>${escapeHtml(formatTarikh(grp.tarikhMula))}</b></span>
+                            <span><i data-lucide="flag" class="i14"></i>Siap <b>${escapeHtml(formatTarikh(grp.jangkaSiap))}</b>${dueTxt}</span>
+                        </div>
+                    </article>
                 `;
             }).join('');
 
@@ -1548,19 +1635,19 @@
                 const container = document.getElementById(containerId);
                 if (!container) return;
                 if (!rows || rows.length === 0) {
-                    container.innerHTML = `<p class="text-slate-400 text-sm py-8 text-center">Tiada data dijumpai dalam pautan CSV ini.</p>`;
+                    container.innerHTML = `<div class="empty">Tiada data dijumpai dalam pautan CSV ini.</div>`;
                     return;
                 }
                 const headers = rows[0].__headers || Object.keys(rows[0]).filter(k => !k.startsWith('__'));
-                let html = `<table class="w-full text-left border-collapse text-xs"><thead><tr class="bg-canvas/60 border-b border-line uppercase tracking-wider text-slate-500 font-semibold">`;
+                let html = `<table><thead><tr>`;
                 headers.forEach(h => {
-                    html += `<th class="px-3 py-3 whitespace-nowrap">${escapeHtml(h)}</th>`;
+                    html += `<th>${escapeHtml(h)}</th>`;
                 });
-                html += `</tr></thead><tbody class="divide-y divide-line text-slate-700">`;
+                html += `</tr></thead><tbody>`;
                 rows.forEach(r => {
-                    html += `<tr class="hover:bg-canvas transition">`;
+                    html += `<tr>`;
                     headers.forEach(h => {
-                        html += `<td class="px-3 py-3 text-slate-600">${escapeHtml(r[h] || '-')}</td>`;
+                        html += `<td>${escapeHtml(r[h] || '-')}</td>`;
                     });
                     html += `</tr>`;
                 });
@@ -1611,8 +1698,8 @@
             if (cancel) cancel.innerText = isEdit ? 'Batal Edit' : 'Batal';
             if (submit && !submit.disabled) {
                 submit.innerHTML = isEdit
-                    ? `<i data-lucide="save" class="w-4 h-4"></i> <span>Simpan Perubahan</span>`
-                    : `<i data-lucide="send" class="w-4 h-4"></i> <span>Simpan & Jana Kad Progres</span>`;
+                    ? `<i data-lucide="save" class="i16"></i> <span>Simpan Perubahan</span>`
+                    : `<i data-lucide="send" class="i16"></i> <span>Simpan & Jana Kad Progres</span>`;
             }
             refreshIcons();
         }
@@ -1721,7 +1808,7 @@
 
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="w-4 h-4 border-2 border-ink border-t-transparent rounded-full animate-spin"></span> <span>Menghantar...</span>`;
+            submitBtn.innerHTML = `<span class="spin sm"></span> <span>Menghantar...</span>`;
 
             const isEdit = Boolean(editingRecord);
             const payload = {
@@ -1795,23 +1882,20 @@
             if (!toast || !toastMsg || !toastIcon) return;
 
             toastMsg.innerText = msg;
-            toast.className = "fixed top-6 right-6 z-50 px-4 py-3 rounded-md shadow-sm border text-sm flex items-center gap-3 transition-all transform translate-y-0 opacity-100 max-w-sm";
-
-            if (type === "success") {
-                toast.classList.add("bg-emerald-50", "border-emerald-500/30", "text-emerald-800");
-                toastIcon.setAttribute("data-lucide", "check-circle");
-            } else if (type === "error") {
-                toast.classList.add("bg-red-50", "border-red-500/30", "text-red-800");
-                toastIcon.setAttribute("data-lucide", "alert-circle");
-            } else {
-                toast.classList.add("bg-white", "border-line", "text-slate-700");
-                toastIcon.setAttribute("data-lucide", "info");
-            }
+            const kind = type === 'success' ? 'ok' : type === 'error' ? 'bad' : 'info';
+            const iconName = kind === 'ok' ? 'check-circle' : kind === 'bad' ? 'alert-circle' : 'info';
+            toastIcon.innerHTML = `<i data-lucide="${iconName}" class="i18"></i>`;
+            toast.className = 'toast ' + kind;          // buang 'hidden', kekal tersembunyi (opacity 0)
+            void toast.offsetWidth;                     // paksa reflow supaya transisi masuk berjalan
+            toast.classList.add('on');
             refreshIcons();
 
-            setTimeout(() => {
-                toast.classList.add("translate-y-2", "opacity-0");
-                setTimeout(() => toast.classList.add("hidden"), 300);
+            // Mesej berturut-turut tak dipotong oleh pemasa toast sebelumnya
+            clearTimeout(toastTimer);
+            clearTimeout(toastHideTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('on');
+                toastHideTimer = setTimeout(() => toast.classList.add('hidden'), 250);
             }, 3500);
         }
 
