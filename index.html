@@ -316,6 +316,7 @@ tr:last-child td{border-bottom:0}
       <div class="sub" id="sub-site"><div><div class="inner">
         <button data-v="ops:site" title="Ringkasan Tapak"><span class="tx">Ringkasan Tapak</span></button>
         <button data-v="app:site" title="Laporan Harian"><span class="tx">Laporan Harian</span></button>
+        <button data-v="app:site-status" title="Status Site"><span class="tx">Status Site</span></button>
       </div></div></div>
     </div>
     <div class="ngrp" data-g="pelan">
@@ -408,6 +409,7 @@ const MOD_TITLES={tracking:['Fail Tracking','Jejak fail dari kutipan data hingga
 /* Aplikasi dalam folder repo — dimuat terus (iframe src), jadi kemas kini fail dalam folder terus nampak di hub */
 const APPS={
   'site':{url:'HOD Site/index.html',t:'Laporan Harian Tapak',c:'HOD Site · Google Sheets'},
+  'site-status':{url:'HOD Site/Status Site/index.html',t:'Status Site',c:'HOD Site · Status tapak'},
   'pelan-status':{url:'HOD Pelan/Status Pelan/index.html',t:'Status Pelan',c:'HOD Pelan · Laporan pelukis pelan'},
   'pelan-qc':{url:'HOD Pelan/Kualiti Pelan/index.html',t:'Kualiti Pelan (QC)',c:'HOD Pelan · Semakan QC dari Google Sheets'},
   'pelan-checklist':{url:'HOD Pelan/Checklist Plan/index.html',t:'Checklist Plan',c:'HOD Pelan · Senarai semak digital pelan'},
