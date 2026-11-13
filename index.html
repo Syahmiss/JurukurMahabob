@@ -199,6 +199,27 @@ tr:last-child td{border-bottom:0}
 .nav button.on .tag{display:none}
 .stat[data-go]{cursor:pointer;transition:background .15s}
 .stat[data-go]:hover{background:var(--ind-50)}
+
+/* ---------- Nav dropdown: main nav (.gh) + sub nav (.sub) ---------- */
+.nav{padding-top:8px}
+.ngrp{margin-bottom:2px}
+.nav .chev{width:16px;height:16px;margin-left:auto;opacity:.65;transition:transform .2s ease,opacity .15s}
+.nav .gh:hover .chev{opacity:1}
+.ngrp.open>.gh .chev{transform:rotate(180deg)}
+.nav .gh.has-on{color:#fff;font-weight:650;background:rgba(255,255,255,.06)}
+.nav .gh.has-on>svg:first-child{color:var(--yel)}
+/* titik kuning pada main nav bila sub aktif tersembunyi dalam dropdown tertutup */
+.ngrp:not(.open)>.gh.has-on .tx::after{content:"";display:inline-block;width:6px;height:6px;border-radius:2px;background:var(--yel);margin-left:8px;vertical-align:2px}
+/* animasi tinggi auto: grid-rows 0fr → 1fr */
+.sub{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}
+.ngrp.open>.sub{grid-template-rows:1fr}
+.sub>div{min-height:0;overflow:hidden;visibility:hidden;transition:visibility .22s}
+.ngrp.open>.sub>div{visibility:visible}
+.sub .inner{margin:2px 0 6px 20px;padding-left:10px;border-left:1px solid rgba(255,255,255,.12)}
+.nav .sub button{padding:7px 10px;font-size:13px;color:#b9bbe8}
+.nav .sub button:hover{color:#fff}
+.nav .sub button.on{color:var(--ind-800)}
+.nsep{height:1px;background:rgba(255,255,255,.1);margin:10px 10px}
 @media (min-width:861px){
   .sb{transition:width .18s ease}
   .main{transition:left .18s ease}
@@ -209,7 +230,11 @@ tr:last-child td{border-bottom:0}
   body.rail .sb:not(:hover) .brand>div:last-child,
   body.rail .sb:not(:hover) .nav .tx,
   body.rail .sb:not(:hover) .nav .tag,
+  body.rail .sb:not(:hover) .nav .chev,
+  body.rail .sb:not(:hover) .nav .sub,
   body.rail .sb:not(:hover) .sbfoot{display:none}
+  body.rail .sb:not(:hover) .nav .gh.has-on{background:#fff;color:var(--ind-800)}
+  body.rail .sb:not(:hover) .nav .gh.has-on>svg:first-child{color:var(--ind-600)}
   body.rail .sb:not(:hover) .grp{font-size:0;height:1px;padding:0;margin:10px 10px;background:rgba(255,255,255,.12)}
   body.rail .sb:not(:hover) .nav{padding:4px 12px 16px;overflow-x:hidden}
   body.rail .sb:not(:hover) .nav button{justify-content:center;padding:10px 0}
@@ -272,6 +297,7 @@ tr:last-child td{border-bottom:0}
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
 </svg>
 
 <aside class="sb" id="sb">
@@ -279,27 +305,45 @@ tr:last-child td{border-bottom:0}
     <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></div>
     <div><b>JURUKUR MAHABOB</b><span>Operations Hub</span></div>
   </div>
-  <nav class="nav" id="nav">
-    <div class="grp">Utama</div>
+  <nav class="nav" id="nav" aria-label="Navigasi utama">
     <button data-v="home" class="on" title="Dashboard Utama"><svg><use href="#i-home"/></svg><span class="tx">Dashboard Utama</span></button>
     <button data-v="ops:overview" title="Ringkasan Operasi"><svg><use href="#i-grid"/></svg><span class="tx">Ringkasan Operasi</span></button>
-    <div class="grp">HOD Site / Tapak</div>
-    <button data-v="ops:site" title="Ringkasan Tapak"><svg><use href="#i-pin"/></svg><span class="tx">Ringkasan Tapak</span></button>
-    <button data-v="app:site" title="Laporan Harian"><svg><use href="#i-report"/></svg><span class="tx">Laporan Harian</span></button>
-    <div class="grp">HOD Pelan</div>
-    <button data-v="ops:pelan" title="Ringkasan Pelan"><svg><use href="#i-map"/></svg><span class="tx">Ringkasan Pelan</span></button>
-    <button data-v="app:pelan-status" title="Status Pelan"><svg><use href="#i-layers"/></svg><span class="tx">Status Pelan</span></button>
-    <button data-v="app:pelan-qc" title="Kualiti Pelan (QC)"><svg><use href="#i-check"/></svg><span class="tx">Kualiti Pelan (QC)</span></button>
-    <button data-v="app:pelan-checklist" title="Checklist Plan"><svg><use href="#i-list"/></svg><span class="tx">Checklist Plan</span></button>
-    <div class="grp">HR &amp; Akaun</div>
-    <button data-v="ops:hr" title="HOD HR"><svg><use href="#i-users"/></svg><span class="tx">HOD HR</span></button>
-    <button data-v="ops:akaun" title="HOD Akaun"><svg><use href="#i-cash"/></svg><span class="tx">HOD Akaun</span></button>
-    <div class="grp">Alat operasi</div>
-    <button data-v="tracking" title="Fail Tracking"><svg><use href="#i-file"/></svg><span class="tx">Fail Tracking</span></button>
-    <button data-v="app:inventory" title="Inventori Peralatan"><svg><use href="#i-tool"/></svg><span class="tx">Inventori Peralatan</span></button>
-    <button data-v="quotation" title="Penjana Sebut Harga"><svg><use href="#i-quote"/></svg><span class="tx">Penjana Sebut Harga</span></button>
-    <button data-v="planner" title="Perancangan &amp; Ramalan"><svg><use href="#i-plan"/></svg><span class="tx">Perancangan &amp; Ramalan</span></button>
-    <div class="grp">Sistem</div>
+
+    <!-- Main nav (.gh) + sub nav dropdown (.sub). Tambah item baru: letak <button data-v="..."> dalam .inner kumpulan berkenaan. -->
+    <div class="ngrp" data-g="site">
+      <button class="gh" type="button" aria-expanded="false" aria-controls="sub-site" title="HOD Site / Tapak"><svg><use href="#i-pin"/></svg><span class="tx">HOD Site / Tapak</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <div class="sub" id="sub-site"><div><div class="inner">
+        <button data-v="ops:site" title="Ringkasan Tapak"><span class="tx">Ringkasan Tapak</span></button>
+        <button data-v="app:site" title="Laporan Harian"><span class="tx">Laporan Harian</span></button>
+      </div></div></div>
+    </div>
+    <div class="ngrp" data-g="pelan">
+      <button class="gh" type="button" aria-expanded="false" aria-controls="sub-pelan" title="HOD Pelan"><svg><use href="#i-map"/></svg><span class="tx">HOD Pelan</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <div class="sub" id="sub-pelan"><div><div class="inner">
+        <button data-v="ops:pelan" title="Ringkasan Pelan"><span class="tx">Ringkasan Pelan</span></button>
+        <button data-v="app:pelan-status" title="Status Pelan"><span class="tx">Status Pelan</span></button>
+        <button data-v="app:pelan-qc" title="Kualiti Pelan (QC)"><span class="tx">Kualiti Pelan (QC)</span></button>
+        <button data-v="app:pelan-checklist" title="Checklist Plan"><span class="tx">Checklist Plan</span></button>
+      </div></div></div>
+    </div>
+    <div class="ngrp" data-g="hr">
+      <button class="gh" type="button" aria-expanded="false" aria-controls="sub-hr" title="HR &amp; Akaun"><svg><use href="#i-users"/></svg><span class="tx">HR &amp; Akaun</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <div class="sub" id="sub-hr"><div><div class="inner">
+        <button data-v="ops:hr" title="HOD HR"><span class="tx">HOD HR</span></button>
+        <button data-v="ops:akaun" title="HOD Akaun"><span class="tx">HOD Akaun</span></button>
+      </div></div></div>
+    </div>
+    <div class="ngrp" data-g="alat">
+      <button class="gh" type="button" aria-expanded="false" aria-controls="sub-alat" title="Alat Operasi"><svg><use href="#i-tool"/></svg><span class="tx">Alat Operasi</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <div class="sub" id="sub-alat"><div><div class="inner">
+        <button data-v="tracking" title="Fail Tracking"><span class="tx">Fail Tracking</span></button>
+        <button data-v="app:inventory" title="Inventori Peralatan"><span class="tx">Inventori Peralatan</span></button>
+        <button data-v="quotation" title="Penjana Sebut Harga"><span class="tx">Penjana Sebut Harga</span></button>
+        <button data-v="planner" title="Perancangan &amp; Ramalan"><span class="tx">Perancangan &amp; Ramalan</span></button>
+      </div></div></div>
+    </div>
+
+    <div class="nsep" aria-hidden="true"></div>
     <button data-v="ops:data" title="Data &amp; Sync"><svg><use href="#i-sync"/></svg><span class="tx">Data &amp; Sync</span></button>
   </nav>
   <div class="sbfoot">
@@ -417,7 +461,9 @@ function onFrameReady(id){
 let current='home',pendingOps=null;
 function setActive(v,fromFrame){
   current=v;
-  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.querySelectorAll('#nav button[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  // main nav: tanda kumpulan yang ada sub aktif, dan buka dropdown dia (tak simpan sebagai pilihan user)
+  document.querySelectorAll('#nav .ngrp').forEach(g=>{const has=!!g.querySelector('button.on');g.querySelector('.gh').classList.toggle('has-on',has);if(has)setGroup(g,true,false);});
   const [mod,sub]=v.split(':');
   if(mod==='home'){$('#pgTitle').textContent='Dashboard Utama';$('#pgCrumb').textContent='Ringkasan semua modul';}
   else if(mod==='ops'){$('#pgTitle').textContent=OPS_TITLES[sub]||'Operasi';$('#pgCrumb').textContent='Operasi HOD';}
@@ -448,7 +494,19 @@ window.addEventListener('message',e=>{
   if(k&&k.startsWith('app:'))frames[k].src=appUrl(k.slice(4));
   show('home');
 });
-document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(b)show(b.dataset.v);});
+/* ================= NAV DROPDOWN ================= */
+const NAV_OPEN_KEY='jm_nav_open';
+let navOpen={};try{navOpen=JSON.parse(localStorage.getItem(NAV_OPEN_KEY))||{};}catch(e){navOpen={};}
+function setGroup(g,open,save){
+  g.classList.toggle('open',open);g.querySelector('.gh').setAttribute('aria-expanded',String(open));
+  if(save){navOpen[g.dataset.g]=open;try{localStorage.setItem(NAV_OPEN_KEY,JSON.stringify(navOpen));}catch(e){}}
+}
+document.querySelectorAll('#nav .ngrp').forEach(g=>setGroup(g,navOpen[g.dataset.g]===true,false));
+document.getElementById('nav').addEventListener('click',e=>{
+  const gh=e.target.closest('.gh');
+  if(gh){const g=gh.parentElement;setGroup(g,!g.classList.contains('open'),true);return;}
+  const b=e.target.closest('button[data-v]');if(b)show(b.dataset.v);
+});
 $('#btnBack').onclick=()=>show('home');
 $('#burger').onclick=()=>document.body.classList.toggle('nav-open');
 $('#scrim').onclick=()=>document.body.classList.remove('nav-open');
@@ -811,7 +869,7 @@ Object.keys(MODULES).forEach(makeFrame);
 loadExt();setInterval(loadExt,5*60*1000);
 render();
 const h0=location.hash.slice(1).replace('-',':');
-const valid=[...document.querySelectorAll('#nav button')].map(b=>b.dataset.v);
+const valid=[...document.querySelectorAll('#nav button[data-v]')].map(b=>b.dataset.v);
 show(valid.includes(h0)?h0:'home');
 })();
 </script>
