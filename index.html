@@ -298,6 +298,7 @@ tr:last-child td{border-bottom:0}
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></symbol>
 </svg>
 
 <aside class="sb" id="sb">
@@ -324,6 +325,12 @@ tr:last-child td{border-bottom:0}
         <button data-v="app:pelan-status" title="Status Pelan"><span class="tx">Status Pelan</span></button>
         <button data-v="app:pelan-qc" title="Kualiti Pelan (QC)"><span class="tx">Kualiti Pelan (QC)</span></button>
         <button data-v="app:pelan-checklist" title="Checklist Plan"><span class="tx">Checklist Plan</span></button>
+      </div></div></div>
+    </div>
+    <div class="ngrp" data-g="bim">
+      <button class="gh" type="button" aria-expanded="false" aria-controls="sub-bim" title="HOD BIM"><svg><use href="#i-cube"/></svg><span class="tx">HOD BIM</span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <div class="sub" id="sub-bim"><div><div class="inner">
+        <button data-v="app:bim" title="Ringkasan BIM"><span class="tx">Ringkasan BIM</span></button>
       </div></div></div>
     </div>
     <div class="ngrp" data-g="hr">
@@ -404,6 +411,7 @@ const APPS={
   'pelan-status':{url:'HOD Pelan/Status Pelan/index.html',t:'Status Pelan',c:'HOD Pelan · Laporan pelukis pelan'},
   'pelan-qc':{url:'HOD Pelan/Kualiti Pelan/index.html',t:'Kualiti Pelan (QC)',c:'HOD Pelan · Semakan QC dari Google Sheets'},
   'pelan-checklist':{url:'HOD Pelan/Checklist Plan/index.html',t:'Checklist Plan',c:'HOD Pelan · Senarai semak digital pelan'},
+  'bim':{url:'HOD BIM/index.html',t:'Ringkasan BIM',c:'HOD BIM · Pemodelan & koordinasi'},
   'inventory':{url:'Inventori Peralatan/index.html',t:'Inventori Peralatan',c:'Alat operasi · Google Sheets'}
 };
 const appUrl=k=>encodeURI(APPS[k].url);
