@@ -226,7 +226,6 @@ table.sheet{width:100%;min-width:900px;border-collapse:collapse;font-size:12.5px
 .crow .x:hover{color:var(--bad);border-color:var(--bad-line)}
 .edit-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:0 14px}
 .edit-bar .e-oleh{flex:1 1 160px;max-width:220px}
-.edit-bar .e-pin{flex:0 1 100px}
 .edit-bar .spacer{flex:1 1 0}
 .msg{margin:0 14px;font-size:12.5px;color:var(--muted);min-height:1.2em}
 .msg.bad{color:var(--bad);font-weight:550}
@@ -1087,7 +1086,6 @@ function editorView(it){
     <p class="ed-hint tpl" aria-live="polite">${isNew?'Taip nama peralatan yang sama dengan alat sedia ada untuk salin senarai komponennya.':''}</p>
     <div class="edit-bar">
       <input id="eo-${u}" class="e-oleh" type="text" maxlength="60" placeholder="Nama anda" value="${esc(store.get('inv_oleh'))}" aria-label="Nama anda">
-      <input id="ep-${u}" class="e-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" value="${esc(store.get('inv_pin',true))}" aria-label="PIN editor">
       <span class="spacer"></span>
       <button type="button" class="btn" data-act="cancel">Batal</button>
       <button type="button" class="btn primary" data-act="save">${isNew?'Tambah alat':'Simpan perubahan'}</button>
@@ -1128,20 +1126,19 @@ async function saveFull(box, btn){
   if(!data.peralatan) return say('Isi nama peralatan.', true);
   if(data.komponen.some(c=>!c.detail)) return say('Setiap komponen yang diisi perlu ada Detail.', true);
   if(!isNew && JSON.stringify(data)===EDIT_INIT.get(EDITING)) return say('Tiada perubahan untuk disimpan.');
-  const oleh=box.querySelector('.e-oleh').value.trim(), pin=box.querySelector('.e-pin').value.trim();
+  const oleh=box.querySelector('.e-oleh').value.trim();
   if(!oleh) return say('Isi nama anda dulu supaya rekod audit lengkap.', true);
-  if(!pin) return say('Isi PIN editor.', true);
 
   const it = isNew ? null : ITEMS.find(i=>i.key===EDITING);
   if(!isNew && !it) return say('Alat ni tak dijumpai lagi. Muat semula dashboard.', true);
-  const payload={pin, oleh, action:isNew?'addItem':'saveItem', item:data};
+  const payload={oleh, action:isNew?'addItem':'saveItem', item:data};
   if(it) payload.expect={firstRow:it.firstRow, lastRow:it.lastRow, peralatan:it.peralatan,
     rows:it.komponen.map(c=>({row:c.row, detail:c.detailRaw}))};
 
   btn.disabled=true; say('Menyimpan…');
   try{
     const res=await postScript(payload);
-    store.set('inv_oleh',oleh); store.set('inv_pin',pin,true);
+    store.set('inv_oleh',oleh);
     if(it && F.surv===it.nama && data.nama!==it.nama) F.surv=data.nama;
     EDITING=null; NEW_PRESET=null; EDIT_INIT.clear();
     toast(isNew ? `${data.peralatan} ditambah di bawah ${data.nama}.` : res.updated===0 ? 'Tiada perubahan.' : `${data.peralatan} (${data.nama}) dikemas kini.`);
@@ -1183,7 +1180,6 @@ function renameForm(n){
     <label for="rn-${u}">Nama baru untuk ${esc(n)}<input id="rn-${u}" class="rn-to" maxlength="60" value="${esc(n)}"></label>
     <div class="rn-row">
       <input id="ro-${u}" class="rn-oleh" maxlength="60" placeholder="Nama anda" value="${esc(store.get('inv_oleh'))}" aria-label="Nama anda">
-      <input id="rp-${u}" class="rn-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" value="${esc(store.get('inv_pin',true))}" aria-label="PIN editor">
     </div>
     <p class="ed-hint">Semua sel Nama "${esc(n)}" dalam sheet akan ditukar.</p>
     <div class="rn-row"><button type="button" class="btn sm" data-pact="rcancel">Batal</button><button type="button" class="btn sm primary" data-pact="rsave">Simpan nama</button></div>
@@ -1195,18 +1191,17 @@ async function renamePerson(form, btn){
   const msg=form.querySelector('.msg');
   const say=(t,bad)=>{ msg.textContent=t; msg.className='msg'+(bad?' bad':''); };
   const from=form.dataset.nama, to=form.querySelector('.rn-to').value.trim();
-  const oleh=form.querySelector('.rn-oleh').value.trim(), pin=form.querySelector('.rn-pin').value.trim();
+  const oleh=form.querySelector('.rn-oleh').value.trim();
   if(!to || to===from) return say('Isi nama baru yang berbeza.', true);
   if(!oleh) return say('Isi nama anda dulu.', true);
-  if(!pin) return say('Isi PIN editor.', true);
   if(personNames().includes(to) && form.dataset.confirm!==to){
     form.dataset.confirm=to;
     return say(`"${to}" dah wujud. Tekan Simpan sekali lagi untuk gabungkan semua alat ${from} di bawah ${to}.`, true);
   }
   btn.disabled=true; say('Menyimpan…');
   try{
-    await postScript({pin, oleh, action:'renamePerson', from, to});
-    store.set('inv_oleh',oleh); store.set('inv_pin',pin,true);
+    await postScript({oleh, action:'renamePerson', from, to});
+    store.set('inv_oleh',oleh);
     RENAMING=null; if(F.surv===from) F.surv=to;
     toast(`${from} ditukar kepada ${to}.`);
     await load();
