@@ -39,41 +39,10 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-jm-gold selection:text-jm-navy">
 
-    <!-- Top Navigation Bar (Tema Korporat Jurukur Mahabob) -->
-    <header class="bg-jm-navy text-white shadow-lg border-b-4 border-jm-gold sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row justify-between items-center py-4 gap-4">
-                <!-- Brand & Logo -->
-                <div class="flex items-center space-x-3">
-                    <div class="w-11 h-11 rounded-xl bg-jm-gold text-jm-navy flex items-center justify-center font-extrabold text-xl shadow-md">
-                        <i class="fa-solid fa-compass-drafting"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white">JURUKUR MAHABOB</h1>
-                            <span class="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-jm-gold text-jm-navy rounded-full">
-                                Sales & Billing
-                            </span>
-                        </div>
-                        <p class="text-xs text-blue-200">Sistem Pemantauan Jualan, Tuntutan & Akaun Belum Terima</p>
-                    </div>
-                </div>
-
-                <!-- Action Controls -->
-                <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
-                    <div id="lastUpdatedBadge" class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span id="syncStatusText">Menyambung data...</span>
-                    </div>
-                    <button onclick="fetchDashboardData()" id="refreshBtn" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
-                        <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
-                        <span>Kemaskini Data</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Department Tabs Navigation (Tab 1 - Tab 4) -->
-            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto pt-2 pb-3 border-t border-white/10" aria-label="Kategori Bahagian">
+    <!-- Toolbar: Tab Bahagian & Kemaskini Data (header dibuang) -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Kategori Bahagian">
                 <button onclick="switchDepartmentTab('ENGINEERING')" id="dept-tab-ENGINEERING" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-jm-gold text-jm-navy shadow-md transition-all flex items-center gap-2 whitespace-nowrap">
                     <i class="fa-solid fa-helmet-safety"></i>
                     <span>1. Engineering</span>
@@ -91,8 +60,18 @@
                     <span>4. Cadastral</span>
                 </button>
             </nav>
+            <div class="flex items-center space-x-3 justify-end">
+                <div id="lastUpdatedBadge" class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="syncStatusText">Menyambung data...</span>
+                </div>
+                <button onclick="fetchDashboardData()" id="refreshBtn" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
+                    <span>Kemaskini Data</span>
+                </button>
+            </div>
         </div>
-    </header>
+    </div>
 
     <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
