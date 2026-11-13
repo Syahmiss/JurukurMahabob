@@ -337,7 +337,7 @@ tr:last-child td{border-bottom:0}
       <button class="gh" type="button" aria-expanded="false" aria-controls="sub-hr" title="HR &amp; Akaun"><svg><use href="#i-users"/></svg><span class="tx">HR &amp; Akaun</span><svg class="chev"><use href="#i-chev"/></svg></button>
       <div class="sub" id="sub-hr"><div><div class="inner">
         <button data-v="ops:hr" title="HOD HR"><span class="tx">HOD HR</span></button>
-        <button data-v="ops:akaun" title="HOD Akaun"><span class="tx">HOD Akaun</span></button>
+        <button data-v="app:akaun" title="HOD Akaun"><span class="tx">HOD Akaun</span></button>
       </div></div></div>
     </div>
     <div class="ngrp" data-g="alat">
@@ -412,6 +412,7 @@ const APPS={
   'pelan-qc':{url:'HOD Pelan/Kualiti Pelan/index.html',t:'Kualiti Pelan (QC)',c:'HOD Pelan · Semakan QC dari Google Sheets'},
   'pelan-checklist':{url:'HOD Pelan/Checklist Plan/index.html',t:'Checklist Plan',c:'HOD Pelan · Senarai semak digital pelan'},
   'bim':{url:'HOD BIM/index.html',t:'Ringkasan BIM',c:'HOD BIM · Pemodelan & koordinasi'},
+  'akaun':{url:'HOD Akaun/index.html',t:'HOD Akaun',c:'HR & Akaun · Jualan & invois dari Google Sheets'},
   'inventory':{url:'Inventori Peralatan/index.html',t:'Inventori Peralatan',c:'Alat operasi · Google Sheets'}
 };
 const appUrl=k=>encodeURI(APPS[k].url);
@@ -713,7 +714,7 @@ function render(){
   const A=[];
   delayed.forEach(p=>A.push({s:'bad',t:'Projek lewat: '+p.proj,d:p.client+' · '+(p.prog||0)+'% · tarikh akhir '+dmy(parseD(p.due)),go:'ops:site'}));
   dueSoon.filter(p=>p.status!=='delay').forEach(p=>{const dd=daysTo(parseD(p.due));A.push({s:dd<0?'bad':'warn',t:(dd<0?'Melepasi tarikh akhir: ':'Tarikh akhir dalam '+dd+' hari: ')+p.proj,d:p.client+' · '+(p.prog||0)+'% siap',go:'ops:site'});});
-  INV.filter(i=>num(i.amt)-num(i.paid)>0).sort((a,b)=>(num(b.amt)-num(b.paid))-(num(a.amt)-num(a.paid))).forEach(i=>A.push({s:i.status==='unpaid'?'warn':'info',t:'Belum dibayar '+rm(num(i.amt)-num(i.paid))+' · '+i.inv,d:i.client+' · invois '+dmy(parseD(i.date)),go:'ops:akaun'}));
+  INV.filter(i=>num(i.amt)-num(i.paid)>0).sort((a,b)=>(num(b.amt)-num(b.paid))-(num(a.amt)-num(a.paid))).forEach(i=>A.push({s:i.status==='unpaid'?'warn':'info',t:'Belum dibayar '+rm(num(i.amt)-num(i.paid))+' · '+i.inv,d:i.client+' · invois '+dmy(parseD(i.date)),go:'app:akaun'}));
   badItems.slice(0,6).forEach(x=>A.push({s:'bad',t:'Peralatan rosak: '+x.it.name,d:x.team+(x.it.serial?' · S/N '+x.it.serial:'')+' · '+(x.it.comp||[]).filter(c=>c.s==='tidak').map(c=>c.d+(c.c?' ('+c.c+')':'')).join(', '),go:'app:inventory'}));
   if(badItems.length>6)A.push({s:'bad',t:'+'+(badItems.length-6)+' lagi peralatan tidak baik',d:'Buka Inventori Peralatan untuk senarai penuh',go:'app:inventory'});
   drOver.forEach(d=>A.push({s:'warn',t:'Lukisan lewat: '+(d.dwgNo||d.title||'–'),d:[DRW.projName[d.projectId],d.drafter,num(d.progress)+'%','sasaran '+dmy(drDue(d))].filter(Boolean).join(' · '),go:'app:pelan-status'}));
@@ -736,8 +737,8 @@ function render(){
     <div class="chips">${nBad?`<span class="chip bad">${nBad} kritikal</span>`:''}${nWarn?`<span class="chip warn">${nWarn} perlu perhatian</span>`:''}${!nBad&&!nWarn?'<span class="chip ok">Semua terkawal</span>':''}</div></div>`;
   h+='<div class="kpis">'
    +kpi('ops:site','Projek aktif',active.length,`${delayed.length?`<span class="chip bad">${delayed.length} lewat</span>`:'<span class="chip ok">Tiada lewat</span>'} ${crewsOn} krew di tapak`)
-   +kpi('ops:akaun','Kutipan diterima',`<small>RM</small>${Math.round(paid/1000).toLocaleString('en-MY')}k`,`${billed?Math.round(paid/billed*100):0}% daripada ${rmK(billed)} diinvois`,true)
-   +kpi('ops:akaun','Belum dikutip',`<small>RM</small>${Math.round(outst/1000).toLocaleString('en-MY')}k`,`${INV.filter(i=>num(i.amt)-num(i.paid)>0).length} invois tertunggak`)
+   +kpi('app:akaun','Kutipan diterima',`<small>RM</small>${Math.round(paid/1000).toLocaleString('en-MY')}k`,`${billed?Math.round(paid/billed*100):0}% daripada ${rmK(billed)} diinvois`,true)
+   +kpi('app:akaun','Belum dikutip',`<small>RM</small>${Math.round(outst/1000).toLocaleString('en-MY')}k`,`${INV.filter(i=>num(i.amt)-num(i.paid)>0).length} invois tertunggak`)
    +kpi('tracking','Fail tracking aktif',trkActive.length,trk.length?`${trkClosed.length} ditutup, purata ${trkAvg}%`:'Belum ada fail')
    /* FIX: jangan tunjuk "0 rosak / 0 perhatian" bila CSV inventori belum load atau gagal */
    +kpi('app:inventory','Peralatan perlu tindakan',EXT.inv?invBad+invWarn:'–',EXT.inv?`<span class="chip bad">${invBad} rosak</span><span class="chip warn">${invWarn} perhatian</span>`:`<span class="chip mute">${extMsg('inv')}</span>`)
@@ -746,7 +747,7 @@ function render(){
 
   // --- row 1: trend + alerts
   h+='<div class="grid g21">';
-  h+=`<div class="panel"><div class="ph"><h3>Hasil vs perbelanjaan bulanan</h3><span class="src">HOD Akaun · RM '000</span><div class="sp"></div><button class="link" data-go="ops:akaun">Buka Akaun</button></div>`
+  h+=`<div class="panel"><div class="ph"><h3>Hasil vs perbelanjaan bulanan</h3><span class="src">HOD Akaun · RM '000</span><div class="sp"></div><button class="link" data-go="app:akaun">Buka Akaun</button></div>`
     +(TR.length?groupBars(TR,[{k:'rev',l:'Hasil',c:'var(--c-rev)'},{k:'exp',l:'Perbelanjaan',c:'var(--c-exp)'}])+`<div class="lgd"><span><i style="background:var(--c-rev)"></i>Hasil</span><span><i style="background:var(--c-exp)"></i>Perbelanjaan</span><span style="margin-left:auto">Perbelanjaan bulan ini: <b>${rm(expT)}</b></span></div>`:'<div class="empty">Tiada data trend. Import data di Data & Sync.</div>')
     +'</div>';
   h+=`<div class="panel"><div class="ph"><h3>Perlu perhatian</h3><span class="src">${A.length} perkara</span></div><div class="alerts">`
@@ -771,7 +772,7 @@ function render(){
   const clients=Object.entries(byClient).sort((a,b)=>(b[1].p+b[1].o)-(a[1].p+a[1].o));
   const maxC=Math.max(1,...clients.map(c=>c[1].p+c[1].o));
   h+='<div class="grid g11">';
-  h+=`<div class="panel"><div class="ph"><h3>Kutipan invois ikut klien</h3><span class="src">HOD Akaun</span><div class="sp"></div><button class="link" data-go="ops:akaun">Invois</button></div>`
+  h+=`<div class="panel"><div class="ph"><h3>Kutipan invois ikut klien</h3><span class="src">HOD Akaun</span><div class="sp"></div><button class="link" data-go="app:akaun">Invois</button></div>`
     +(clients.length?clients.map(([c,v])=>hbStack(c,[{v:v.p,c:'var(--c-rev)',l:'Dibayar',t:rm(v.p)},{v:v.o,c:'var(--c-exp)',l:'Tertunggak',t:rm(v.o)}],0,rmK(v.p+v.o)).replace('<div class="track">',`<div class="track" style="width:${(v.p+v.o)/maxC*100}%">`)).join(''):'<div class="empty">Tiada invois.</div>')
     +`<div class="lgd"><span><i style="background:var(--c-rev)"></i>Dibayar ${rmK(paid)}</span><span><i style="background:var(--c-exp)"></i>Tertunggak ${rmK(outst)}</span></div></div>`;
   h+=`<div class="panel"><div class="ph"><h3>Keadaan peralatan ikut pemegang</h3><span class="src">Google Sheets</span><div class="sp"></div><button class="link" data-go="app:inventory">Inventori</button></div>`
