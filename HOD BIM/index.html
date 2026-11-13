@@ -1,1313 +1,694 @@
 <!DOCTYPE html>
-<html lang="ms" class="dark">
+<html lang="ms">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scan to BIM - Project & Deliverables Tracking Dashboard</title>
-  
-  <!-- Tailwind CSS & Google Fonts -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO-BIM Tracker · Scan to BIM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
+<style>
+/* ============================================================
+   GEO-BIM Tracker — UI ikut template JMC Operations Hub
+   (GEO-STAT: light, indigo + kuning). Tiada sidebar sendiri:
+   bila dibuka dalam hub, sidebar hub jadi "rail".
+   ============================================================ */
+:root{
+  --ind-950:#17154a; --ind-900:#1f1c63; --ind-800:#272483; --ind-600:#4338ca; --ind-500:#5b51e0; --ind-100:#e2e3fb; --ind-50:#eef0ff;
+  --yel:#f5c518; --yel-600:#d9a400; --yel-50:#fff8d6; --yel-ink:#2a2100;
+  --bg:#f6f7fb; --surface:#ffffff; --line:#e3e5ef; --line2:#eef0f6;
+  --ink:#16182b; --ink2:#484d66; --muted:#757a94;
+  --ok:#0f7a43; --ok-50:#e5f4ec; --warn:#b45309; --warn-50:#fdf1e1; --bad:#c52a2a; --bad-50:#fdeaea;
+  --f:'Archivo','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  --r-lg:16px; --r-md:10px; --r-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--f);font-stretch:100%;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input,select{font-family:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--yel);outline-offset:2px}
+[hidden]{display:none!important}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              primary: '#0f11df',
-              yellow: '#ffe500',
-              navy: '#102139',
-              darkbg: '#0a101d',
-              carddark: '#141e30',
-              hoverblue: '#0b0cb0'
-            }
-          },
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'sans-serif']
-          }
-        }
-      }
-    }
-  </script>
+/* ---------- Tab bar ---------- */
+.tabbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.tabs{display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:12px;border:1px solid var(--line);overflow-x:auto;max-width:100%}
+.tabs button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:9px;font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap;transition:background .15s,color .15s}
+.tabs button:hover{background:var(--ind-50);color:var(--ind-600)}
+.tabs button.on{background:var(--ind-950);color:#fff;box-shadow:0 6px 16px -8px rgba(23,21,74,.6)}
+.tabs button.on svg{color:var(--yel)}
+.tabs button:focus-visible{outline:2px solid var(--yel)}
+.sp{flex:1}
 
-  <style>
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      transition: background-color 0.3s, color 0.3s;
-    }
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(15, 17, 223, 0.3);
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(15, 17, 223, 0.6);
-    }
-    .glass-card {
-      backdrop-filter: blur(12px);
-    }
-  </style>
+/* ---------- Butang ---------- */
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;text-decoration:none;transition:border-color .15s,color .15s,background .15s}
+.btn:hover{border-color:var(--ind-600);color:var(--ind-600)}
+.btn.p{background:var(--ind-600);border-color:var(--ind-600);color:#fff}
+.btn.p:hover{background:var(--ind-800);border-color:var(--ind-800);color:#fff}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.ok:hover{filter:brightness(.92);color:#fff}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.danger:hover{filter:brightness(.92);color:#fff}
+.link{all:unset;cursor:pointer;font-size:12px;font-weight:650;color:var(--ind-600);padding:4px 8px;border-radius:7px;display:inline-flex;align-items:center;gap:5px}
+.link:hover{background:var(--ind-50)}
+.link:focus-visible{outline:2px solid var(--ind-600)}
+.ico{all:unset;cursor:pointer;display:grid;place-items:center;width:30px;height:30px;border-radius:8px;color:var(--muted)}
+.ico:hover{background:var(--bad-50);color:var(--bad)}
+.ico:focus-visible{outline:2px solid var(--ind-600)}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1480px;margin:0 auto;padding:22px 26px 44px}
+.grid{display:grid;gap:16px;margin-bottom:16px}
+.g21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.g11{grid-template-columns:repeat(2,minmax(0,1fr))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;min-width:0;margin-bottom:16px}
+.grid>.panel{margin-bottom:0}
+.ph{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ph h3{font-size:14.5px;font-weight:700;font-stretch:106%;display:flex;align-items:center;gap:9px}
+.ph h3::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--yel)}
+.ph p{font-size:12px;color:var(--muted);flex-basis:100%;margin-top:-6px;padding-left:13px}
+.ph .src{font-size:11.5px;color:var(--muted);padding:2px 8px;border-radius:6px;background:var(--bg)}
+.empty{padding:24px 10px;text-align:center;color:var(--muted);font-size:12.5px}
+
+/* ---------- Hero + KPI ---------- */
+.hero{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px}
+.hero .contour{position:absolute;right:-40px;top:-60px;width:520px;height:300px;pointer-events:none;color:var(--ind-600);opacity:.13}
+.hero-head{position:relative;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:20px 24px 18px}
+.hero-head h2{font-size:26px;font-weight:780;font-stretch:118%;letter-spacing:-.4px;line-height:1.1;color:var(--ind-950)}
+.hero-head p{font-size:12.5px;color:var(--muted);margin-top:5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.kpis{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-top:1px solid var(--line);background:linear-gradient(var(--surface),var(--bg))}
+.kpi{all:unset;box-sizing:border-box;cursor:pointer;display:block;padding:15px 18px 16px;border-left:1px solid var(--line);min-width:0;position:relative;transition:background .15s}
+.kpi:first-child{border-left:0}
+.kpi:hover{background:var(--ind-50)}
+.kpi.sel{background:var(--ind-50);box-shadow:inset 0 -3px 0 var(--ind-600)}
+.kpi:focus-visible{outline:2px solid var(--ind-600);outline-offset:-2px}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:6px}
+.kpi .l i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.kpi .v{font-size:27px;font-weight:720;font-stretch:112%;margin-top:4px;letter-spacing:-.6px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink);line-height:1.15}
+.kpi .s{font-size:11.5px;color:var(--ink2);margin-top:6px}
+.kpi.hl .v{display:inline-block;background:linear-gradient(transparent 66%,var(--yel) 66%,var(--yel) 92%,transparent 92%)}
+
+/* ---------- Chip ---------- */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip.ok{background:var(--ok-50);color:var(--ok)}.chip.warn{background:var(--warn-50);color:var(--warn)}.chip.bad{background:var(--bad-50);color:var(--bad)}
+.chip.info{background:var(--ind-50);color:var(--ind-600)}.chip.mute{background:var(--line2);color:var(--ink2)}
+.chip.dr{background:var(--ind-100);color:var(--ind-800)}.chip.yel{background:var(--yel-50);color:#8a6a00}
+
+/* ---------- Jadual ---------- */
+.tw{overflow-x:auto;margin:0 -6px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+th{font-size:11.5px;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tbody tr:hover td{background:#fafaff}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td .t{font-weight:600;color:var(--ink)}
+td .m{font-size:11.5px;color:var(--muted)}
+td .ref{font-variant-numeric:tabular-nums;font-weight:650;color:var(--ind-600);white-space:nowrap}
+.clip{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{display:flex;align-items:center;gap:8px;min-width:120px}
+.prog .bar{flex:1;height:7px;background:var(--line2);border-radius:4px;overflow:hidden}
+.prog .bar i{display:block;height:100%;border-radius:4px}
+.prog b{font-size:11.5px;font-weight:650;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- Bar mendatar + stat ---------- */
+.hb{display:grid;grid-template-columns:minmax(0,120px) minmax(0,1fr) auto;gap:12px;align-items:center;padding:6px 0;font-size:12.5px}
+.hb .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.hb .track{height:14px;border-radius:5px;overflow:hidden;background:var(--line2)}
+.hb .track span{display:block;height:100%;border-radius:5px}
+.hb .val{font-variant-numeric:tabular-nums;font-weight:650;min-width:28px;text-align:right}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{background:var(--bg);border-radius:var(--r-md);padding:11px 13px}
+.stat .l{font-size:11.5px;color:var(--muted)}
+.stat .v{font-size:20px;font-weight:720;font-stretch:110%;font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* ---------- Staff ---------- */
+.people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:300px;overflow:auto}
+.person{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line2);border-radius:10px;min-width:0}
+.av{width:32px;height:32px;border-radius:50%;background:var(--ind-950);color:var(--yel);display:grid;place-items:center;font-size:11px;font-weight:750;flex:none}
+.person>div:not(.av){min-width:0;flex:1}
+.person b{display:block;font-size:12.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person span{font-size:11px;color:var(--muted)}
+
+/* ---------- Borang ---------- */
+.form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 16px}
+.f label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.f .req{color:var(--bad)}
+.f small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.s2{grid-column:span 2}.s3{grid-column:1/-1}
+.inp{width:100%;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.inp:focus{outline:none;border-color:var(--ind-600);box-shadow:0 0 0 3px var(--ind-50)}
+.inp.sm{width:auto;padding:6px 10px;font-size:12px}
+input[type=file].inp{padding:6px}
+input[type=file].inp::file-selector-button{border:0;background:var(--ind-600);color:#fff;font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:7px;margin-right:10px;cursor:pointer}
+.factions{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
+.pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:150px;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.pick label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);cursor:pointer;min-width:0}
+.pick label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+input[type=checkbox]{accent-color:var(--ind-600);width:15px;height:15px;flex:none}
+
+/* ---------- Checklist ---------- */
+.score{background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.score .lbl{flex:1;min-width:220px}
+.score .row{display:flex;justify-content:space-between;font-size:12.5px;font-weight:650;margin-bottom:7px;gap:10px}
+.score .row b{color:var(--ind-600);font-variant-numeric:tabular-nums}
+.bigbar{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.bigbar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--ind-600),var(--ok));transition:width .4s ease}
+.cats{display:grid;gap:12px}
+.cat{border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.cat-h{display:flex;align-items:center;gap:10px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--line2)}
+.cat-h h4{font-size:13.5px;font-weight:700;font-stretch:106%;flex:1}
+.cat-h b{font-size:12px;color:var(--ind-600);font-variant-numeric:tabular-nums}
+.ck-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ck{display:grid;grid-template-columns:16px minmax(0,1fr);gap:10px;align-items:start;padding:9px 10px;border:1px solid var(--line2);border-radius:10px;cursor:pointer;transition:background .15s,border-color .15s}
+.ck:hover{background:var(--ind-50);border-color:var(--ind-100)}
+.ck:has(input:checked){background:var(--ind-50);border-color:var(--ind-100)}
+.ck input{margin-top:2px}
+.ck small{display:inline-block;font-size:10px;font-weight:650;color:var(--ink2);background:var(--line2);border-radius:5px;padding:0 6px;margin-bottom:3px}
+.ck:has(input:checked) small{background:var(--ind-100);color:var(--ind-800)}
+.ck p{font-size:12.5px;color:var(--ink)}
+.ckfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:16px;padding-top:14px;font-size:12px;color:var(--muted)}
+
+/* ---------- Modal + toast ---------- */
+.modal{position:fixed;inset:0;background:rgba(23,21,74,.5);display:none;place-items:center;z-index:110;padding:16px;overflow:auto}
+.modal.on{display:grid}
+.modal .box{background:var(--surface);border-radius:var(--r-lg);max-width:440px;width:100%;padding:22px 24px;border-top:4px solid var(--yel);box-shadow:0 24px 60px -20px rgba(23,21,74,.5)}
+.modal .box.lg{max-width:680px}
+.mh{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.mh h4{font-size:16px;font-weight:700;flex:1}
+.mh .ico:hover{background:var(--line2);color:var(--ink)}
+.modal p{font-size:13px;color:var(--ink2);margin-bottom:18px}
+.modal .form{grid-template-columns:repeat(2,minmax(0,1fr))}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--ind-950);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;z-index:120;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;border-left:4px solid var(--yel);max-width:340px}
+.toast.on{opacity:1;transform:none}
+.toast.err{border-left-color:var(--bad)}
+
+/* ---------- Responsif ---------- */
+@media (max-width:1320px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi:nth-child(4){border-left:0}.kpi:nth-child(n+4){border-top:1px solid var(--line)}}
+@media (max-width:1100px){.g21,.g11{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){
+  .wrap{padding:16px 16px 32px}
+  .hero-head{padding:16px 16px 14px}.hero-head h2{font-size:22px}
+  .hero .contour{width:360px;right:-120px}
+  .form,.modal .form{grid-template-columns:minmax(0,1fr)}
+  .s2,.s3{grid-column:auto}
+  .ck-grid,.people{grid-template-columns:minmax(0,1fr)}
+  .pick{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{border-left:1px solid var(--line)!important;border-top:1px solid var(--line)}
+  .kpi:nth-child(odd){border-left:0!important}.kpi:nth-child(-n+2){border-top:0}
+  .kpi .v{font-size:22px}
+  .tabbar .btn span{display:none}
+  .panel{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3 2.5 8 12 13l9.5-5z"/><path d="m2.5 12 9.5 5 9.5-5M2.5 16l9.5 5 9.5-5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-report" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/></symbol>
+</svg>
 
-<body class="bg-slate-100 text-slate-800 dark:bg-brand-darkbg dark:text-slate-100 min-h-screen flex flex-col md:flex-row transition-colors duration-200">
 
-  <!-- LEFT SIDEBAR NAVIGATION -->
-  <aside class="w-full md:w-64 bg-brand-navy border-r border-brand-primary/20 text-white flex flex-col justify-between shrink-0 sticky top-0 md:h-screen z-40 shadow-xl">
-    
-    <div>
-      <!-- Logo & Title Header -->
-      <div class="p-5 flex items-center space-x-3 border-b border-slate-800">
-        <div class="w-10 h-10 rounded-xl bg-brand-primary flex items-center justify-center text-brand-yellow font-bold text-xl shadow-md border border-brand-yellow/30 shrink-0">
-          <i data-lucide="layers" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <h1 class="font-extrabold text-base tracking-tight leading-none text-white">GEO-BIM <span class="text-brand-yellow">TRACKER</span></h1>
-          <p class="text-[10px] text-slate-300 mt-1">Sistem Perjalanan Fail & Scan to BIM</p>
-        </div>
-      </div>
-
-      <!-- User Profile Badge -->
-      <div class="p-4 mx-3 my-4 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-xs border-2 border-brand-yellow shrink-0">
-          LS
-        </div>
-        <div class="truncate">
-          <p class="text-xs font-semibold leading-tight text-white truncate">Jurukur Sub-Service</p>
-          <p class="text-[10px] text-brand-yellow font-medium truncate">Senior BIM Manager</p>
-        </div>
-      </div>
-
-      <!-- NAV BUTTONS (SUSUN DI BELAH KIRI) -->
-      <div class="px-3 space-y-1.5">
-        <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">Menu Utama</p>
-
-        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active w-full text-left bg-brand-primary text-white font-bold py-3 px-3.5 rounded-xl flex items-center space-x-3 text-xs transition shadow-md border-l-4 border-brand-yellow">
-          <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0 text-brand-yellow"></i>
-          <span>1. Dashboard Projek</span>
-        </button>
-
-        <button onclick="switchTab('laporan')" id="tab-laporan" class="tab-btn w-full text-left text-slate-300 hover:text-white hover:bg-slate-800 font-medium py-3 px-3.5 rounded-xl flex items-center space-x-3 text-xs transition">
-          <i data-lucide="clipboard-text" class="w-4 h-4 shrink-0"></i>
-          <span>2. Laporan Harian Drafter</span>
-        </button>
-
-        <button onclick="switchTab('checklist')" id="tab-checklist" class="tab-btn w-full text-left text-slate-300 hover:text-white hover:bg-slate-800 font-medium py-3 px-3.5 rounded-xl flex items-center space-x-3 text-xs transition">
-          <i data-lucide="check-square" class="w-4 h-4 shrink-0"></i>
-          <span>3. Checklist Scan to BIM V2</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Sidebar Bottom Controls -->
-    <div class="p-4 border-t border-slate-800 space-y-2">
-      <!-- Live Google Sheet Button -->
-      <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRs4qLMVZWv6J__EfhLmyu3owvC3zRt40W3S_oEpS3HNyhBcDwnMKyBAE1c9XLuhrEbJEcEt2bMoEgt/pubhtml" target="_blank" title="Buka Google Sheet Database" class="w-full flex items-center justify-center space-x-2 text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 py-2 rounded-xl border border-emerald-500/30 transition">
-        <i data-lucide="database" class="w-4 h-4"></i>
-        <span>Database Live</span>
-      </a>
-
-      <!-- Theme Switcher Button -->
-      <button id="themeToggle" class="w-full flex items-center justify-center space-x-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-brand-yellow border border-slate-700 transition text-xs font-semibold">
-        <i data-lucide="sun" id="themeIconSun" class="w-4 h-4 hidden"></i>
-        <i data-lucide="moon" id="themeIconMoon" class="w-4 h-4"></i>
-        <span id="themeToggleText">Tukar Mod Tema</span>
-      </button>
-    </div>
-
-  </aside>
-
-  <!-- MAIN CONTENT AREA (RIGHT SIDE) -->
-  <main class="flex-grow max-w-full w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 overflow-x-hidden">
-
-    <!-- ========================================== -->
-    <!-- TAB 1: DASHBOARD FAIL PROJEK -->
-    <!-- ========================================== -->
-    <section id="content-dashboard" class="space-y-6">
-      
-      <!-- Top Action & KPI Summary -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Ikhtisar Perjalanan Fail Projek</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Pantau pergerakan fail scan-to-BIM, status tapak, sehingga penyediaan sheet final.</p>
-        </div>
-        
-        <button onclick="openModal('modalProject')" class="bg-brand-primary hover:bg-brand-hoverblue text-white font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-brand-primary/30 flex items-center justify-center space-x-2 transition transform active:scale-95 border border-brand-yellow/40">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-yellow"></i>
-          <span>Daftar Fail Projek Baharu</span>
-        </button>
-      </div>
-
-      <!-- KPI METRIC CARDS (FULL WIDTH ROW) -->
-      <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <!-- Total Files Registered -->
-        <div class="col-span-2 md:col-span-2 bg-gradient-to-br from-brand-navy to-slate-900 text-white p-4 rounded-2xl shadow border border-slate-700/60 relative overflow-hidden">
-          <div class="absolute -right-4 -bottom-4 opacity-10 text-brand-yellow">
-            <i data-lucide="folder-archive" class="w-32 h-32"></i>
-          </div>
-          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Jumlah Fail Berdaftar</p>
-          <h3 id="stat-total" class="text-3xl sm:text-4xl font-extrabold text-brand-yellow mt-1">0</h3>
-          <p class="text-[11px] text-emerald-400 mt-2 flex items-center space-x-1">
-            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
-            <span>Terkini & Aktif dalam pangkalan data</span>
-          </p>
-        </div>
-
-        <!-- Status: Belum Mula -->
-        <div class="bg-white dark:bg-brand-carddark p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span class="text-xs font-semibold">Belum Mula</span>
-            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-          </div>
-          <h4 id="stat-belum" class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-2">0</h4>
-          <span class="text-[10px] text-slate-400">Perancangan / Queue</span>
-        </div>
-
-        <!-- Status: On-Site -->
-        <div class="bg-white dark:bg-brand-carddark p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-amber-500">
-            <span class="text-xs font-semibold">On-Site</span>
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-          </div>
-          <h4 id="stat-onsite" class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-2">0</h4>
-          <span class="text-[10px] text-slate-400">Laser Scanning/UAV</span>
-        </div>
-
-        <!-- Status: Processing -->
-        <div class="bg-white dark:bg-brand-carddark p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-blue-500">
-            <span class="text-xs font-semibold">Processing</span>
-            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-          </div>
-          <h4 id="stat-processing" class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-2">0</h4>
-          <span class="text-[10px] text-slate-400">Registration/Pointcloud</span>
-        </div>
-
-        <!-- Status: Drafting & Sheet -->
-        <div class="bg-white dark:bg-brand-carddark p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-purple-500">
-            <span class="text-xs font-semibold">Drafting / Sheet</span>
-            <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
-          </div>
-          <h4 id="stat-drafting" class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-2">0</h4>
-          <span class="text-[10px] text-slate-400">3D BIM Modeling / QC</span>
-        </div>
-
-        <!-- Status: Siap / Selesai (ADDED) -->
-        <div class="bg-white dark:bg-brand-carddark p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-emerald-500">
-            <span class="text-xs font-semibold">Siap / Selesai</span>
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          </div>
-          <h4 id="stat-siap" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">0</h4>
-          <span class="text-[10px] text-slate-400">Diserahkan & QA 100%</span>
-        </div>
-      </div>
-
-      <!-- VERTICAL STACKED LAYOUT (KEDUA-DUA BAHAGIAN DISUSUN KE BAWAH) -->
-      <div class="flex flex-col space-y-6">
-        
-        <!-- 1. Table Projects (Lebar Penuh) -->
-        <div class="w-full bg-white dark:bg-brand-carddark rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-          
-          <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="flex items-center space-x-2">
-              <i data-lucide="folder-open" class="w-5 h-5 text-brand-primary dark:text-brand-yellow"></i>
-              <h3 class="font-bold text-slate-900 dark:text-white">Senarai Fail Projek Aktif</h3>
-            </div>
-
-            <!-- Filter Status -->
-            <div class="flex items-center space-x-2">
-              <span class="text-xs text-slate-500">Tapis Status:</span>
-              <select id="filterStatus" onchange="renderProjects()" class="bg-slate-100 dark:bg-brand-navy text-xs rounded-lg px-3 py-1.5 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                <option value="ALL">Semua Fail</option>
-                <option value="Belum Mula">Belum Mula</option>
-                <option value="On-Site">On-Site</option>
-                <option value="Processing">Processing</option>
-                <option value="Drafting">Drafting</option>
-                <option value="Sheet Final">Sheet Final</option>
-                <option value="Siap / Selesai">Siap / Selesai</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Table Container -->
-          <div class="overflow-x-auto flex-grow">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="bg-slate-50 dark:bg-brand-navy/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider">
-                  <th class="p-3.5">No. Fail / Tajuk Projek</th>
-                  <th class="p-3.5">Tempoh Kerja</th>
-                  <th class="p-3.5">Status Fail</th>
-                  <th class="p-3.5">PIC Terlibat</th>
-                  <th class="p-3.5">Progress QC</th>
-                  <th class="p-3.5 text-center">Tindakan</th>
-                </tr>
-              </thead>
-              <tbody id="projectTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
-                <!-- JS populated -->
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-
-        <!-- 2. Chart Agihan Status (Disusun Ke Bawah) -->
-        <div class="w-full bg-white dark:bg-brand-carddark p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <h3 class="font-bold text-slate-900 dark:text-white mb-4 text-sm flex items-center space-x-2">
-            <i data-lucide="pie-chart" class="w-4 h-4 text-brand-primary dark:text-brand-yellow"></i>
-            <span>Agihan Status Fail Projek</span>
-          </h3>
-          <div class="relative h-56">
-            <canvas id="statusChart"></canvas>
-          </div>
-        </div>
-
-        <!-- 3. Fail Projek Yang Telah Siap / Diserahkan (NEW TABLE ADDED) -->
-        <div class="w-full bg-white dark:bg-brand-carddark rounded-2xl border border-emerald-500/30 shadow-sm overflow-hidden flex flex-col">
-          <div class="p-4 sm:p-5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i>
-              <h3 class="font-bold text-slate-900 dark:text-white">Arkaib Fail Projek Yang Telah Siap</h3>
-            </div>
-            <span class="text-xs bg-emerald-500 text-white font-bold px-2.5 py-0.5 rounded-full" id="completedBadgeCount">0 Fail</span>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="bg-slate-50 dark:bg-brand-navy/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider">
-                  <th class="p-3.5">No. Fail / Tajuk Projek</th>
-                  <th class="p-3.5">Tarikh Siap</th>
-                  <th class="p-3.5">Skor QC Checklist</th>
-                  <th class="p-3.5">PIC Bertanggungjawab</th>
-                  <th class="p-3.5 text-center">Status Final</th>
-                </tr>
-              </thead>
-              <tbody id="completedProjectTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
-                <!-- JS populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 4. Staff & PIC List (Disusun Ke Bawah) -->
-        <div class="w-full bg-white dark:bg-brand-carddark p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center space-x-2">
-              <i data-lucide="users" class="w-4 h-4 text-brand-primary dark:text-brand-yellow"></i>
-              <span>Senarai Staff & PIC Ukur/BIM</span>
-            </h3>
-            <button onclick="openModal('modalStaff')" class="text-[11px] text-brand-primary dark:text-brand-yellow font-semibold hover:underline flex items-center space-x-1">
-              <i data-lucide="user-plus" class="w-3 h-3"></i>
-              <span>Tambah Staff</span>
-            </button>
-          </div>
-          <div id="staffListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-1">
-            <!-- JS Populated -->
-          </div>
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- ========================================== -->
-    <!-- TAB 2: LAPORAN HARIAN DRAFTER -->
-    <!-- ========================================== -->
-    <section id="content-laporan" class="hidden space-y-6">
-      
-      <div class="bg-white dark:bg-brand-carddark p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div class="border-b border-slate-200 dark:border-slate-800 pb-4 mb-6">
-          <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-            <i data-lucide="file-edit" class="w-5 h-5 text-brand-primary dark:text-brand-yellow"></i>
-            <span>Borang Laporan Harian Drafter / Modeler</span>
-          </h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Isi kemajuan tugasan harian anda. Peratusan (%) dan status akan mengemaskini fail projek utama secara automatik.</p>
-        </div>
-
-        <form id="dailyReportForm" onsubmit="handleDailyReportSubmit(event)" class="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
-          
-          <!-- Staff Name -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nama Drafter / Modeler <span class="text-rose-500">*</span></label>
-            <select id="rptStaff" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-              <option value="">-- Pilih Nama --</option>
-            </select>
-          </div>
-
-          <!-- Department -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Jabatan / Bahagian</label>
-            <select id="rptDept" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-              <option value="Scan to BIM Unit">Scan to BIM Unit</option>
-              <option value="Terrestrial Laser Scanning (TLS)">Terrestrial Laser Scanning (TLS)</option>
-              <option value="UAV & Drone Photogrammetry">UAV & Drone Photogrammetry</option>
-              <option value="Kadaster & Ukur Kejuruteraan">Kadaster & Ukur Kejuruteraan</option>
-              <option value="QA/QC Check">QA/QC Check</option>
-            </select>
-          </div>
-
-          <!-- File Project Select -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nombor Fail Projek <span class="text-rose-500">*</span></label>
-            <select id="rptFileNo" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-              <option value="">-- Pilih Fail Projek --</option>
-            </select>
-          </div>
-
-          <!-- Task Harian -->
-          <div class="md:col-span-2">
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Task Harian Yang Dibuat <span class="text-rose-500">*</span></label>
-            <input type="text" id="rptTask" placeholder="Contoh: Modeling Architectural LOD300 Aras 2 & Cleaning Pointcloud Block A" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-          </div>
-
-          <!-- Hours Spent -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Jam Dibelanjakan (Hours)</label>
-            <input type="number" step="0.5" id="rptHours" value="8" min="0.5" max="24" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-          </div>
-
-          <!-- Percentage Accomplished -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Kemajuan Projek Terkini (%)</label>
-            <input type="number" id="rptPercent" min="0" max="100" placeholder="0 - 100" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-          </div>
-
-          <!-- Status Kemaskini Fail -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Kemaskini Status Fail Projek</label>
-            <select id="rptStatusUpdate" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-              <option value="Belum Mula">Belum Mula</option>
-              <option value="On-Site">On-Site</option>
-              <option value="Processing">Processing</option>
-              <option value="Drafting">Drafting</option>
-              <option value="Sheet Final">Sheet Final</option>
-              <option value="Siap / Selesai">Siap / Selesai</option>
-            </select>
-          </div>
-
-          <!-- Deadline -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Sasaran Siap / Deadline Target</label>
-            <input type="date" id="rptDeadline" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-primary">
-          </div>
-
-          <!-- Submit Button -->
-          <div class="md:col-span-3 flex justify-end pt-2">
-            <button type="submit" class="bg-brand-primary hover:bg-brand-hoverblue text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">
-              <i data-lucide="send" class="w-4 h-4 text-brand-yellow"></i>
-              <span>Hantar Laporan Harian</span>
-            </button>
-          </div>
-
-        </form>
-      </div>
-
-      <!-- RECENT DAILY REPORTS LOG TABLE -->
-      <div class="bg-white dark:bg-brand-carddark rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center space-x-2">
-            <i data-lucide="history" class="w-4 h-4 text-brand-primary dark:text-brand-yellow"></i>
-            <span>Rekod Laporan Harian Terkini</span>
-          </h3>
-          <span class="text-xs text-slate-500">Auto-tally ke Dashboard Projek</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-50 dark:bg-brand-navy/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider">
-                <th class="p-3.5">Tarikh / Masa</th>
-                <th class="p-3.5">Drafter & Dept</th>
-                <th class="p-3.5">No. Fail Projek</th>
-                <th class="p-3.5">Tugasan Dijalankan</th>
-                <th class="p-3.5">Jam</th>
-                <th class="p-3.5">% Progress</th>
-                <th class="p-3.5">Status Projek</th>
-              </tr>
-            </thead>
-            <tbody id="dailyReportsTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
-              <!-- JS Populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- ========================================== -->
-    <!-- TAB 3: CHECKLIST DAN SERAHAN SCAN TO BIM -->
-    <!-- ========================================== -->
-    <section id="content-checklist" class="hidden space-y-6">
-      
-      <div class="bg-white dark:bg-brand-carddark p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        
-        <!-- Header Selector -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-6 gap-4">
-          <div>
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-              <i data-lucide="check-check" class="w-5 h-5 text-brand-primary dark:text-brand-yellow"></i>
-              <span>Checklist Quality Control & Serahan Projek (Scan to BIM V2)</span>
-            </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Disemak mengikut piawaian lengkap fail <strong>Checklist Scan to BIM V2.xlsx</strong> (Field Survey hingga Final Sheet).</p>
-          </div>
-
-          <div class="flex items-center space-x-3">
-            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Pilih Projek untuk QC:</label>
-            <select id="chkProjectSelect" onchange="loadProjectChecklist()" class="bg-slate-100 dark:bg-brand-navy text-xs rounded-xl px-3 py-2 border border-slate-300 dark:border-slate-700 font-bold text-brand-primary dark:text-brand-yellow focus:outline-none focus:ring-2 focus:ring-brand-primary">
-              <!-- JS Populated -->
-            </select>
-          </div>
-        </div>
-
-        <!-- PROGRESS BAR DISPLAY FOR CHECKLIST -->
-        <div class="bg-slate-50 dark:bg-brand-navy p-4 rounded-xl border border-slate-200 dark:border-slate-800 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex-grow space-y-1">
-            <div class="flex justify-between text-xs font-bold">
-              <span class="text-slate-700 dark:text-slate-200">Skor Keseluruhan Semakan Kualiti (QA/QC Checklist)</span>
-              <span id="chkScoreText" class="text-brand-primary dark:text-brand-yellow text-sm">0% Complete</span>
-            </div>
-            <div class="w-full bg-slate-200 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
-              <div id="chkProgressBar" class="bg-gradient-to-r from-brand-primary to-emerald-400 h-full w-0 transition-all duration-500"></div>
-            </div>
-          </div>
-          <div class="flex items-center space-x-2 text-xs">
-            <span class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30" id="chkStatusBadge">Drafting Mode</span>
-          </div>
-        </div>
-
-        <!-- CHECKLIST SECTIONS -->
-        <div class="space-y-6" id="checklistContainer">
-          <!-- JS will populate full excel checklist items -->
-        </div>
-
-        <!-- Save Checklist Action -->
-        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-          <button onclick="saveProjectChecklist()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg flex items-center space-x-2 transition">
-            <i data-lucide="save" class="w-4 h-4"></i>
-            <span>Simpan Status Checklist Excel & Kemaskini % Projek</span>
-          </button>
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- ========================================== -->
-  <!-- MODALS -->
-  <!-- ========================================== -->
-
-  <!-- MODAL: ADD PROJECT FILE -->
-  <div id="modalProject" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white dark:bg-brand-carddark w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden text-xs">
-      
-      <!-- Modal Header -->
-      <div class="bg-brand-navy p-4 text-white flex items-center justify-between border-b border-brand-primary/30">
-        <div class="flex items-center space-x-2">
-          <i data-lucide="folder-plus" class="w-5 h-5 text-brand-yellow"></i>
-          <h3 class="font-bold text-sm">Daftar Fail Projek Baharu</h3>
-        </div>
-        <button onclick="closeModal('modalProject')" class="text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <!-- Modal Form -->
-      <form id="addProjectForm" onsubmit="handleCreateProject(event)" class="p-6 space-y-4">
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Project Title -->
-          <div class="md:col-span-2">
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Tajuk Projek <span class="text-rose-500">*</span></label>
-            <input type="text" id="projTitle" placeholder="Contoh: Cadastral & Scan to BIM Menara 8, Putrajaya" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-          </div>
-
-          <!-- File Number -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nombor Fail Projek <span class="text-rose-500">*</span></label>
-            <input type="text" id="projFileNo" placeholder="JUPEM/STB/2026/089" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-          </div>
-
-          <!-- Initial Status -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Status Awal Projek</label>
-            <select id="projStatus" class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-              <option value="Belum Mula">Belum Mula</option>
-              <option value="On-Site">On-Site</option>
-              <option value="Processing">Processing</option>
-              <option value="Drafting">Drafting</option>
-              <option value="Sheet Final">Sheet Final</option>
-              <option value="Siap / Selesai">Siap / Selesai</option>
-            </select>
-          </div>
-
-          <!-- Start Date -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Tarikh Start Kerja <span class="text-rose-500">*</span></label>
-            <input type="date" id="projStart" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-          </div>
-
-          <!-- End Date -->
-          <div>
-            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Tarikh Akhir Kerja <span class="text-rose-500">*</span></label>
-            <input type="date" id="projEnd" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-          </div>
-        </div>
-
-        <!-- Client Brief Attachment -->
-        <div>
-          <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Attachment Client Brief / Dokumen Spesifikasi</label>
-          <input type="file" id="projAttachment" class="w-full text-xs text-slate-500 bg-slate-50 dark:bg-brand-navy border border-slate-300 dark:border-slate-700 rounded-xl p-2 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-primary file:text-white hover:file:bg-brand-hoverblue">
-          <p class="text-[10px] text-slate-400 mt-1">PDF, DOCX, ZIP atau Scan Map Spesifikasi client.</p>
-        </div>
-
-        <!-- Staff Tick Name with Add Option -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <label class="font-semibold text-slate-700 dark:text-slate-300">Selected Staff Terlibat (Tick PIC):</label>
-            <button type="button" onclick="openModal('modalStaff')" class="text-brand-primary dark:text-brand-yellow font-bold text-[11px] flex items-center space-x-1 hover:underline">
-              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-              <span>+ Tambah Nama Staff</span>
-            </button>
-          </div>
-          <div id="staffCheckboxContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 dark:bg-brand-navy p-3 rounded-xl border border-slate-300 dark:border-slate-700 max-h-32 overflow-y-auto">
-            <!-- JS Populated checkboxes -->
-          </div>
-        </div>
-
-        <!-- Buttons -->
-        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-          <button type="button" onclick="closeModal('modalProject')" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold">Batal</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold shadow-md hover:bg-brand-hoverblue">Simpan Fail Projek</button>
-        </div>
-
-      </form>
-    </div>
+<main class="wrap">
+  <div class="tabbar">
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Modul">
+      <button role="tab" data-tab="dashboard" class="on" aria-selected="true"><svg class="i"><use href="#i-grid"/></svg><span>Dashboard projek</span></button>
+      <button role="tab" data-tab="laporan" aria-selected="false"><svg class="i"><use href="#i-report"/></svg><span>Laporan harian</span></button>
+      <button role="tab" data-tab="checklist" aria-selected="false"><svg class="i"><use href="#i-check"/></svg><span>Checklist BIM V2</span></button>
+    </nav>
+    <div class="sp"></div>
+    <a class="btn" id="dbLink" target="_blank" rel="noopener noreferrer" title="Buka Google Sheet database"><svg class="i"><use href="#i-db"/></svg><span>Database live</span></a>
   </div>
 
-  <!-- MODAL: ADD NEW STAFF -->
-  <div id="modalStaff" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white dark:bg-brand-carddark w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden text-xs">
-      
-      <div class="bg-brand-navy p-4 text-white flex items-center justify-between border-b border-brand-primary/30">
-        <div class="flex items-center space-x-2">
-          <i data-lucide="user-plus" class="w-5 h-5 text-brand-yellow"></i>
-          <h3 class="font-bold text-sm">Tambah Nama Staff / PIC</h3>
+  <!-- ================= TAB 1: DASHBOARD ================= -->
+  <section id="v-dashboard">
+    <div class="hero">
+      <svg class="contour" viewBox="0 0 520 300" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
+        <g transform="rotate(-10 380 150)">
+          <ellipse cx="380" cy="150" rx="40" ry="24"/><ellipse cx="378" cy="152" rx="78" ry="48"/><ellipse cx="374" cy="154" rx="118" ry="74"/>
+          <ellipse cx="370" cy="156" rx="160" ry="100"/><ellipse cx="366" cy="158" rx="204" ry="128"/><ellipse cx="362" cy="160" rx="250" ry="158"/>
+        </g>
+        <path d="M350 150h60M380 128v44" stroke-width="1.6"/>
+      </svg>
+      <div class="hero-head">
+        <div>
+          <h2>Perjalanan fail Scan to BIM</h2>
+          <p id="heroSub">Pantau fail dari kerja tapak, pemprosesan pointcloud hingga sheet final.</p>
         </div>
-        <button onclick="closeModal('modalStaff')" class="text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <div class="sp"></div>
+        <div class="chips" id="heroChips"></div>
+        <button class="btn p" data-open="mProject"><svg class="i"><use href="#i-plus"/></svg><span>Daftar fail baharu</span></button>
       </div>
-
-      <form id="addStaffForm" onsubmit="handleCreateStaff(event)" class="p-5 space-y-4">
-        <div>
-          <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nama Penuh Staff</label>
-          <input type="text" id="staffName" placeholder="Contoh: Muhammad Ammar" required class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-        </div>
-
-        <div>
-          <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Jawatan / Peranan</label>
-          <select id="staffRole" class="w-full bg-slate-50 dark:bg-brand-navy p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-            <option value="Senior Modeler / Drafter">Senior Modeler / Drafter</option>
-            <option value="BIM Coordinator">BIM Coordinator</option>
-            <option value="TLS / Laser Scanner Surveyor">TLS / Laser Scanner Surveyor</option>
-            <option value="UAV Pilot & Specialist">UAV Pilot & Specialist</option>
-            <option value="QA/QC Checker">QA/QC Checker</option>
-          </select>
-        </div>
-
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeModal('modalStaff')" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Batal</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold">Simpan Staff</button>
-        </div>
-      </form>
-
+      <div class="kpis" id="kpis"></div>
     </div>
-  </div>
 
-
-  <!-- JAVASCRIPT LOGIC -->
-  <script>
-    // ==========================================
-    // DATA STORE & INITIALIZATION
-    // ==========================================
-    let statusChart = null;
-
-    // Default Sample Data
-    const defaultProjects = [
-      {
-        id: 'proj-101',
-        title: 'Cadastral & Scan to BIM Menara 8, Putrajaya',
-        fileNo: 'JUPEM/STB/2026/089',
-        start: '2026-02-01',
-        end: '2026-03-15',
-        status: 'Drafting',
-        staffIds: ['stf-1', 'stf-2'],
-        attachment: 'Client_Brief_Menara8.pdf',
-        progressPercent: 65,
-        checklistScores: {}
-      },
-      {
-        id: 'proj-102',
-        title: 'TLS As-Built Survey Hospital Sultanah Aminah',
-        fileNo: 'JUPEM/TLS/2026/014',
-        start: '2026-01-10',
-        end: '2026-02-28',
-        status: 'On-Site',
-        staffIds: ['stf-3'],
-        attachment: 'Spek_Scan_Hospital.pdf',
-        progressPercent: 30,
-        checklistScores: {}
-      },
-      {
-        id: 'proj-100',
-        title: 'Scan to BIM & 2D Cadastral Wisma Ukur',
-        fileNo: 'JUPEM/STB/2025/112',
-        start: '2025-11-01',
-        end: '2026-01-15',
-        status: 'Siap / Selesai',
-        staffIds: ['stf-1', 'stf-3'],
-        attachment: 'Final_Handover_WismaUkur.pdf',
-        progressPercent: 100,
-        checklistScores: {}
-      }
-    ];
-
-    const defaultStaff = [
-      { id: 'stf-1', name: 'Ahmad Modeler', role: 'Senior Modeler / Drafter' },
-      { id: 'stf-2', name: 'Siti BIM Spec', role: 'BIM Coordinator' },
-      { id: 'stf-3', name: 'Khairul Surveyor', role: 'TLS / Laser Scanner Surveyor' }
-    ];
-
-    const defaultReports = [
-      {
-        date: '2026-02-22 17:30',
-        staffName: 'Ahmad Modeler',
-        dept: 'Scan to BIM Unit',
-        fileNo: 'JUPEM/STB/2026/089',
-        task: 'Kemaskini Wall Alignment & Section Elevations Sheet Aras 2',
-        hours: 8,
-        percent: 65,
-        status: 'Drafting'
-      }
-    ];
-
-    // 73 ITEMS SCAN TO BIM CHECKLIST SPECIFICATION
-    const scanToBimChecklist = [
-      {
-        category: "1. Sheet & Titleblock",
-        items: [
-          { id: "chk_1", sub: "Sheet - Umum", text: "Nama lukisan berserta skala A3 yang betul [0:00 (A1), 0:00 (A3)]" },
-          { id: "chk_2", sub: "Sheet - Umum", text: "Dimension grid & level" },
-          { id: "chk_3", sub: "Sheet - Umum", text: "Speksifikasi pelan" },
-          { id: "chk_4", sub: "Sheet - Titleblock", text: "Tajuk projek" },
-          { id: "chk_5", sub: "Sheet - Titleblock", text: "Logo & alamat pemilik" },
-          { id: "chk_6", sub: "Sheet - Titleblock", text: "Logo & alamat pengurus projek" },
-          { id: "chk_7", sub: "Sheet - Titleblock", text: "Logo & alamat company" },
-          { id: "chk_8", sub: "Sheet - Titleblock", text: "Nama LSr & tanda tangan" },
-          { id: "chk_9", sub: "Sheet - Titleblock", text: "Nama Arkitek & tanda tangan (*jika perlu)" },
-          { id: "chk_10", sub: "Sheet - Titleblock", text: "Nama bangunan" },
-          { id: "chk_11", sub: "Sheet - Titleblock", text: "Nama lukisan (pelan tapak, pelan lantai aras, keratan rentas, pandangan)" },
-          { id: "chk_12", sub: "Sheet - Titleblock", text: "Ruang nama (Diukur, Dilukis, Disemak oleh:)" },
-          { id: "chk_13", sub: "Sheet - Titleblock", text: "Skala" },
-          { id: "chk_14", sub: "Sheet - Titleblock", text: "Tarikh" },
-          { id: "chk_15", sub: "Sheet - Titleblock", text: "No. Lukisan" },
-          { id: "chk_16", sub: "Sheet - Legend", text: "Jadual nama & keluasan ruang" },
-          { id: "chk_17", sub: "Sheet - Legend", text: "Kemasan dinding" },
-          { id: "chk_18", sub: "Sheet - Legend", text: "Kemasan lantai & siling" },
-          { id: "chk_19", sub: "Sheet - Legend", text: "Fire Protection System (FPS) *jika perlu" }
-        ]
-      },
-      {
-        category: "2. Tag Ruang & Sanitary Ware",
-        items: [
-          { id: "chk_20", sub: "Tag Ruang", text: "Nama Ruang (*termasuk tangga, koridor, ruang terbuka & etc.)" },
-          { id: "chk_21", sub: "Tag Ruang", text: "Kemasan Lantai" },
-          { id: "chk_22", sub: "Tag Ruang", text: "Kemasan Siling" },
-          { id: "chk_23", sub: "Tag Ruang", text: "Ceiling Height" },
-          { id: "chk_24", sub: "Tag Ruang", text: "Keluasan (m²) (*pastikan line boundary dalam ruang yang betul)" },
-          { id: "chk_25", sub: "Tag Ruang", text: "Finish Floor Level (FFL: 00.000 *unit meter)" },
-          { id: "chk_26", sub: "Tag Ruang", text: "Kod tag ruang *jika perlu" },
-          { id: "chk_27", sub: "Sanitary Ware", text: "Water Closet (wc)" },
-          { id: "chk_28", sub: "Sanitary Ware", text: "Water Tap (t)" },
-          { id: "chk_29", sub: "Sanitary Ware", text: "Shower (sh)" },
-          { id: "chk_30", sub: "Sanitary Ware", text: "Floor Trap (ft)" },
-          { id: "chk_31", sub: "Sanitary Ware", text: "Sink/basin" }
-        ]
-      },
-      {
-        category: "3. Annotation, Line & Built-in Structure",
-        items: [
-          { id: "chk_32", sub: "Annotation", text: "Stair path arrow UP/DN" },
-          { id: "chk_33", sub: "Annotation", text: "Bilangan anak tangga" },
-          { id: "chk_34", sub: "Annotation", text: "Speksifikasi setiap tangga (jenis tangga, riser & tread)" },
-          { id: "chk_35", sub: "Annotation", text: "Drop lantai UP/DN berserta nilai" },
-          { id: "chk_36", sub: "Annotation", text: "Ramp UP/DN + hatching arrow (*jika ramp mempunyai groove line on site)" },
-          { id: "chk_37", sub: "Annotation", text: "Arah 'fall' air hujan + slope (FALL 00°)" },
-          { id: "chk_38", sub: "Line", text: "Hidden line bukaan pintu & tingkap (*Section & Elevation Plans)" },
-          { id: "chk_39", sub: "Line", text: "Glaze pintu kaca & tingkap (*Section & Elevation Plans)" },
-          { id: "chk_40", sub: "Line", text: "Hidden line Void + text 'VOID'" },
-          { id: "chk_41", sub: "Line", text: "Cut line tangga yang terpotong" },
-          { id: "chk_42", sub: "Line", text: "Dotted line tangga yang terpotong" },
-          { id: "chk_43", sub: "Built-in Structure", text: "Workstation (*jika ada)" },
-          { id: "chk_44", sub: "Built-in Structure", text: "Sink countertop (*jika ada)" },
-          { id: "chk_45", sub: "Built-in Structure", text: "Fixed cabinet (*jika ada)" },
-          { id: "chk_46", sub: "Built-in Structure", text: "Tempat wudhuk + floor trap & water tap (*jika ada)" }
-        ]
-      },
-      {
-        category: "4. Bumbung, Hatching & Tags",
-        items: [
-          { id: "chk_47", sub: "Bumbung", text: "Rainwater downpipe (RWDP) (*Floor, Roof, Section & Elevation Plans)" },
-          { id: "chk_48", sub: "Bumbung", text: "Roof gutter" },
-          { id: "chk_49", sub: "Bumbung", text: "Ridge cap/valley" },
-          { id: "chk_50", sub: "Bumbung", text: "Longkang + lubang air di flatroof" },
-          { id: "chk_51", sub: "Hatching", text: "Lantai jubin di tandas (*berdasarkan saiz jubin)" },
-          { id: "chk_52", sub: "Hatching", text: "Bumbung (tiles, metal deck & etc.)" },
-          { id: "chk_53", sub: "Hatching", text: "Cut section dinding batu bata" },
-          { id: "chk_54", sub: "Hatching", text: "Cut section concreate column & beam" },
-          { id: "chk_55", sub: "Hatching", text: "Lantai kayu (*jika ada)" },
-          { id: "chk_56", sub: "Hatching", text: "Dinding jubin di tandas (*Section plan)" },
-          { id: "chk_57", sub: "Hatching", text: "Hatching dinding di elevation plan (*jika ada: batu bata, kayu, groove line)" },
-          { id: "chk_58", sub: "Hatching", text: "Hatching siling di RCP (*jika ada: siling gantung, timber strip, etc.)" },
-          { id: "chk_59", sub: "Tag", text: "Door Tag - Floor plans" },
-          { id: "chk_60", sub: "Tag", text: "Door Tag - Section plans" },
-          { id: "chk_61", sub: "Tag", text: "Door Tag - Elevation plans" },
-          { id: "chk_62", sub: "Tag", text: "Window Tag - Floor plans" },
-          { id: "chk_63", sub: "Tag", text: "Window Tag - Section plans" },
-          { id: "chk_64", sub: "Tag", text: "Window Tag - Elevation plans" },
-          { id: "chk_65", sub: "Tag", text: "Wall Tag - Floor plans" }
-        ]
-      },
-      {
-        category: "5. Site Plan, Jadual & Revit Link",
-        items: [
-          { id: "chk_66", sub: "Site Plan", text: "Jadual petunjuk & warna hatching" },
-          { id: "chk_67", sub: "Site Plan", text: "Boundary line" },
-          { id: "chk_68", sub: "Site Plan", text: "Fire hydrant" },
-          { id: "chk_69", sub: "Site Plan", text: "Landscape / green area" },
-          { id: "chk_70", sub: "Jadual Bukaan", text: "Hidden line bukaan pintu & tingkap" },
-          { id: "chk_71", sub: "Jadual Bukaan", text: "Hidden line Void + text 'VOID'" },
-          { id: "chk_72", sub: "Jadual Bukaan", text: "Glaze pintu kaca & tingkap" },
-          { id: "chk_73", sub: "Revit Link", text: "Model Mekanikal (Peralatan Bomba & Lif) (*jika ada)" }
-        ]
-      }
-    ];
-
-    // LocalStorage Helper
-    let projectData = JSON.parse(localStorage.getItem('stb_projects')) || defaultProjects;
-    let staffData = JSON.parse(localStorage.getItem('stb_staff')) || defaultStaff;
-    let reportData = JSON.parse(localStorage.getItem('stb_reports')) || defaultReports;
-
-    function saveData() {
-      localStorage.setItem('stb_projects', JSON.stringify(projectData));
-      localStorage.setItem('stb_staff', JSON.stringify(staffData));
-      localStorage.setItem('stb_reports', JSON.stringify(reportData));
-    }
-
-    // ==========================================
-    // NAVIGATION & TAB SWITCHING (UPDATED FOR LEFT SIDEBAR)
-    // ==========================================
-    function switchTab(tabName) {
-      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active', 'bg-brand-primary', 'text-white', 'font-bold', 'shadow-md', 'border-l-4', 'border-brand-yellow');
-        btn.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-slate-800', 'font-medium');
-        
-        // Reset icon color
-        const icon = btn.querySelector('i');
-        if (icon) icon.classList.remove('text-brand-yellow');
-      });
-
-      const activeSection = document.getElementById(`content-${tabName}`);
-      const activeBtn = document.getElementById(`tab-${tabName}`);
-
-      if (activeSection) activeSection.classList.remove('hidden');
-      if (activeBtn) {
-        activeBtn.classList.add('active', 'bg-brand-primary', 'text-white', 'font-bold', 'shadow-md', 'border-l-4', 'border-brand-yellow');
-        activeBtn.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-slate-800', 'font-medium');
-
-        // Highlight active icon
-        const icon = activeBtn.querySelector('i');
-        if (icon) icon.classList.add('text-brand-yellow');
-      }
-
-      if (tabName === 'checklist') loadProjectChecklist();
-    }
-
-    // Modal Control
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-    // ==========================================
-    // RENDER FUNCTIONS
-    // ==========================================
-    function renderAll() {
-      renderStats();
-      renderProjects();
-      renderStaffList();
-      renderDailyReportDropdowns();
-      renderDailyReportsTable();
-      renderChecklistSelect();
-      renderChart();
-    }
-
-    function renderStats() {
-      document.getElementById('stat-total').innerText = projectData.length;
-      document.getElementById('stat-belum').innerText = projectData.filter(p => p.status === 'Belum Mula').length;
-      document.getElementById('stat-onsite').innerText = projectData.filter(p => p.status === 'On-Site').length;
-      document.getElementById('stat-processing').innerText = projectData.filter(p => p.status === 'Processing').length;
-      document.getElementById('stat-drafting').innerText = projectData.filter(p => p.status === 'Drafting' || p.status === 'Sheet Final').length;
-      document.getElementById('stat-siap').innerText = projectData.filter(p => p.status === 'Siap / Selesai').length;
-    }
-
-    function getStatusBadge(status) {
-      const styles = {
-        'Belum Mula': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-slate-300',
-        'On-Site': 'bg-amber-500/10 text-amber-500 border-amber-500/30',
-        'Processing': 'bg-blue-500/10 text-blue-500 border-blue-500/30',
-        'Drafting': 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-        'Sheet Final': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
-        'Siap / Selesai': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-extrabold'
-      };
-      return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${styles[status] || styles['Belum Mula']}">${status}</span>`;
-    }
-
-    function renderProjects() {
-      const filter = document.getElementById('filterStatus').value;
-      const tbody = document.getElementById('projectTableBody');
-      const completedBody = document.getElementById('completedProjectTableBody');
-      tbody.innerHTML = '';
-      completedBody.innerHTML = '';
-
-      const filtered = filter === 'ALL' ? projectData : projectData.filter(p => p.status === filter);
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Tiada fail projek direkodkan.</td></tr>`;
-      } else {
-        filtered.forEach(p => {
-          const staffNames = (p.staffIds || []).map(id => {
-            const stf = staffData.find(s => s.id === id);
-            return stf ? stf.name : '';
-          }).filter(Boolean).join(', ');
-
-          const row = document.createElement('tr');
-          row.className = 'hover:bg-slate-50 dark:hover:bg-brand-navy/40 transition';
-          row.innerHTML = `
-            <td class="p-3.5">
-              <div class="font-bold text-slate-900 dark:text-white">${p.title}</div>
-              <div class="text-[10px] text-slate-400 font-mono">${p.fileNo} ${p.attachment ? `• <span class="text-brand-primary dark:text-brand-yellow">📎 ${p.attachment}</span>` : ''}</div>
-            </td>
-            <td class="p-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">
-              ${p.start} <br><span class="text-slate-400">sehingga ${p.end}</span>
-            </td>
-            <td class="p-3.5 whitespace-nowrap">${getStatusBadge(p.status)}</td>
-            <td class="p-3.5 text-slate-600 dark:text-slate-300">${staffNames || '<span class="text-slate-400 italic">Belum di-assign</span>'}</td>
-            <td class="p-3.5">
-              <div class="flex items-center space-x-2">
-                <div class="w-16 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div class="bg-brand-primary dark:bg-brand-yellow h-full" style="width: ${p.progressPercent || 0}%"></div>
-                </div>
-                <span class="font-bold text-[11px] text-slate-700 dark:text-slate-200">${p.progressPercent || 0}%</span>
-              </div>
-            </td>
-            <td class="p-3.5 text-center">
-              <button onclick="deleteProject('${p.id}')" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/30" title="Padam Projek">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </td>
-          `;
-          tbody.appendChild(row);
-        });
-      }
-
-      // Render Dedicated Completed Projects Table
-      const completedList = projectData.filter(p => p.status === 'Siap / Selesai' || p.progressPercent === 100);
-      document.getElementById('completedBadgeCount').innerText = `${completedList.length} Fail`;
-
-      if (completedList.length === 0) {
-        completedBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">Belum ada fail yang siap sepenuhnya.</td></tr>`;
-      } else {
-        completedList.forEach(p => {
-          const staffNames = (p.staffIds || []).map(id => {
-            const stf = staffData.find(s => s.id === id);
-            return stf ? stf.name : '';
-          }).filter(Boolean).join(', ');
-
-          const row = document.createElement('tr');
-          row.className = 'hover:bg-slate-50 dark:hover:bg-brand-navy/40 transition bg-emerald-500/5';
-          row.innerHTML = `
-            <td class="p-3.5">
-              <div class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
-                <span>${p.title}</span>
-              </div>
-              <div class="text-[10px] text-slate-400 font-mono">${p.fileNo} ${p.attachment ? `• 📎 ${p.attachment}` : ''}</div>
-            </td>
-            <td class="p-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">${p.end}</td>
-            <td class="p-3.5">
-              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">100% QA Passed</span>
-            </td>
-            <td class="p-3.5 text-slate-600 dark:text-slate-300 text-[11px]">${staffNames || '-'}</td>
-            <td class="p-3.5 text-center">${getStatusBadge('Siap / Selesai')}</td>
-          `;
-          completedBody.appendChild(row);
-        });
-      }
-
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function renderStaffList() {
-      const container = document.getElementById('staffListContainer');
-      const checkboxContainer = document.getElementById('staffCheckboxContainer');
-      container.innerHTML = '';
-      checkboxContainer.innerHTML = '';
-
-      staffData.forEach(stf => {
-        // Staff Workload Count
-        const assignedProjects = projectData.filter(p => (p.staffIds || []).includes(stf.id)).length;
-
-        // Render Sidebar List
-        const div = document.createElement('div');
-        div.className = 'flex items-center justify-between bg-slate-50 dark:bg-brand-navy/60 p-2 rounded-xl text-xs border border-slate-200 dark:border-slate-800';
-        div.innerHTML = `
-          <div>
-            <p class="font-bold text-slate-800 dark:text-slate-200">${stf.name}</p>
-            <p class="text-[10px] text-slate-400">${stf.role}</p>
-          </div>
-          <span class="px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary dark:text-brand-yellow font-bold text-[10px]">
-            ${assignedProjects} Fail Projek
-          </span>
-        `;
-        container.appendChild(div);
-
-        // Render Checkboxes for Project Modal
-        const checkDiv = document.createElement('label');
-        checkDiv.className = 'flex items-center space-x-2 text-slate-700 dark:text-slate-300 text-xs cursor-pointer hover:text-brand-primary';
-        checkDiv.innerHTML = `
-          <input type="checkbox" value="${stf.id}" class="proj-staff-checkbox rounded border-slate-300 text-brand-primary focus:ring-brand-primary">
-          <span class="truncate">${stf.name}</span>
-        `;
-        checkboxContainer.appendChild(checkDiv);
-      });
-    }
-
-    function renderDailyReportDropdowns() {
-      const staffSel = document.getElementById('rptStaff');
-      const fileSel = document.getElementById('rptFileNo');
-
-      staffSel.innerHTML = '<option value="">-- Pilih Nama --</option>';
-      staffData.forEach(s => {
-        staffSel.innerHTML += `<option value="${s.name}">${s.name} (${s.role})</option>`;
-      });
-
-      fileSel.innerHTML = '<option value="">-- Pilih Fail Projek --</option>';
-      projectData.forEach(p => {
-        fileSel.innerHTML += `<option value="${p.fileNo}">${p.fileNo} - ${p.title}</option>`;
-      });
-    }
-
-    function renderDailyReportsTable() {
-      const tbody = document.getElementById('dailyReportsTableBody');
-      tbody.innerHTML = '';
-
-      if (reportData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">Tiada laporan harian dihantar hari ini.</td></tr>`;
-        return;
-      }
-
-      reportData.slice().reverse().forEach(r => {
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-slate-50 dark:hover:bg-brand-navy/40 transition';
-        row.innerHTML = `
-          <td class="p-3.5 text-slate-400 text-[11px] font-mono">${r.date}</td>
-          <td class="p-3.5">
-            <div class="font-bold text-slate-800 dark:text-slate-200">${r.staffName}</div>
-            <div class="text-[10px] text-slate-400">${r.dept}</div>
-          </td>
-          <td class="p-3.5 font-mono text-brand-primary dark:text-brand-yellow font-bold">${r.fileNo}</td>
-          <td class="p-3.5 text-slate-700 dark:text-slate-300 max-w-xs truncate">${r.task}</td>
-          <td class="p-3.5 font-bold">${r.hours} hrs</td>
-          <td class="p-3.5 font-bold text-emerald-500">${r.percent}%</td>
-          <td class="p-3.5">${getStatusBadge(r.status)}</td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function renderChecklistSelect() {
-      const sel = document.getElementById('chkProjectSelect');
-      sel.innerHTML = '';
-      projectData.forEach(p => {
-        sel.innerHTML += `<option value="${p.id}">${p.fileNo} - ${p.title}</option>`;
-      });
-    }
-
-    // ==========================================
-    // CHECKLIST SYSTEM ENGINE (UPDATED TO 73 ITEMS)
-    // ==========================================
-    function loadProjectChecklist() {
-      const projId = document.getElementById('chkProjectSelect').value;
-      const proj = projectData.find(p => p.id === projId);
-      const container = document.getElementById('checklistContainer');
-      container.innerHTML = '';
-
-      if (!proj) {
-        container.innerHTML = '<p class="text-slate-400 text-center py-4">Sila pilih fail projek terlebih dahulu.</p>';
-        return;
-      }
-
-      proj.checklistScores = proj.checklistScores || {};
-
-      let totalChecked = 0;
-      let totalItemsAll = 73;
-
-      scanToBimChecklist.forEach((cat) => {
-        let catCheckedCount = 0;
-
-        const catCard = document.createElement('div');
-        catCard.className = 'bg-slate-50 dark:bg-brand-navy/40 rounded-xl p-4 border border-slate-200 dark:border-slate-800 space-y-3';
-        
-        let itemsHTML = '';
-        cat.items.forEach(item => {
-          const isChecked = proj.checklistScores[item.id] || false;
-          if (isChecked) {
-            catCheckedCount++;
-            totalChecked++;
-          }
-
-          itemsHTML += `
-            <label class="flex items-start space-x-3 p-2.5 rounded-lg bg-white dark:bg-brand-carddark border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-brand-primary/50 transition">
-              <input type="checkbox" id="${item.id}" onchange="calculateChecklistProgress()" ${isChecked ? 'checked' : ''} class="chk-item-checkbox mt-0.5 rounded border-slate-300 text-brand-primary focus:ring-brand-primary w-4 h-4">
-              <div class="text-xs">
-                <span class="inline-block px-1.5 py-0.5 text-[9px] font-bold rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 mb-1">${item.sub}</span>
-                <p class="font-medium text-slate-800 dark:text-slate-200">${item.text}</p>
-              </div>
-            </label>
-          `;
-        });
-
-        const catPercent = Math.round((catCheckedCount / cat.items.length) * 100);
-
-        catCard.innerHTML = `
-          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-            <h4 class="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">${cat.category}</h4>
-            <span class="text-xs font-bold text-brand-primary dark:text-brand-yellow">${catCheckedCount}/${cat.items.length} (${catPercent}%)</span>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            ${itemsHTML}
-          </div>
-        `;
-        container.appendChild(catCard);
-      });
-
-      const overallPercent = Math.round((totalChecked / totalItemsAll) * 100);
-      document.getElementById('chkScoreText').innerText = `${totalChecked} / 73 Checked (${overallPercent}%)`;
-      document.getElementById('chkProgressBar').style.width = `${overallPercent}%`;
-
-      const badge = document.getElementById('chkStatusBadge');
-      if (overallPercent === 100) {
-        badge.innerText = 'LULUS QA/QC (100%)';
-        badge.className = 'px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30';
-      } else {
-        badge.innerText = 'Dalam Semakan / Work in Progress';
-        badge.className = 'px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-400 font-semibold border border-amber-500/30';
-      }
-    }
-
-    function calculateChecklistProgress() {
-      const projId = document.getElementById('chkProjectSelect').value;
-      const proj = projectData.find(p => p.id === projId);
-      if (!proj) return;
-
-      let totalChecked = 0;
-      let totalItemsAll = 73;
-
-      scanToBimChecklist.forEach(cat => {
-        cat.items.forEach(item => {
-          const el = document.getElementById(item.id);
-          if (el && el.checked) {
-            totalChecked++;
-            proj.checklistScores[item.id] = true;
-          } else {
-            proj.checklistScores[item.id] = false;
-          }
-        });
-      });
-
-      const overallPercent = Math.round((totalChecked / totalItemsAll) * 100);
-      document.getElementById('chkScoreText').innerText = `${totalChecked} / 73 Checked (${overallPercent}%)`;
-      document.getElementById('chkProgressBar').style.width = `${overallPercent}%`;
-
-      proj.progressPercent = overallPercent;
-      saveData();
-      renderProjects();
-    }
-
-    function saveProjectChecklist() {
-      calculateChecklistProgress();
-      alert('Status Checklist (73 Perkara Semakan) telah berjaya disimpan dan disegerakkan!');
-    }
-
-    // ==========================================
-    // FORMS SUBMISSION
-    // ==========================================
-    function handleCreateProject(e) {
-      e.preventDefault();
-      const selectedStaff = Array.from(document.querySelectorAll('.proj-staff-checkbox:checked')).map(cb => cb.value);
-
-      const newProj = {
-        id: 'proj-' + Date.now(),
-        title: document.getElementById('projTitle').value,
-        fileNo: document.getElementById('projFileNo').value,
-        start: document.getElementById('projStart').value,
-        end: document.getElementById('projEnd').value,
-        status: document.getElementById('projStatus').value,
-        staffIds: selectedStaff,
-        attachment: document.getElementById('projAttachment').files[0]?.name || '',
-        progressPercent: 0,
-        checklistScores: {}
-      };
-
-      projectData.push(newProj);
-      saveData();
-      renderAll();
-      closeModal('modalProject');
-      document.getElementById('addProjectForm').reset();
-    }
-
-    function handleCreateStaff(e) {
-      e.preventDefault();
-      const newStaff = {
-        id: 'stf-' + Date.now(),
-        name: document.getElementById('staffName').value,
-        role: document.getElementById('staffRole').value
-      };
-
-      staffData.push(newStaff);
-      saveData();
-      renderAll();
-      closeModal('modalStaff');
-      document.getElementById('addStaffForm').reset();
-    }
-
-    function handleDailyReportSubmit(e) {
-      e.preventDefault();
-      const now = new Date();
-      const dateStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-      const newRpt = {
-        date: dateStr,
-        staffName: document.getElementById('rptStaff').value,
-        dept: document.getElementById('rptDept').value,
-        fileNo: document.getElementById('rptFileNo').value,
-        task: document.getElementById('rptTask').value,
-        hours: parseFloat(document.getElementById('rptHours').value),
-        percent: parseInt(document.getElementById('rptPercent').value),
-        status: document.getElementById('rptStatusUpdate').value
-      };
-
-      // Tally to target project file automatically
-      const targetProj = projectData.find(p => p.fileNo === newRpt.fileNo);
-      if (targetProj) {
-        targetProj.progressPercent = newRpt.percent;
-        targetProj.status = newRpt.status;
-      }
-
-      reportData.push(newRpt);
-      saveData();
-      renderAll();
-      document.getElementById('dailyReportForm').reset();
-      alert('Laporan harian berjaya dihantar dan dikemaskini secara automatik ke fail projek!');
-    }
-
-    function deleteProject(id) {
-      if (confirm('Adakah anda pasti mahu memadam fail projek ini?')) {
-        projectData = projectData.filter(p => p.id !== id);
-        saveData();
-        renderAll();
-      }
-    }
-
-    // ==========================================
-    // CHART.JS STATUS DISTRIBUTION
-    // ==========================================
-    function renderChart() {
-      const ctx = document.getElementById('statusChart').getContext('2d');
-      const counts = {
-        'Belum Mula': projectData.filter(p => p.status === 'Belum Mula').length,
-        'On-Site': projectData.filter(p => p.status === 'On-Site').length,
-        'Processing': projectData.filter(p => p.status === 'Processing').length,
-        'Drafting': projectData.filter(p => p.status === 'Drafting').length,
-        'Sheet Final': projectData.filter(p => p.status === 'Sheet Final').length,
-        'Siap / Selesai': projectData.filter(p => p.status === 'Siap / Selesai').length
-      };
-
-      if (statusChart) statusChart.destroy();
-
-      statusChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(counts),
-          datasets: [{
-            data: Object.values(counts),
-            backgroundColor: ['#94a3b8', '#f59e0b', '#3b82f6', '#a855f7', '#6366f1', '#10b981'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: { boxWidth: 10, font: { size: 10 }, color: '#94a3b8' }
-            }
-          }
-        }
-      });
-    }
-
-    // ==========================================
-    // THEME SWITCHER (LIGHT / DARK)
-    // ==========================================
-    const themeToggleBtn = document.getElementById('themeToggle');
-    const sunIcon = document.getElementById('themeIconSun');
-    const moonIcon = document.getElementById('themeIconMoon');
-
-    themeToggleBtn.addEventListener('click', () => {
-      document.documentElement.classList.toggle('dark');
-      const isDark = document.documentElement.classList.contains('dark');
-      
-      if (isDark) {
-        sunIcon.classList.add('hidden');
-        moonIcon.classList.remove('hidden');
-      } else {
-        sunIcon.classList.remove('hidden');
-        moonIcon.classList.add('hidden');
-      }
-    });
-
-    // Initial Execution
-    window.onload = function() {
-      renderAll();
-      if (window.lucide) lucide.createIcons();
-    };
-  </script>
+    <div class="grid g21">
+      <div class="panel" id="listPanel">
+        <div class="ph">
+          <h3>Senarai fail projek</h3><span class="src" id="listCount"></span>
+          <div class="sp"></div>
+          <label for="filterStatus" class="m" style="font-size:12px;color:var(--muted)">Tapis</label>
+          <select id="filterStatus" class="inp sm"></select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Projek / No. fail</th><th>Tempoh kerja</th><th>Status</th><th>PIC</th><th>Progress QC</th><th></th></tr></thead>
+          <tbody id="projectBody"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h3>Agihan status fail</h3><span class="src" id="distCount"></span></div>
+        <div id="dist"></div>
+        <div class="stats" id="distStats" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <div class="grid g11">
+      <div class="panel">
+        <div class="ph"><h3>Arkib fail siap</h3><span class="src" id="doneCount">0 fail</span></div>
+        <div class="tw"><table>
+          <thead><tr><th>Projek / No. fail</th><th class="num">Tarikh siap</th><th>Skor checklist</th><th>PIC</th></tr></thead>
+          <tbody id="doneBody"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h3>Staff &amp; PIC ukur / BIM</h3><span class="src" id="staffCount"></span><div class="sp"></div>
+          <button class="link" data-open="mStaff"><svg class="i"><use href="#i-user"/></svg>Tambah staff</button></div>
+        <div class="people" id="people"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 2: LAPORAN HARIAN ================= -->
+  <section id="v-laporan" hidden>
+    <div class="panel">
+      <div class="ph"><h3>Borang laporan harian drafter / modeler</h3>
+        <p>Peratus dan status yang diisi akan kemas kini fail projek berkenaan secara automatik.</p></div>
+      <form id="reportForm" class="form" autocomplete="off">
+        <div class="f"><label for="rptStaff">Nama drafter / modeler <span class="req">*</span></label><select id="rptStaff" class="inp" required></select></div>
+        <div class="f"><label for="rptDept">Jabatan / bahagian</label>
+          <select id="rptDept" class="inp" required>
+            <option>Scan to BIM Unit</option><option>Terrestrial Laser Scanning (TLS)</option><option>UAV &amp; Drone Photogrammetry</option>
+            <option>Kadaster &amp; Ukur Kejuruteraan</option><option>QA/QC Check</option>
+          </select></div>
+        <div class="f"><label for="rptProj">Fail projek <span class="req">*</span></label><select id="rptProj" class="inp" required></select></div>
+        <div class="f s2"><label for="rptTask">Task harian yang dibuat <span class="req">*</span></label>
+          <input type="text" id="rptTask" class="inp" maxlength="300" placeholder="Contoh: Modeling Architectural LOD300 Aras 2 & cleaning pointcloud Block A" required></div>
+        <div class="f"><label for="rptHours">Jam dibelanjakan</label><input type="number" id="rptHours" class="inp" value="8" step="0.5" min="0.5" max="24" required></div>
+        <div class="f"><label for="rptPercent">Kemajuan projek terkini (%) <span class="req">*</span></label><input type="number" id="rptPercent" class="inp" min="0" max="100" placeholder="0 – 100" required></div>
+        <div class="f"><label for="rptStatus">Kemas kini status fail</label><select id="rptStatus" class="inp" required></select></div>
+        <div class="f"><label for="rptDeadline">Sasaran siap <span class="req">*</span></label><input type="date" id="rptDeadline" class="inp" required></div>
+        <div class="s3 factions"><button type="submit" class="btn p"><svg class="i"><use href="#i-send"/></svg>Hantar laporan harian</button></div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><h3>Rekod laporan harian terkini</h3><span class="src" id="rptCount"></span></div>
+      <div class="tw"><table>
+        <thead><tr><th>Tarikh / masa</th><th>Drafter &amp; jabatan</th><th>No. fail</th><th>Tugasan</th><th class="num">Jam</th><th class="num">Progress</th><th>Status</th><th class="num">Sasaran</th></tr></thead>
+        <tbody id="reportBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 3: CHECKLIST ================= -->
+  <section id="v-checklist" hidden>
+    <div class="panel">
+      <div class="ph">
+        <h3>Checklist QC &amp; serahan projek (Scan to BIM V2)</h3>
+        <div class="sp"></div>
+        <label for="ckProject" style="font-size:12px;color:var(--muted)">Projek</label>
+        <select id="ckProject" class="inp sm" style="max-width:340px"></select>
+        <p>Ikut piawaian fail Checklist Scan to BIM V2.xlsx, dari sheet &amp; titleblock hingga Revit link.</p>
+      </div>
+      <div class="score">
+        <div class="lbl">
+          <div class="row"><span>Skor keseluruhan semakan QA/QC</span><b id="ckScore">0 / 0 (0%)</b></div>
+          <div class="bigbar"><i id="ckBar"></i></div>
+        </div>
+        <span class="chip mute" id="ckBadge">–</span>
+      </div>
+      <div class="cats" id="ckCats"></div>
+      <div class="ckfoot">
+        <span>Setiap tick disimpan terus dan jadi % progress projek.</span>
+        <button class="btn ok" id="ckSave"><svg class="i"><use href="#i-save"/></svg>Simpan &amp; segerak</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= MODAL: DAFTAR PROJEK ================= -->
+<div class="modal" id="mProject" role="dialog" aria-modal="true" aria-labelledby="mProjectT"><div class="box lg">
+  <div class="mh"><h4 id="mProjectT">Daftar fail projek baharu</h4><button class="ico" data-close aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <form id="projectForm" class="form" autocomplete="off">
+    <div class="f s3"><label for="projTitle">Tajuk projek <span class="req">*</span></label><input type="text" id="projTitle" class="inp" maxlength="200" placeholder="Contoh: Cadastral & Scan to BIM Menara 8, Putrajaya" required></div>
+    <div class="f"><label for="projFileNo">Nombor fail projek <span class="req">*</span></label><input type="text" id="projFileNo" class="inp" maxlength="60" placeholder="JUPEM/STB/2026/089" required></div>
+    <div class="f"><label for="projStatus">Status awal</label><select id="projStatus" class="inp"></select></div>
+    <div class="f"><label for="projStart">Tarikh mula kerja <span class="req">*</span></label><input type="date" id="projStart" class="inp" required></div>
+    <div class="f"><label for="projEnd">Tarikh akhir kerja <span class="req">*</span></label><input type="date" id="projEnd" class="inp" required></div>
+    <div class="f s3"><label for="projFile">Attachment client brief / spesifikasi</label><input type="file" id="projFile" class="inp">
+      <small>Hanya nama fail yang direkod (fail tak dimuat naik ke mana-mana).</small></div>
+    <div class="f s3">
+      <label style="display:flex;align-items:center">PIC terlibat<span class="sp"></span><button type="button" class="link" data-open="mStaff"><svg class="i"><use href="#i-user"/></svg>Tambah staff</button></label>
+      <div class="pick" id="staffPick"></div>
+    </div>
+    <div class="s3 factions"><button type="button" class="btn" data-close>Batal</button><button type="submit" class="btn p">Simpan fail projek</button></div>
+  </form>
+</div></div>
+
+<!-- ================= MODAL: TAMBAH STAFF ================= -->
+<div class="modal" id="mStaff" role="dialog" aria-modal="true" aria-labelledby="mStaffT"><div class="box">
+  <div class="mh"><h4 id="mStaffT">Tambah staff / PIC</h4><button class="ico" data-close aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <form id="staffForm" class="form" style="grid-template-columns:minmax(0,1fr)" autocomplete="off">
+    <div class="f"><label for="staffName">Nama penuh <span class="req">*</span></label><input type="text" id="staffName" class="inp" maxlength="80" placeholder="Contoh: Muhammad Ammar" required></div>
+    <div class="f"><label for="staffRole">Jawatan / peranan</label>
+      <select id="staffRole" class="inp">
+        <option>Senior Modeler / Drafter</option><option>BIM Coordinator</option><option>TLS / Laser Scanner Surveyor</option>
+        <option>UAV Pilot &amp; Specialist</option><option>QA/QC Checker</option>
+      </select></div>
+    <div class="factions"><button type="button" class="btn" data-close>Batal</button><button type="submit" class="btn p">Simpan staff</button></div>
+  </form>
+</div></div>
+
+<!-- ================= MODAL: PENGESAHAN PADAM ================= -->
+<div class="modal" id="mConfirm" role="alertdialog" aria-modal="true" aria-labelledby="mConfirmT"><div class="box">
+  <div class="mh"><h4 id="mConfirmT">Padam fail projek?</h4></div>
+  <p id="mConfirmTxt"></p>
+  <div class="factions"><button class="btn" data-close>Batal</button><button class="btn danger" id="mConfirmYes">Ya, padam</button></div>
+</div></div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= CONFIG ================= */
+const SHEET_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRs4qLMVZWv6J__EfhLmyu3owvC3zRt40W3S_oEpS3HNyhBcDwnMKyBAE1c9XLuhrEbJEcEt2bMoEgt/pubhtml';
+const KEYS={proj:'stb_projects',staff:'stb_staff',rpt:'stb_reports'};
+/* status → [kelas chip, warna bar, keterangan KPI] */
+const STATUS={
+  'Belum Mula':['mute','#a3a6c2','Perancangan / queue'],
+  'On-Site':['warn','#b45309','Laser scanning / UAV'],
+  'Processing':['info','#5b51e0','Registration / pointcloud'],
+  'Drafting':['dr','#272483','3D BIM modeling'],
+  'Sheet Final':['yel','#d9a400','Sheet & QC akhir'],
+  'Siap / Selesai':['ok','#0f7a43','Diserahkan']
+};
+const ST_KEYS=Object.keys(STATUS);
+const DONE='Siap / Selesai';
+
+const DEF_PROJECTS=[
+  {id:'proj-101',title:'Cadastral & Scan to BIM Menara 8, Putrajaya',fileNo:'JUPEM/STB/2026/089',start:'2026-02-01',end:'2026-03-15',status:'Drafting',staffIds:['stf-1','stf-2'],attachment:'Client_Brief_Menara8.pdf',progressPercent:65,checklistScores:{}},
+  {id:'proj-102',title:'TLS As-Built Survey Hospital Sultanah Aminah',fileNo:'JUPEM/TLS/2026/014',start:'2026-01-10',end:'2026-02-28',status:'On-Site',staffIds:['stf-3'],attachment:'Spek_Scan_Hospital.pdf',progressPercent:30,checklistScores:{}},
+  {id:'proj-100',title:'Scan to BIM & 2D Cadastral Wisma Ukur',fileNo:'JUPEM/STB/2025/112',start:'2025-11-01',end:'2026-01-15',status:DONE,staffIds:['stf-1','stf-3'],attachment:'Final_Handover_WismaUkur.pdf',progressPercent:100,checklistScores:{}}
+];
+const DEF_STAFF=[
+  {id:'stf-1',name:'Ahmad Modeler',role:'Senior Modeler / Drafter'},
+  {id:'stf-2',name:'Siti BIM Spec',role:'BIM Coordinator'},
+  {id:'stf-3',name:'Khairul Surveyor',role:'TLS / Laser Scanner Surveyor'}
+];
+const DEF_REPORTS=[
+  {date:'2026-02-22 17:30',staffName:'Ahmad Modeler',dept:'Scan to BIM Unit',fileNo:'JUPEM/STB/2026/089',task:'Kemaskini Wall Alignment & Section Elevations Sheet Aras 2',hours:8,percent:65,status:'Drafting'}
+];
+
+/* 73 perkara — Checklist Scan to BIM V2 */
+const CHECKLIST=[
+  {category:'1. Sheet & titleblock',items:[
+    ['chk_1','Sheet - Umum','Nama lukisan berserta skala A3 yang betul [0:00 (A1), 0:00 (A3)]'],['chk_2','Sheet - Umum','Dimension grid & level'],['chk_3','Sheet - Umum','Speksifikasi pelan'],
+    ['chk_4','Sheet - Titleblock','Tajuk projek'],['chk_5','Sheet - Titleblock','Logo & alamat pemilik'],['chk_6','Sheet - Titleblock','Logo & alamat pengurus projek'],
+    ['chk_7','Sheet - Titleblock','Logo & alamat company'],['chk_8','Sheet - Titleblock','Nama LSr & tanda tangan'],['chk_9','Sheet - Titleblock','Nama Arkitek & tanda tangan (*jika perlu)'],
+    ['chk_10','Sheet - Titleblock','Nama bangunan'],['chk_11','Sheet - Titleblock','Nama lukisan (pelan tapak, pelan lantai aras, keratan rentas, pandangan)'],
+    ['chk_12','Sheet - Titleblock','Ruang nama (Diukur, Dilukis, Disemak oleh:)'],['chk_13','Sheet - Titleblock','Skala'],['chk_14','Sheet - Titleblock','Tarikh'],
+    ['chk_15','Sheet - Titleblock','No. Lukisan'],['chk_16','Sheet - Legend','Jadual nama & keluasan ruang'],['chk_17','Sheet - Legend','Kemasan dinding'],
+    ['chk_18','Sheet - Legend','Kemasan lantai & siling'],['chk_19','Sheet - Legend','Fire Protection System (FPS) *jika perlu']]},
+  {category:'2. Tag ruang & sanitary ware',items:[
+    ['chk_20','Tag Ruang','Nama Ruang (*termasuk tangga, koridor, ruang terbuka & etc.)'],['chk_21','Tag Ruang','Kemasan Lantai'],['chk_22','Tag Ruang','Kemasan Siling'],
+    ['chk_23','Tag Ruang','Ceiling Height'],['chk_24','Tag Ruang','Keluasan (m²) (*pastikan line boundary dalam ruang yang betul)'],
+    ['chk_25','Tag Ruang','Finish Floor Level (FFL: 00.000 *unit meter)'],['chk_26','Tag Ruang','Kod tag ruang *jika perlu'],['chk_27','Sanitary Ware','Water Closet (wc)'],
+    ['chk_28','Sanitary Ware','Water Tap (t)'],['chk_29','Sanitary Ware','Shower (sh)'],['chk_30','Sanitary Ware','Floor Trap (ft)'],['chk_31','Sanitary Ware','Sink/basin']]},
+  {category:'3. Annotation, line & built-in structure',items:[
+    ['chk_32','Annotation','Stair path arrow UP/DN'],['chk_33','Annotation','Bilangan anak tangga'],['chk_34','Annotation','Speksifikasi setiap tangga (jenis tangga, riser & tread)'],
+    ['chk_35','Annotation','Drop lantai UP/DN berserta nilai'],['chk_36','Annotation','Ramp UP/DN + hatching arrow (*jika ramp mempunyai groove line on site)'],
+    ['chk_37','Annotation','Arah \'fall\' air hujan + slope (FALL 00°)'],['chk_38','Line','Hidden line bukaan pintu & tingkap (*Section & Elevation Plans)'],
+    ['chk_39','Line','Glaze pintu kaca & tingkap (*Section & Elevation Plans)'],['chk_40','Line','Hidden line Void + text \'VOID\''],['chk_41','Line','Cut line tangga yang terpotong'],
+    ['chk_42','Line','Dotted line tangga yang terpotong'],['chk_43','Built-in Structure','Workstation (*jika ada)'],['chk_44','Built-in Structure','Sink countertop (*jika ada)'],
+    ['chk_45','Built-in Structure','Fixed cabinet (*jika ada)'],['chk_46','Built-in Structure','Tempat wudhuk + floor trap & water tap (*jika ada)']]},
+  {category:'4. Bumbung, hatching & tag',items:[
+    ['chk_47','Bumbung','Rainwater downpipe (RWDP) (*Floor, Roof, Section & Elevation Plans)'],['chk_48','Bumbung','Roof gutter'],['chk_49','Bumbung','Ridge cap/valley'],
+    ['chk_50','Bumbung','Longkang + lubang air di flatroof'],['chk_51','Hatching','Lantai jubin di tandas (*berdasarkan saiz jubin)'],['chk_52','Hatching','Bumbung (tiles, metal deck & etc.)'],
+    ['chk_53','Hatching','Cut section dinding batu bata'],['chk_54','Hatching','Cut section concrete column & beam'],['chk_55','Hatching','Lantai kayu (*jika ada)'],
+    ['chk_56','Hatching','Dinding jubin di tandas (*Section plan)'],['chk_57','Hatching','Hatching dinding di elevation plan (*jika ada: batu bata, kayu, groove line)'],
+    ['chk_58','Hatching','Hatching siling di RCP (*jika ada: siling gantung, timber strip, etc.)'],['chk_59','Tag','Door Tag - Floor plans'],['chk_60','Tag','Door Tag - Section plans'],
+    ['chk_61','Tag','Door Tag - Elevation plans'],['chk_62','Tag','Window Tag - Floor plans'],['chk_63','Tag','Window Tag - Section plans'],
+    ['chk_64','Tag','Window Tag - Elevation plans'],['chk_65','Tag','Wall Tag - Floor plans']]},
+  {category:'5. Site plan, jadual & Revit link',items:[
+    ['chk_66','Site Plan','Jadual petunjuk & warna hatching'],['chk_67','Site Plan','Boundary line'],['chk_68','Site Plan','Fire hydrant'],['chk_69','Site Plan','Landscape / green area'],
+    ['chk_70','Jadual Bukaan','Hidden line bukaan pintu & tingkap'],['chk_71','Jadual Bukaan','Hidden line Void + text \'VOID\''],['chk_72','Jadual Bukaan','Glaze pintu kaca & tingkap'],
+    ['chk_73','Revit Link','Model Mekanikal (Peralatan Bomba & Lif) (*jika ada)']]}
+];
+const CK_TOTAL=CHECKLIST.reduce((a,c)=>a+c.items.length,0);
+
+/* ================= HELPERS ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const parseD=s=>{if(!s)return null;const d=new Date(String(s).slice(0,10)+'T00:00:00');return isNaN(d)?null:d;};
+const dmy=s=>{const d=parseD(s);return d?pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear():'–';};
+const dmyT=s=>{const t=String(s||'').slice(11,16);return dmy(s)+(t?' · '+t:'');};
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const daysTo=d=>Math.round((d-today())/864e5);
+const localStamp=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());};
+const initials=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const chip=st=>`<span class="chip ${(STATUS[st]||STATUS['Belum Mula'])[0]}">${esc(st||'–')}</span>`;
+function load(k,def){try{const v=JSON.parse(localStorage.getItem(k));return Array.isArray(v)?v:JSON.parse(JSON.stringify(def));}catch(e){return JSON.parse(JSON.stringify(def));}}
+function save(){
+  try{localStorage.setItem(KEYS.proj,JSON.stringify(projects));localStorage.setItem(KEYS.staff,JSON.stringify(staff));localStorage.setItem(KEYS.rpt,JSON.stringify(reports));}
+  catch(e){toast('Gagal simpan data dalam browser ini',true);}
+}
+function toast(m,err){const t=$('#toast');t.textContent=m;t.classList.toggle('err',!!err);t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2600);}
+function progCell(p,col){p=Math.max(0,Math.min(100,+p||0));col=col||(p>=100?'var(--ok)':'var(--ind-600)');return `<div class="prog"><div class="bar"><i style="width:${p}%;background:${col}"></i></div><b>${p}%</b></div>`;}
+const staffNames=p=>(p.staffIds||[]).map(id=>{const s=staff.find(x=>x.id===id);return s?s.name:'';}).filter(Boolean);
+const ckCount=p=>{const sc=p.checklistScores||{};return CHECKLIST.reduce((a,c)=>a+c.items.filter(([id])=>sc[id]).length,0);};
+const isOverdue=p=>{const d=parseD(p.end);return p.status!==DONE&&d&&d<today();};
+
+/* ================= DATA ================= */
+let projects=load(KEYS.proj,DEF_PROJECTS);
+let staff=load(KEYS.staff,DEF_STAFF);
+let reports=load(KEYS.rpt,DEF_REPORTS);
+
+/* ================= TAB ================= */
+function switchTab(tab){
+  document.querySelectorAll('#tabs button').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on));});
+  ['dashboard','laporan','checklist'].forEach(t=>{$('#v-'+t).hidden=t!==tab;});
+  if(tab==='checklist')renderChecklist();
+  
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)switchTab(b.dataset.tab);});
+
+/* ================= MODAL ================= */
+function openModal(id){$('#'+id).classList.add('on');const f=$('#'+id+' input:not([type=checkbox]):not([type=file]), #'+id+' select');if(f)setTimeout(()=>f.focus(),30);}
+function closeModal(el){el.classList.remove('on');}
+document.addEventListener('click',e=>{
+  const o=e.target.closest('[data-open]');if(o){e.preventDefault();openModal(o.dataset.open);return;}
+  const c=e.target.closest('[data-close]');if(c){closeModal(c.closest('.modal'));return;}
+  if(e.target.classList.contains('modal'))closeModal(e.target);
+});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const open=[...document.querySelectorAll('.modal.on')];if(open.length)closeModal(open[open.length-1]);});
+
+/* ================= RENDER: DASHBOARD ================= */
+let filter='ALL';
+function renderDashboard(){
+  const n=st=>projects.filter(p=>p.status===st).length;
+  const over=projects.filter(isOverdue);
+  const kpi=(f,l,v,s,col,hl)=>`<button class="kpi${hl?' hl':''}${filter===f?' sel':''}" data-f="${esc(f)}"><div class="l">${col?`<i style="background:${col}"></i>`:''}${l}</div><div class="v">${v}</div><div class="s">${s}</div></button>`;
+  $('#kpis').innerHTML=
+     kpi('ALL','Jumlah fail berdaftar',projects.length,`${projects.length-n(DONE)} masih aktif`,null,true)
+    +kpi('Belum Mula','Belum mula',n('Belum Mula'),STATUS['Belum Mula'][2],STATUS['Belum Mula'][1])
+    +kpi('On-Site','On-site',n('On-Site'),STATUS['On-Site'][2],STATUS['On-Site'][1])
+    +kpi('Processing','Processing',n('Processing'),STATUS['Processing'][2],STATUS['Processing'][1])
+    +kpi('Drafting|Sheet Final','Drafting / sheet',n('Drafting')+n('Sheet Final'),'Modeling, sheet & QC',STATUS['Drafting'][1])
+    +kpi(DONE,'Siap / selesai',n(DONE),STATUS[DONE][2],STATUS[DONE][1]);
+
+  $('#heroChips').innerHTML=over.length?`<span class="chip bad">${over.length} lewat tarikh akhir</span>`:(projects.length?'<span class="chip ok">Semua dalam jadual</span>':'');
+  $('#heroSub').textContent='Pantau fail dari kerja tapak, pemprosesan pointcloud hingga sheet final. Dikemas kini '+dmy(localStamp())+'.';
+
+  // senarai utama
+  const sel=filter==='ALL'?projects:projects.filter(p=>filter.split('|').includes(p.status));
+  const list=sel.slice().sort((a,b)=>(a.status===DONE)-(b.status===DONE)||(parseD(a.end)||9e15)-(parseD(b.end)||9e15));
+  $('#listCount').textContent=list.length+' fail';
+  $('#projectBody').innerHTML=list.length?list.map(p=>{
+    const d=parseD(p.end),dd=d?daysTo(d):null,names=staffNames(p);
+    const due=p.status===DONE||dd==null?'':`<div class="m" style="color:${dd<0?'var(--bad)':dd<=14?'var(--warn)':'var(--muted)'}">${dd<0?Math.abs(dd)+' hari lewat':dd+' hari lagi'}</div>`;
+    return `<tr>
+      <td><div class="t">${esc(p.title)}</div><div class="m"><span class="ref">${esc(p.fileNo)}</span>${p.attachment?` · <svg class="i" style="width:12px;height:12px;vertical-align:-2px"><use href="#i-clip"/></svg> ${esc(p.attachment)}`:''}</div></td>
+      <td style="white-space:nowrap"><div>${dmy(p.start)} – ${dmy(p.end)}</div>${due}</td>
+      <td>${chip(p.status)}</td>
+      <td>${names.length?esc(names.join(', ')):'<span class="m">Belum di-assign</span>'}</td>
+      <td>${progCell(p.progressPercent,isOverdue(p)?'var(--bad)':null)}</td>
+      <td><button class="ico" data-del="${esc(p.id)}" title="Padam projek" aria-label="Padam ${esc(p.title)}"><svg class="i"><use href="#i-trash"/></svg></button></td>
+    </tr>`;}).join(''):'<tr><td colspan="6" class="empty">Tiada fail projek untuk status ini.</td></tr>';
+
+  // agihan status
+  const tot=projects.length||1;
+  $('#distCount').textContent=projects.length+' fail';
+  $('#dist').innerHTML=ST_KEYS.map(st=>{const v=n(st);return `<div class="hb"><div class="n">${esc(st)}</div><div class="track"><span style="width:${v/tot*100}%;background:${STATUS[st][1]}"></span></div><div class="val">${v}</div></div>`;}).join('');
+  const act=projects.filter(p=>p.status!==DONE);
+  const avg=act.length?Math.round(act.reduce((a,p)=>a+(+p.progressPercent||0),0)/act.length):0;
+  $('#distStats').innerHTML=`<div class="stat"><div class="l">Purata progress fail aktif</div><div class="v">${avg}%</div></div><div class="stat"><div class="l">Lewat tarikh akhir</div><div class="v" style="${over.length?'color:var(--bad)':''}">${over.length}</div></div>`;
+
+  // arkib siap
+  const done=projects.filter(p=>p.status===DONE||+p.progressPercent===100);
+  $('#doneCount').textContent=done.length+' fail';
+  $('#doneBody').innerHTML=done.length?done.map(p=>{const c=ckCount(p),full=c===CK_TOTAL;
+    return `<tr><td><div class="t">${esc(p.title)}</div><div class="m"><span class="ref">${esc(p.fileNo)}</span>${p.status!==DONE?' · '+chip(p.status):''}</div></td>
+      <td class="num">${dmy(p.end)}</td>
+      <td><span class="chip ${full?'ok':c?'warn':'mute'}">${full?'QA lulus 100%':c+' / '+CK_TOTAL+' disemak'}</span></td>
+      <td>${esc(staffNames(p).join(', ')||'–')}</td></tr>`;}).join(''):'<tr><td colspan="4" class="empty">Belum ada fail yang siap sepenuhnya.</td></tr>';
+
+  // staff
+  $('#staffCount').textContent=staff.length+' orang';
+  $('#people').innerHTML=staff.length?staff.map(s=>{const k=projects.filter(p=>(p.staffIds||[]).includes(s.id)&&p.status!==DONE).length;
+    return `<div class="person"><div class="av">${esc(initials(s.name))}</div><div><b title="${esc(s.name)}">${esc(s.name)}</b><span>${esc(s.role)}</span></div><span class="chip ${k?'info':'mute'}">${k} aktif</span></div>`;}).join(''):'<div class="empty">Belum ada staff.</div>';
+}
+$('#kpis').addEventListener('click',e=>{const k=e.target.closest('.kpi');if(!k)return;filter=k.dataset.f;$('#filterStatus').value=filter;renderDashboard();$('#listPanel').scrollIntoView({behavior:'smooth',block:'start'});});
+$('#filterStatus').addEventListener('change',e=>{filter=e.target.value;renderDashboard();});
+
+/* padam projek (modal pengesahan, bukan confirm()) */
+let pendingDel=null;
+$('#projectBody').addEventListener('click',e=>{
+  const b=e.target.closest('[data-del]');if(!b)return;
+  const p=projects.find(x=>x.id===b.dataset.del);if(!p)return;
+  pendingDel=p.id;$('#mConfirmTxt').textContent=`"${p.title}" (${p.fileNo}) akan dipadam bersama status checklist dia. Laporan harian lama untuk fail ini kekal dalam rekod.`;
+  openModal('mConfirm');
+});
+$('#mConfirmYes').onclick=()=>{if(!pendingDel)return;projects=projects.filter(p=>p.id!==pendingDel);pendingDel=null;save();renderAll();closeModal($('#mConfirm'));toast('Fail projek dipadam');};
+
+/* ================= RENDER: DROPDOWN & STAFF PICK ================= */
+function fillStatusSelect(el,withAll){
+  const cur=el.value;
+  el.innerHTML=(withAll?'<option value="ALL">Semua fail</option>':'')+ST_KEYS.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')+(withAll?'<option value="Drafting|Sheet Final">Drafting + Sheet Final</option>':'');
+  if(cur&&[...el.options].some(o=>o.value===cur))el.value=cur;
+}
+function renderSelects(){
+  fillStatusSelect($('#filterStatus'),true);$('#filterStatus').value=filter;
+  fillStatusSelect($('#rptStatus'));fillStatusSelect($('#projStatus'));
+  const rs=$('#rptStaff'),rsv=rs.value;
+  rs.innerHTML='<option value="">– Pilih nama –</option>'+staff.map(s=>`<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.role)})</option>`).join('');rs.value=rsv;
+  const rp=$('#rptProj'),rpv=rp.value;
+  rp.innerHTML='<option value="">– Pilih fail projek –</option>'+projects.map(p=>`<option value="${esc(p.id)}">${esc(p.fileNo)} – ${esc(p.title)}</option>`).join('');
+  if(projects.some(p=>p.id===rpv))rp.value=rpv;
+  const ck=$('#ckProject'),ckv=ck.value;
+  ck.innerHTML=projects.map(p=>`<option value="${esc(p.id)}">${esc(p.fileNo)} – ${esc(p.title)}</option>`).join('');
+  if(projects.some(p=>p.id===ckv))ck.value=ckv;
+  // kekalkan tick PIC bila staff baru ditambah semasa modal projek terbuka
+  const ticked=new Set([...document.querySelectorAll('#staffPick input:checked')].map(i=>i.value));
+  $('#staffPick').innerHTML=staff.length?staff.map(s=>`<label><input type="checkbox" value="${esc(s.id)}"${ticked.has(s.id)?' checked':''}><span title="${esc(s.name)}">${esc(s.name)}</span></label>`).join(''):'<span class="m" style="font-size:12px;color:var(--muted)">Tambah staff dahulu.</span>';
+}
+
+/* ================= RENDER: LAPORAN ================= */
+function renderReports(){
+  $('#rptCount').textContent=reports.length+' rekod';
+  $('#reportBody').innerHTML=reports.length?reports.slice().reverse().map(r=>`<tr>
+    <td style="white-space:nowrap" class="m">${dmyT(r.date)}</td>
+    <td><div class="t">${esc(r.staffName)}</div><div class="m">${esc(r.dept)}</div></td>
+    <td><span class="ref">${esc(r.fileNo)}</span></td>
+    <td><div class="clip" title="${esc(r.task)}">${esc(r.task)}</div></td>
+    <td class="num">${esc(r.hours)} j</td>
+    <td class="num" style="font-weight:650;color:var(--ok)">${esc(r.percent)}%</td>
+    <td>${chip(r.status)}</td>
+    <td class="num">${r.deadline?dmy(r.deadline):'–'}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">Belum ada laporan harian dihantar.</td></tr>';
+}
+$('#reportForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const proj=projects.find(p=>p.id===$('#rptProj').value);
+  if(!proj){toast('Pilih fail projek yang sah',true);return;}
+  const pct=Math.max(0,Math.min(100,parseInt($('#rptPercent').value,10)||0));
+  const r={date:localStamp(),staffName:$('#rptStaff').value,dept:$('#rptDept').value,projId:proj.id,fileNo:proj.fileNo,
+    task:$('#rptTask').value.trim(),hours:parseFloat($('#rptHours').value)||0,percent:pct,status:$('#rptStatus').value,deadline:$('#rptDeadline').value};
+  proj.progressPercent=pct;proj.status=r.status;
+  reports.push(r);save();renderAll();
+  e.target.reset();
+  toast('Laporan dihantar · '+proj.fileNo+' kini '+pct+'% ('+r.status+')');
+});
+
+/* ================= RENDER: CHECKLIST ================= */
+function ckProject(){return projects.find(p=>p.id===$('#ckProject').value);}
+function renderChecklist(){
+  const p=ckProject(),box=$('#ckCats');
+  $('#ckSave').disabled=!p;
+  if(!p){box.innerHTML='<div class="empty">Daftar fail projek dahulu untuk mula semakan QC.</div>';updateCkSummary();return;}
+  p.checklistScores=p.checklistScores||{};
+  box.innerHTML=CHECKLIST.map((c,ci)=>`<div class="cat"><div class="cat-h"><h4>${esc(c.category)}</h4><b id="cat-c-${ci}"></b></div><div class="ck-grid">`
+    +c.items.map(([id,sub,txt])=>`<label class="ck"><input type="checkbox" data-ck="${id}"${p.checklistScores[id]?' checked':''}><div><small>${esc(sub)}</small><p>${esc(txt)}</p></div></label>`).join('')
+    +'</div></div>').join('');
+  updateCkSummary();
+}
+function updateCkSummary(){
+  const p=ckProject(),sc=p?(p.checklistScores||{}):{};let tot=0;
+  CHECKLIST.forEach((c,ci)=>{const n=c.items.filter(([id])=>sc[id]).length;tot+=n;const el=$('#cat-c-'+ci);if(el)el.textContent=n+'/'+c.items.length+' ('+Math.round(n/c.items.length*100)+'%)';});
+  const pct=Math.round(tot/CK_TOTAL*100);
+  $('#ckScore').textContent=tot+' / '+CK_TOTAL+' ('+pct+'%)';
+  $('#ckBar').style.width=pct+'%';
+  const b=$('#ckBadge');
+  if(!p){b.className='chip mute';b.textContent='Tiada projek';}
+  else if(pct===100){b.className='chip ok';b.textContent='Lulus QA/QC';}
+  else{b.className='chip warn';b.textContent='Dalam semakan';}
+  return pct;
+}
+$('#ckProject').addEventListener('change',renderChecklist);
+$('#ckCats').addEventListener('change',e=>{
+  const i=e.target.closest('input[data-ck]');if(!i)return;
+  const p=ckProject();if(!p)return;
+  p.checklistScores[i.dataset.ck]=i.checked;
+  p.progressPercent=updateCkSummary();
+  save();renderDashboard();
+});
+$('#ckSave').onclick=()=>{const p=ckProject();if(!p)return;p.progressPercent=updateCkSummary();save();renderDashboard();toast('Checklist '+p.fileNo+' disimpan · progress '+p.progressPercent+'%');};
+
+/* ================= BORANG: PROJEK & STAFF ================= */
+$('#projectForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const fileNo=$('#projFileNo').value.trim(),start=$('#projStart').value,end=$('#projEnd').value;
+  if(projects.some(p=>p.fileNo.toLowerCase()===fileNo.toLowerCase())){toast('No. fail '+fileNo+' dah wujud',true);$('#projFileNo').focus();return;}
+  if(end<start){toast('Tarikh akhir mesti selepas tarikh mula',true);$('#projEnd').focus();return;}
+  const f=$('#projFile').files[0];
+  projects.push({id:'proj-'+Date.now(),title:$('#projTitle').value.trim(),fileNo:fileNo,start:start,end:end,status:$('#projStatus').value,
+    staffIds:[...document.querySelectorAll('#staffPick input:checked')].map(i=>i.value),attachment:f?f.name:'',
+    progressPercent:$('#projStatus').value===DONE?100:0,checklistScores:{}});
+  save();e.target.reset();$('#staffPick').querySelectorAll('input').forEach(i=>i.checked=false);
+  renderAll();closeModal($('#mProject'));toast('Fail '+fileNo+' didaftarkan');
+});
+$('#staffForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('#staffName').value.trim();
+  if(staff.some(s=>s.name.toLowerCase()===name.toLowerCase())){toast(name+' dah ada dalam senarai',true);return;}
+  staff.push({id:'stf-'+Date.now(),name:name,role:$('#staffRole').value});
+  save();e.target.reset();renderAll();closeModal($('#mStaff'));toast(name+' ditambah');
+});
+
+/* ================= BOOT ================= */
+function renderAll(){renderSelects();renderDashboard();renderReports();if(!$('#v-checklist').hidden)renderChecklist();}
+$('#dbLink').href=SHEET_URL;
+/* sync bila tab/iframe lain ubah data yang sama */
+window.addEventListener('storage',e=>{if(Object.values(KEYS).includes(e.key)){projects=load(KEYS.proj,DEF_PROJECTS);staff=load(KEYS.staff,DEF_STAFF);reports=load(KEYS.rpt,DEF_REPORTS);renderAll();}});
+renderAll();
+})();
+</script>
 </body>
 </html>
