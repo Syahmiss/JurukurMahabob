@@ -86,9 +86,9 @@ button{font-family:inherit;cursor:pointer}
 .hero-head h2{font-size:26px;font-weight:780;font-stretch:118%;letter-spacing:-.4px;line-height:1.1;color:var(--ind-950)}
 .hero-head p{font-size:12.5px;color:var(--muted);margin-top:5px}
 .hero-head .chips{display:flex;gap:6px;flex-wrap:wrap}
-.kpis{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-top:1px solid var(--line);background:linear-gradient(var(--surface),var(--bg))}
-.kpi{all:unset;box-sizing:border-box;cursor:pointer;display:block;padding:15px 18px 16px;border-left:1px solid var(--line);min-width:0;position:relative;transition:background .15s}
-.kpi:first-child{border-left:0}
+/* 8 KPI (4 x 2). Garisan antara kad guna gap 1px atas latar --line, jadi tak perlu kira nth-child ikut lebar skrin. */
+.kpis{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;border-top:1px solid var(--line);background:var(--line)}
+.kpi{all:unset;box-sizing:border-box;cursor:pointer;display:block;padding:15px 18px 16px;min-width:0;position:relative;transition:background .15s;background:var(--surface)}
 .kpi:hover{background:var(--ind-50)}
 .kpi:focus-visible{outline:2px solid var(--ind-600);outline-offset:-2px}
 .kpi .l{font-size:12px;color:var(--muted);font-weight:500}
@@ -241,7 +241,7 @@ tr:last-child td{border-bottom:0}
   body.rail .sb:not(:hover) .nav button{justify-content:center;padding:10px 0}
   body.rail .sb:not(:hover) .nav button.on::after{display:none}
 }
-@media (max-width:1320px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi:nth-child(4){border-left:0}.kpi:nth-child(n+4){border-top:1px solid var(--line)}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:1100px){.g21,.g11,.g111{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:860px){
   .sb{transform:translateX(-100%)}
@@ -256,9 +256,6 @@ tr:last-child td{border-bottom:0}
   .hero .contour{width:360px;right:-120px}
 }
 @media (max-width:560px){
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .kpi{border-left:1px solid var(--line)!important;border-top:1px solid var(--line)}
-  .kpi:nth-child(odd){border-left:0!important}.kpi:nth-child(-n+2){border-top:0}
   .kpi .v{font-size:22px}
   .hb{grid-template-columns:minmax(0,90px) minmax(0,1fr) auto}
   .pipe .r{grid-template-columns:22px minmax(0,96px) minmax(0,1fr) 22px}
@@ -270,7 +267,7 @@ tr:last-child td{border-bottom:0}
   .sb,.top .btn,.burger,.frame,.toast,.tip,.hero .contour{display:none!important}
   .main{position:static}.content{position:static}#home{position:static;overflow:visible;padding:0}
   .panel,.hero,.report{break-inside:avoid}
-  .kpis{grid-template-columns:repeat(3,1fr)}
+  .kpis{grid-template-columns:repeat(4,1fr)}
   .report{background:#fff;color:var(--ink);border:1px solid var(--line)}.report .ph h3,.report ol b{color:var(--ink)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -379,7 +376,11 @@ const MODULES={"ops": "modules/ops.html", "tracking": "modules/tracking.html", "
 if(/^jm-app/.test(window.name)){try{parent.postMessage({jmHub:'nested'},'*');}catch(e){}document.body.innerHTML='';return;}
 /* ================= CONFIG ================= */
 const KEYS={ops:'mjt_ops_db',tracking:'survey_tracker_v1',inventory:'jmc_instrument_inventory_v1',quotation:'jmc_quotation_v1',planner:'jm_planner_v1'};
-const EXTRA_KEYS=['mjt_ops_sync','mjt_ops_lang','drafter_projects_data','drafter_drawings_data','geo_local_reports'];
+/* stb_* = HOD BIM (GEO-BIM Tracker). Dulu tak masuk backup, jadi data BIM hilang bila restore. */
+const EXTRA_KEYS=['mjt_ops_sync','mjt_ops_lang','drafter_projects_data','drafter_drawings_data','geo_local_reports','stb_projects','stb_staff','stb_reports'];
+const BIM_KEYS={proj:'stb_projects',staff:'stb_staff',rpt:'stb_reports'};
+const BIM_DONE='Siap / Selesai';
+const BIM_ST={'Belum Mula':'#a3a6c2','On-Site':'#b45309','Processing':'#5b51e0','Drafting':'#272483','Sheet Final':'#d9a400','Siap / Selesai':'#0f7a43'};
 const OPS_TITLES={overview:'Ringkasan Operasi',site:'HOD Site / Tapak',pelan:'HOD Pelan',hr:'HOD HR',akaun:'HOD Akaun',data:'Data & Sync'};
 const MOD_TITLES={tracking:['Fail Tracking','Jejak fail dari kutipan data hingga tutup fail'],quotation:['Penjana Sebut Harga','Sebut harga rasmi atas kepala surat'],planner:['Perancangan & Ramalan','Ramal tempoh, krew & kos ikut tarikh akhir']};
 /* Aplikasi dalam folder repo — dimuat terus (iframe src), jadi kemas kini fail dalam folder terus nampak di hub */
@@ -507,6 +508,12 @@ function readDrafter(){
   return {drawings:d,projName:projName};
 }
 function readTrack(){const d=lsGet(KEYS.tracking);return Array.isArray(d)?d:[];}
+/* HOD BIM — localStorage sama origin. Null kalau app BIM belum pernah simpan (jangan guna data demo app). */
+function readBIM(){
+  const p=lsGet(BIM_KEYS.proj);if(!Array.isArray(p))return null;
+  const s=lsGet(BIM_KEYS.staff),r=lsGet(BIM_KEYS.rpt);
+  return {projects:p,staff:Array.isArray(s)?s:[],reports:Array.isArray(r)?r:[]};
+}
 function readQuote(){
   const w=win('quotation');let d=null;
   try{if(w&&typeof w.collect==='function')d=w.collect();}catch(e){}
@@ -532,16 +539,22 @@ function readPlanner(){
   const teams=+S.teams||0;const days=S.mode==='A'&&teams>0?Math.ceil(td/teams):null;
   return {segs:S.segs.length,td:td,len:len,area:area,cost:cost,quote:quote,profit:quote-cost,margin:quote>0?(quote-cost)/quote*100:0,mode:S.mode,teams:teams,days:days,deadline:S.deadline};
 }
-function invStatus(it){let bad=0,flag=0;(it.comp||[]).forEach(c=>{if(c.s==='tidak')bad++;if(c.c)flag++;});if(it.note)flag++;return bad?'bad':flag?'warn':'ok';}
+/* Sama dengan computeItem() app Inventori: ada "Tidak Baik" = rosak; ada status kosong = belum lengkap */
+function invStatus(it){const c=it.comp||[];return c.some(x=>x.s==='tidak')?'bad':c.some(x=>x.s==='kosong')?'warn':'ok';}
 function trackStage(f){const s=STAGES.find(([k])=>!f.stages||!f.stages[k]||f.stages[k].status!=='done');return s?s[0]:'done';}
 function trackProg(f){return Math.round(STAGES.filter(([k])=>f.stages&&f.stages[k]&&f.stages[k].status==='done').length/STAGES.length*100);}
 
 /* ================= DATA LUAR (Google Sheets terbitan CSV — sumber sama dengan aplikasi folder) ================= */
-const EXT={inv:null,qc:null,ck:null,err:{},loading:false};
+const EXT={inv:null,qc:null,ck:null,lh:null,err:{},loading:false};
 const EXT_SRC={
   inv:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTo5oCD7Wd6vTJNFs1WZti8ZKgkHjp869JylM1NbJwFll8rQ6VoHtgkNSoFHnAjON77i9xZC4QwnA91/pub?gid=0&single=true&output=csv',
-  qcBase:'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9VxT7lq3YC30mu8I2jIDQoorMyxaegkRkHD6geR5KEAmuf9sO88LIzGgw3a83aiYA7H-egUhcbex/pub?output=csv',
-  qcTabs:[['ENGINEERING',399274151],['TITLE',1201764382],['UMAP',421455856]],
+  /* QC — SAMA dengan CSV_SOURCES dalam app Kualiti Pelan, supaya angka hub = angka app.
+     Dulu hub guna sheet lain (2PACX-1vT9VxT7lq3…, tab ENGINEERING/TITLE/UMAP). Kalau sheet tu yang betul,
+     tukar URL dalam app Kualiti Pelan juga, kemudian letak balik di sini:
+     {name:'ENGINEERING',url:'…/pub?output=csv&gid=399274151',cat:'ENGINEERING'}, dsb. */
+  qc:[{name:'QC',url:'https://docs.google.com/spreadsheets/d/e/2PACX-1vSu5gATXzC5n6KzCNO5mk54h2EORGalqNs0XrGcxEeUXdIINtUZZfA2f7kNhAnFVPFnWFYXumEnx4FC/pub?output=csv',cat:'UMUM'}],
+  /* Laporan Harian — CSV_URL dalam HOD Site/Laporan Harian (sheet statistik surveyor) */
+  lh:'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9K9IiWtk4r4MouH9wGT5DeKJWGXyaKcKgj43dnC48KG_87QE7jO7wOJF6jzKQn2XwsJipuQRRj9MZ/pub?gid=1353013862&single=true&output=csv',
   /* Checklist Plan — Web App Apps Script (doPost dalam Api.gs) */
   ckApi:'https://script.google.com/macros/s/AKfycbxZtlvQERuGapebTBHFHT2i6ZFEGRdUnRSDfEyVKPNUDNDsRO28iNKuZYRqFGoWHn5d/exec'
 };
@@ -564,21 +577,65 @@ async function getCSV(url){
   catch(e){throw new Error(e.name==='AbortError'?'tamat masa':e.message);}
   finally{clearTimeout(tm);}
 }
-/* Inventori: Nama | Peralatan | S/N | Detail | Status | Catatan — Nama & Peralatan hanya di baris pertama setiap kumpulan */
+/* Inventori: Nama | Peralatan | S/N | Detail | Status | Catatan | (Status Kalibrasi | Tarikh Kalibrasi) — gaya "merged".
+   Logik SAMA dengan buildModel()/computeItem()/calInfo() dalam app Inventori Peralatan:
+   status kosong = "belum lengkap" (bukan baik), catatan = nota sahaja, kalibrasi sah 12 bulan, amaran 30 hari. */
+const CAL_VALID_MONTHS=12,CAL_WARN_DAYS=30;
+function parseDMY(s){s=String(s||'').trim();let m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(s);
+  if(m){const d=new Date(+m[3],m[2]-1,+m[1]);return d.getDate()===+m[1]&&d.getMonth()===m[2]-1?d:null;}
+  m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);if(m){const d=new Date(+m[1],m[2]-1,+m[3]);return isNaN(d)?null:d;}return null;}
+function calInfo(st,dt){
+  if(!st&&!dt)return null;
+  const d=parseDMY(dt);let due=null,days=null;
+  if(d){due=new Date(d.getFullYear(),d.getMonth()+CAL_VALID_MONTHS,d.getDate());if(due.getDate()!==d.getDate())due.setDate(0);days=daysTo(due);}
+  const s=String(st||'').toLowerCase();
+  const state=/tamat|luput|expired|tidak\s*sah|gagal/.test(s)||(days!==null&&days<0)?'tamat'
+    :/tidak\s*perlu|\bn\/a\b/.test(s)?'na':/dalam|hantar|proses|pending/.test(s)?'proses'
+    :days!==null&&days<=CAL_WARN_DAYS?'hampir':'sah';
+  return {state:state,due:due,days:days};
+}
 function parseInv(rows){
   const h=(rows[0]||[]).map(nk),ix=n=>h.indexOf(n);
-  const iN=ix('NAMA'),iP=ix('PERALATAN'),iS=ix('SN'),iD=ix('DETAIL'),iSt=ix('STATUS'),iC=ix('CATATAN');
-  if(iP<0||iSt<0)throw new Error('lajur Peralatan/Status tiada');
+  const iN=ix('NAMA'),iP=ix('PERALATAN'),iS=ix('SN'),iD=ix('DETAIL'),iSt=ix('STATUS'),iC=ix('CATATAN'),iKs=ix('STATUSKALIBRASI'),iKt=ix('TARIKHKALIBRASI');
+  if(iN<0||iP<0)throw new Error('lajur Nama/Peralatan tiada');
   const teams=[],by={};let nama='',item=null;
   rows.slice(1).forEach(r=>{
     const g=i=>i<0?'':String(r[i]==null?'':r[i]).trim();
     if(!r.join('').trim())return;
-    if(g(iN))nama=g(iN);
-    if(g(iP)){let tm=by[nama];if(!tm){tm=by[nama]={name:nama||'–',groups:[{cat:'',items:[]}]};teams.push(tm);}
-      item={name:g(iP),serial:g(iS),comp:[]};tm.groups[0].items.push(item);}
-    if(item&&(g(iD)||g(iSt)))item.comp.push({d:g(iD)||'Keadaan umum',s:/tidak|rosak/i.test(g(iSt))?'tidak':'baik',c:g(iC)});
+    const n=g(iN),p=g(iP);
+    if(n)nama=n;
+    if(n&&!p){item=null;return;}               // baris tajuk pemegang sahaja
+    if(p){let tm=by[nama];if(!tm){tm=by[nama]={name:nama||'–',groups:[{cat:'',items:[]}]};teams.push(tm);}
+      item={name:p,serial:g(iS),comp:[],calSt:'',calDt:''};tm.groups[0].items.push(item);}
+    if(!item)return;
+    if(g(iKs)&&!item.calSt)item.calSt=g(iKs);
+    if(g(iKt)&&!item.calDt)item.calDt=g(iKt);
+    const det=g(iD),st=g(iSt),ct=g(iC);
+    if(det||st||ct)item.comp.push({d:det||'—',s:!st?'kosong':/tidak|rosak/i.test(st)?'tidak':'baik',c:ct});
   });
-  return {teams:teams};
+  teams.forEach(t=>t.groups[0].items.forEach(it=>{it.cal=calInfo(it.calSt,it.calDt);}));
+  return {teams:teams,hasCal:iKs>=0||iKt>=0};
+}
+/* Laporan Harian — nama lajur ikut FIELD_ALIASES app Laporan Harian */
+const LH_NO_ISSUE=new Set(['','-','0','tiada','tiada isu','tiada masalah','tak ada','takde','none','no','nil','n/a','na']);
+function parseTarikh(v){const s=String(v||'').trim();let m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/),y,mo,d;
+  if(m){y=+m[1];mo=+m[2];d=+m[3];}else{m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);if(!m)return null;d=+m[1];mo=+m[2];y=+m[3];if(y<100)y+=2000;}
+  if(mo<1||mo>12||d<1||d>31)return null;const r=new Date(y,mo-1,d);return isNaN(r)?null:r;}
+function parseLH(rows){
+  const h=(rows[0]||[]).map(x=>String(x).trim().toLowerCase());
+  const col=names=>{for(const n of names){const i=h.indexOf(n);if(i>=0)return i;}return -1;};
+  const C={f:col(['no file','nofile','no fail']),k:col(['kawasan','kawasan lapangan','lokasi','tapak']),t:col(['tarikh','date']),
+    kat:col(['kategori','category']),s:col(['surveyor','juruukur']),q:col(['kuantiti','qty']),u:col(['unit']),
+    isu:col(['status isu','statusisu','isu']),ja:col(['jangka siap asal','jangka asal','jangkaasal']),js:col(['jangka siap semasa','jangka semasa','jangkasemasa'])};
+  if(C.f<0||C.t<0)throw new Error('lajur No File/Tarikh tiada');
+  return rows.slice(1).filter(r=>r.join('').trim()).map(r=>{const g=i=>i<0?'':String(r[i]==null?'':r[i]).trim();
+    const fm=g(C.f).replace(/\s+/g,' ').match(/^([A-Za-z]{2,6})\s*(\d+)\s*\/\s*(\d+)\s*[-–·,:|]?\s*(.*)$/);
+    const file=fm?((/^MGK$/i.test(fm[1])?'MCP':fm[1].toUpperCase())+' '+fm[2].padStart(3,'0')+'/'+(fm[3].length===4?fm[3].slice(2):fm[3])):g(C.f);
+    const isu=g(C.isu);
+    return {file:file,kawasan:g(C.k)||(fm?fm[4].trim():''),tarikh:parseTarikh(g(C.t)),kategori:g(C.kat),surveyor:g(C.s)||'Tiada nama',
+      qty:parseFloat(g(C.q).replace(/,/g,''))||0,unit:g(C.u)||'Unit',isu:LH_NO_ISSUE.has(isu.toLowerCase())?'':isu,
+      asal:parseTarikh(g(C.ja)),semasa:parseTarikh(g(C.js))};
+  });
 }
 /* QC: logik status sama seperti aplikasi Kualiti Pelan */
 function parseQC(rows,cat){
@@ -587,8 +644,12 @@ function parseQC(rows,cat){
   return rows.slice(1).filter(r=>r.join('').trim()).map(r=>{
     const sl=get(r,['STATUS','STATUS QC','KEPUTUSAN','STATE']).toLowerCase();
     const st=/rework|tolak|baiki|reject|gagal|tidak lulus|tak lulus/.test(sl)?'REWORK REQUIRED':/lul|siap|pass|selesai|approved/.test(sl)?'LULUS':'DALAM PROSES QC';
+    /* Rework: sama dengan cleanData()/hasRework() app Kualiti Pelan — fail yang LULUS selepas dibaiki tetap dikira kes rework */
+    const rl=get(r,['REWORK','SEMAK SEMULA','BAIKI']).toLowerCase();
+    const rwCol=!rl||/^(tiada|tidak|tak|no|none|false|n|nil)\b/.test(rl)||/^[-–0]+$/.test(rl)?false:/ada|ya|yes|true|\d/.test(rl);
     return {MAKLUMAT:(get(r,['MAKLUMAT','BIDANG','KATEGORI'])||cat).toUpperCase(),'NO. FAIL':get(r,['NO. FAIL','NO_FAIL','FILE NO','NO REF'])||'–',
-      PERKARA:get(r,['PERKARA','PROJEK','TAJUK','DESCRIPTION','PROJECT']),'NAMA SURVEYOR':get(r,['NAMA SURVEYOR','SURVEYOR','PEGAWAI']),STATUS:st};
+      PERKARA:get(r,['PERKARA','PROJEK','TAJUK','DESCRIPTION','PROJECT']),'NAMA SURVEYOR':get(r,['NAMA SURVEYOR','SURVEYOR','PEGAWAI'])||'Tiada nama',STATUS:st,
+      RW:rwCol||st==='REWORK REQUIRED'};
   });
 }
 /* Web App: POST text/plain (tiada preflight), Apps Script redirect ke googleusercontent yang beri CORS * */
@@ -609,7 +670,13 @@ function parseCK(res){
     st:String(s.current_status||'DRAFT').trim().toUpperCase(),round:Number(s.current_round)||1,
     drafter:s.drafter_name||'',checker:s.assigned_checker_name||'',proj:proj[s.project_id]||s.file_ref||s.project_id||''
   })).filter(s=>s.st!=='INACTIVE');
-  return {sheets:sheets,at:new Date()};
+  /* Item paling kerap gagal — sama dengan computeDashboardFromState() app Checklist Plan */
+  const ids=new Set(sheets.map(s=>s.id)),fails={};
+  (res.itemResults||[]).forEach(r=>{if(String(r.checker_status).toUpperCase()==='FAIL'&&ids.has(r.sheet_id))fails[r.item_id]=(fails[r.item_id]||0)+1;});
+  const master=res.checklistMaster||[];
+  const topErr=Object.entries(fails).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,n])=>{const m=master.find(x=>x.item_id===id)||{};
+    return {type:m.drawing_type||'–',no:m.item_number||id,title:m.item_title||'–',n:n};});
+  return {sheets:sheets,topErr:topErr,at:new Date()};
 }
 /* Status Site — app itu sendiri kira progres fail, lepas tu hantar ringkasan via postMessage (salinan dalam localStorage).
    Hub TAK salin logik kiraan, supaya angka dashboard sentiasa sama dengan app. */
@@ -633,13 +700,14 @@ async function loadExt(){
   if(EXT.loading)return;EXT.loading=true;scheduleRender();
   try{const w=win('app:site-status');if(w&&typeof w.refreshAllData==='function')w.refreshAllData();}catch(e){}
   const inv=getCSV(EXT_SRC.inv).then(r=>{EXT.inv=parseInv(r);delete EXT.err.inv;}).catch(e=>{EXT.err.inv=e.message;});
-  const qc=Promise.allSettled(EXT_SRC.qcTabs.map(([n,g])=>getCSV(EXT_SRC.qcBase+'&gid='+g).then(r=>parseQC(r,n)))).then(res=>{
+  const lh=getCSV(EXT_SRC.lh).then(r=>{EXT.lh=parseLH(r);delete EXT.err.lh;}).catch(e=>{EXT.err.lh=e.message;});
+  const qc=Promise.allSettled(EXT_SRC.qc.map(s=>getCSV(s.url).then(r=>parseQC(r,s.cat)))).then(res=>{
     const ok=res.filter(x=>x.status==='fulfilled');
     if(ok.length)EXT.qc=ok.flatMap(x=>x.value);
     if(ok.length<res.length)EXT.err.qc=(res.length-ok.length)+' tab gagal dimuat';else delete EXT.err.qc;
   });
   const ck=gasCall(EXT_SRC.ckApi,'getInitialAppData').then(r=>{EXT.ck=parseCK(r);delete EXT.err.ck;}).catch(e=>{EXT.err.ck=e.message;});
-  await Promise.allSettled([inv,qc,ck]);EXT.loading=false;scheduleRender();
+  await Promise.allSettled([inv,lh,qc,ck]);EXT.loading=false;scheduleRender();
 }
 
 /* ================= CHARTS ================= */
@@ -692,10 +760,31 @@ function render(){
   // Kualiti Pelan (QC) — Google Sheets
   const QX=EXT.qc||[],qxPass=QX.filter(i=>i.STATUS==='LULUS').length,qxProg=QX.filter(i=>i.STATUS==='DALAM PROSES QC').length,qxRw=QX.filter(i=>i.STATUS==='REWORK REQUIRED');
   const qxCat={};QX.forEach(i=>{qxCat[i.MAKLUMAT]=(qxCat[i.MAKLUMAT]||0)+1;});
+  const qxRwAll=QX.filter(i=>i.RW),qxRwRate=QX.length?Math.round(qxRwAll.length/QX.length*100):0;
+  const qxRwBySv={};qxRwAll.forEach(i=>{qxRwBySv[i['NAMA SURVEYOR']]=(qxRwBySv[i['NAMA SURVEYOR']]||0)+1;});
+  // Laporan Harian (Google Sheets)
+  const LH=EXT.lh||[],d7=new Date(t0.getTime()-6*864e5),d14=new Date(t0.getTime()-13*864e5);
+  const lh7=LH.filter(r=>r.tarikh&&r.tarikh>=d7&&r.tarikh<=t0),lhToday=LH.filter(r=>r.tarikh&&+r.tarikh===+t0);
+  const lhIsu14=LH.filter(r=>r.isu&&r.tarikh&&r.tarikh>=d14).sort((a,b)=>b.tarikh-a.tarikh);
+  const lhOut7={};lh7.forEach(r=>{if(r.qty)lhOut7[r.unit]=(lhOut7[r.unit]||0)+r.qty;});
+  const lhBySv={};LH.forEach(r=>{const s=lhBySv[r.surveyor]=lhBySv[r.surveyor]||{n7:0,last:null};if(lh7.includes(r))s.n7++;if(r.tarikh&&(!s.last||r.tarikh>s.last))s.last=r.tarikh;});
+  // Jangka siap dianjak: laporan TERKINI setiap fail+kawasan, jangka semasa > jangka asal
+  const lhLatest={};LH.forEach(r=>{if(!r.tarikh)return;const k=r.file+'|'+r.kawasan.toLowerCase();if(!lhLatest[k]||r.tarikh>=lhLatest[k].tarikh)lhLatest[k]=r;});
+  const lhSlip=Object.values(lhLatest).filter(r=>r.asal&&r.semasa&&r.semasa>r.asal).map(r=>Object.assign({slip:Math.round((r.semasa-r.asal)/864e5)},r)).sort((a,b)=>b.slip-a.slip);
+  // HOD BIM (localStorage)
+  const BIM=readBIM(),BP=BIM?BIM.projects:[];
+  const bimAct=BP.filter(p=>p.status!==BIM_DONE),bimOver=bimAct.filter(p=>parseD(p.end)&&parseD(p.end)<t0);
+  const bimSoon=bimAct.filter(p=>{const d=parseD(p.end);return d&&d>=t0&&daysTo(d)<=14;});
+  const bimAvg=bimAct.length?Math.round(bimAct.reduce((a,p)=>a+(+p.progressPercent||0),0)/bimAct.length):0;
+  const bimSt={};Object.keys(BIM_ST).forEach(k=>bimSt[k]=0);BP.forEach(p=>{if(bimSt[p.status]!=null)bimSt[p.status]++;});
+  const bimHrs7=BIM?BIM.reports.filter(r=>{const d=parseD(String(r.date||'').slice(0,10));return d&&d>=d7;}).reduce((a,r)=>a+(+r.hours||0),0):0;
+  const bimStaffName=id=>{const s=(BIM?BIM.staff:[]).find(x=>x.id===id);return s?s.name:'';};
   // Checklist Plan — Web App
   const CKS=EXT.ck?EXT.ck.sheets:[],ckN={DRAFT:0,PENDING_CHECK:0,RETURNED:0,APPROVED:0};CKS.forEach(x=>{if(ckN[x.st]!=null)ckN[x.st]++;});
   const ckRet=CKS.filter(x=>x.st==='RETURNED'),ckMulti=CKS.filter(x=>x.round>=3&&x.st!=='APPROVED');
   const ckByChecker={};CKS.filter(x=>x.st==='PENDING_CHECK').forEach(x=>{const k=x.checker||'Belum ditetapkan';ckByChecker[k]=(ckByChecker[k]||0)+1;});
+  const ckApproved=CKS.filter(x=>x.st==='APPROVED'),ckFirstRate=ckApproved.length?Math.round(ckApproved.filter(x=>x.round===1).length/ckApproved.length*100):null;
+  const ckByDrafter={};CKS.forEach(x=>{const k=x.drafter||'Tiada nama';ckByDrafter[k]=(ckByDrafter[k]||0)+1;});
   const extMsg=k=>EXT.err[k]?'Gagal dimuat ('+esc(EXT.err[k])+')':EXT.loading?'Memuatkan…':'Tiada data';
   // Status Site — progres kerja ukur setiap fail
   const SS=EXT.ss,SF=SS?SS.files:[];
@@ -710,8 +799,12 @@ function render(){
   const ssMsg=ready['app:site-status']?'Tiada data dari Status Site':'Memuatkan Status Site…';
   const ssSrc=SS&&SS.at?`Status Site · ${EXT.ssLive?'live':'simpanan'} ${dmy(SS.at)} ${SS.at.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'Status Site';
   // --- inventory
-  let invTot=0,invOk=0,invWarn=0,invBad=0;const invTeams=[],badItems=[];
-  if(inv&&inv.teams)inv.teams.forEach(t=>{let o=0,w=0,b=0;(t.groups||[]).forEach(g=>(g.items||[]).forEach(it=>{const s=invStatus(it);invTot++;if(s==='ok'){o++;invOk++;}else if(s==='warn'){w++;invWarn++;}else{b++;invBad++;badItems.push({team:t.name,it:it});}}));invTeams.push({name:t.name,o:o,w:w,b:b});});
+  let invTot=0,invOk=0,invWarn=0,invBad=0;const invTeams=[],badItems=[],calItems=[];
+  if(inv&&inv.teams)inv.teams.forEach(t=>{let o=0,w=0,b=0;(t.groups||[]).forEach(g=>(g.items||[]).forEach(it=>{const s=invStatus(it);invTot++;if(s==='ok'){o++;invOk++;}else if(s==='warn'){w++;invWarn++;}else{b++;invBad++;badItems.push({team:t.name,it:it});}
+    if(it.cal&&(it.cal.state==='tamat'||it.cal.state==='hampir'))calItems.push({team:t.name,it:it});}));invTeams.push({name:t.name,o:o,w:w,b:b});});
+  calItems.sort((a,b)=>(a.it.cal.days==null?-1e9:a.it.cal.days)-(b.it.cal.days==null?-1e9:b.it.cal.days));
+  const invAction=new Set([...badItems.map(x=>x.it),...calItems.map(x=>x.it)]);
+  if(inv&&inv.teams)inv.teams.forEach(t=>t.groups[0].items.forEach(it=>{if(invStatus(it)==='warn')invAction.add(it);}));
   // --- tracking
   const trkClosed=trk.filter(f=>trackStage(f)==='done'||(f.stages&&f.stages.close&&f.stages.close.status==='done'));
   const trkActive=trk.filter(f=>!trkClosed.includes(f));
@@ -729,6 +822,13 @@ function render(){
   INV.filter(i=>num(i.amt)-num(i.paid)>0).sort((a,b)=>(num(b.amt)-num(b.paid))-(num(a.amt)-num(a.paid))).forEach(i=>A.push({s:i.status==='unpaid'?'warn':'info',t:'Belum dibayar '+rm(num(i.amt)-num(i.paid))+' · '+i.inv,d:i.client+' · invois '+dmy(parseD(i.date)),go:'app:akaun'}));
   badItems.slice(0,6).forEach(x=>A.push({s:'bad',t:'Peralatan rosak: '+x.it.name,d:x.team+(x.it.serial?' · S/N '+x.it.serial:'')+' · '+(x.it.comp||[]).filter(c=>c.s==='tidak').map(c=>c.d+(c.c?' ('+c.c+')':'')).join(', '),go:'app:inventory'}));
   if(badItems.length>6)A.push({s:'bad',t:'+'+(badItems.length-6)+' lagi peralatan tidak baik',d:'Buka Inventori Peralatan untuk senarai penuh',go:'app:inventory'});
+  calItems.slice(0,6).forEach(x=>{const c=x.it.cal;A.push({s:c.state==='tamat'?'bad':'warn',t:(c.state==='tamat'?'Kalibrasi tamat: ':'Kalibrasi tamat dalam '+c.days+' hari: ')+x.it.name,d:[x.team,x.it.serial?'S/N '+x.it.serial:'',c.due?(c.state==='tamat'?'tamat ':'sah hingga ')+dmy(c.due):''].filter(Boolean).join(' · '),go:'app:inventory'});});
+  if(calItems.length>6)A.push({s:'warn',t:'+'+(calItems.length-6)+' lagi alat perlu kalibrasi',d:'Buka Inventori Peralatan untuk senarai penuh',go:'app:inventory'});
+  bimOver.forEach(p=>A.push({s:'bad',t:'Fail BIM lewat: '+p.fileNo,d:[p.title,p.status,(+p.progressPercent||0)+'%','tarikh akhir '+dmy(parseD(p.end))+' ('+Math.abs(daysTo(parseD(p.end)))+' hari lewat)'].filter(Boolean).join(' · '),go:'app:bim'}));
+  bimSoon.forEach(p=>{const dd=daysTo(parseD(p.end));A.push({s:'warn',t:(dd===0?'Fail BIM tamat hari ini: ':'Fail BIM tamat dalam '+dd+' hari: ')+p.fileNo,d:[p.title,p.status,(+p.progressPercent||0)+'%'].filter(Boolean).join(' · '),go:'app:bim'});});
+  lhIsu14.slice(0,5).forEach(r=>A.push({s:'warn',t:'Isu lapangan: '+r.file+(r.kawasan?' · '+r.kawasan:''),d:[r.isu,r.surveyor,dmy(r.tarikh)].filter(Boolean).join(' · '),go:'app:site'}));
+  if(lhIsu14.length>5)A.push({s:'warn',t:'+'+(lhIsu14.length-5)+' lagi isu lapangan (14 hari)',d:'Buka Laporan Harian untuk senarai penuh',go:'app:site'});
+  lhSlip.slice(0,4).forEach(r=>A.push({s:'info',t:'Jangka siap dianjak +'+r.slip+' hari: '+r.file+(r.kawasan?' · '+r.kawasan:''),d:'asal '+dmy(r.asal)+' → semasa '+dmy(r.semasa)+' · laporan '+dmy(r.tarikh)+' oleh '+r.surveyor,go:'app:site'}));
   drOver.forEach(d=>A.push({s:'warn',t:'Lukisan lewat: '+(d.dwgNo||d.title||'–'),d:[DRW.projName[d.projectId],d.drafter,num(d.progress)+'%','sasaran '+dmy(drDue(d))].filter(Boolean).join(' · '),go:'app:pelan-status'}));
   qxRw.slice(0,6).forEach(i=>A.push({s:'bad',t:'QC perlu rework: '+i['NO. FAIL'],d:[i.MAKLUMAT,i.PERKARA,i['NAMA SURVEYOR']].filter(Boolean).join(' · '),go:'app:pelan-qc'}));
   if(qxRw.length>6)A.push({s:'bad',t:'+'+(qxRw.length-6)+' lagi fail QC perlu rework',d:'Buka Kualiti Pelan untuk senarai penuh',go:'app:pelan-qc'});
@@ -747,14 +847,18 @@ function render(){
   const hr=new Date().getHours(),greet=hr<12?'Selamat pagi':hr<14?'Selamat tengah hari':hr<19?'Selamat petang':'Selamat malam';
   let h=`<section class="hero">${CONTOUR}<div class="hero-head"><div><h2>Ringkasan operasi syarikat</h2><p>${greet}. Data live dari semua modul & Google Sheets, dikemas kini ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} pada ${dmy(new Date())}.</p></div><div class="sp"></div>
     <div class="chips">${nBad?`<span class="chip bad">${nBad} kritikal</span>`:''}${nWarn?`<span class="chip warn">${nWarn} perlu perhatian</span>`:''}${!nBad&&!nWarn?'<span class="chip ok">Semua terkawal</span>':''}</div></div>`;
+  /* Pelan perlu tindakan = QC perlu rework + checklist dipulangkan + lukisan lewat (setiap satu dari app sendiri) */
+  const plAct=(QX.length?qxRw.length:0)+(EXT.ck?ckRet.length:0)+drOver.length,plAny=QX.length||EXT.ck||DRW;
   h+='<div class="kpis">'
    +kpi('app:site-status','Fail ukur aktif',SS?ssOpen.length:'–',SS?`${ssLate.length?`<span class="chip bad">${ssLate.length} lewat</span>`:'<span class="chip ok">Tiada lewat</span>'} purata ${ssAvg}%`:`<span class="chip mute">${ssMsg}</span>`)
+   +kpi('app:site','Laporan harian (7 hari)',EXT.lh?lh7.length:'–',EXT.lh?`${lhToday.length} hari ini ${lhIsu14.length?`<span class="chip warn">${lhIsu14.length} isu (14 hari)</span>`:'<span class="chip ok">Tiada isu</span>'}`:`<span class="chip mute">${extMsg('lh')}</span>`)
    +kpi('app:akaun','Kutipan diterima',`<small>RM</small>${Math.round(paid/1000).toLocaleString('en-MY')}k`,`${billed?Math.round(paid/billed*100):0}% daripada ${rmK(billed)} diinvois`,true)
    +kpi('app:akaun','Belum dikutip',`<small>RM</small>${Math.round(outst/1000).toLocaleString('en-MY')}k`,`${INV.filter(i=>num(i.amt)-num(i.paid)>0).length} invois tertunggak`)
+   +kpi(qxRw.length?'app:pelan-qc':ckRet.length?'app:pelan-checklist':'app:pelan-status','Pelan perlu tindakan',plAny?plAct:'–',plAny?`${QX.length?`<span class="chip ${qxRw.length?'bad':'ok'}">${qxRw.length} rework</span>`:''}${EXT.ck?`<span class="chip ${ckRet.length?'warn':'ok'}">${ckRet.length} dipulang</span>`:''}${DRW?`<span class="chip ${drOver.length?'warn':'ok'}">${drOver.length} lewat</span>`:''}`:`<span class="chip mute">${extMsg('qc')}</span>`)
+   +kpi('app:bim','Fail BIM aktif',BIM?bimAct.length:'–',BIM?`${bimOver.length?`<span class="chip bad">${bimOver.length} lewat</span>`:'<span class="chip ok">Tiada lewat</span>'} purata ${bimAvg}%`:'<span class="chip mute">Belum ada data BIM</span>')
+   /* FIX: jangan tunjuk "0 rosak" bila CSV inventori belum load atau gagal */
+   +kpi('app:inventory','Peralatan perlu tindakan',EXT.inv?invAction.size:'–',EXT.inv?`<span class="chip bad">${invBad} rosak</span><span class="chip warn">${invWarn} belum lengkap</span>${EXT.inv.hasCal?`<span class="chip ${calItems.length?'warn':'ok'}">${calItems.length} kalibrasi</span>`:''}`:`<span class="chip mute">${extMsg('inv')}</span>`)
    +kpi('tracking','Fail tracking aktif',trkActive.length,trk.length?`${trkClosed.length} ditutup, purata ${trkAvg}%`:'Belum ada fail')
-   /* FIX: jangan tunjuk "0 rosak / 0 perhatian" bila CSV inventori belum load atau gagal */
-   +kpi('app:inventory','Peralatan perlu tindakan',EXT.inv?invBad+invWarn:'–',EXT.inv?`<span class="chip bad">${invBad} rosak</span><span class="chip warn">${invWarn} perhatian</span>`:`<span class="chip mute">${extMsg('inv')}</span>`)
-   +kpi('quotation','Sebut harga semasa',q?`<small>RM</small>${Math.round(q.total).toLocaleString('en-MY')}`:'–',q?esc(q.ref||'Draf'):'Belum ada draf',true)
    +'</div></section>';
 
   // --- row 1: trend + alerts
@@ -785,6 +889,27 @@ function render(){
     +'</div>';
   h+='</div>';
 
+  // --- row 2b: Laporan Harian + HOD BIM
+  h+='<div class="grid g11">';
+  const svRows=Object.entries(lhBySv).sort((a,b)=>b[1].n7-a[1].n7||a[0].localeCompare(b[0]));
+  const maxSv=Math.max(1,...svRows.map(x=>x[1].n7));
+  h+=`<div class="panel"><div class="ph"><h3>Laporan harian lapangan</h3><span class="src">HOD Site · Google Sheets</span><div class="sp"></div><button class="link" data-go="app:site">Buka laporan</button></div>`
+    +(EXT.lh?`<div class="stats"><div class="stat" data-go="app:site"><div class="l">Laporan 7 hari</div><div class="v">${lh7.length}</div></div><div class="stat" data-go="app:site"><div class="l">Isu dilapor (14 hari)</div><div class="v" style="${lhIsu14.length?'color:var(--warn)':''}">${lhIsu14.length}</div></div></div>`
+      +`<div style="margin-top:12px">${svRows.length?svRows.map(([n,v])=>{const ago=v.last?daysTo(v.last):null;
+        return `<div class="hb"><div class="n" title="${esc(n)}">${esc(n)}</div><div class="track"><span style="width:${v.n7/maxSv*100}%;background:var(--ind-600)" data-tip="<b>${escA(n)}</b><br>${v.n7} laporan dalam 7 hari"></span></div><div class="val" style="${ago!=null&&ago<-3?'color:var(--warn)':''}">${v.n7}<span style="font-weight:500;color:var(--muted);font-size:11px"> · ${v.last?(ago===0?'hari ini':Math.abs(ago)+'h lalu'):'–'}</span></div></div>`;}).join(''):'<div class="empty">Tiada laporan.</div>'}</div>`
+      +`<dl class="kv"><dt>Output 7 hari</dt><dd>${Object.entries(lhOut7).map(([u,v])=>v.toLocaleString('en-MY',{maximumFractionDigits:2})+' '+esc(u)).join(' · ')||'–'}</dd><dt>Jangka siap dianjak</dt><dd style="${lhSlip.length?'color:var(--warn);font-weight:650':''}">${lhSlip.length} fail/kawasan</dd><dt>Jumlah rekod</dt><dd>${LH.length}</dd></dl>`
+      :`<div class="empty">Laporan Harian: ${extMsg('lh')}</div>`)
+    +'</div>';
+  const bimList=bimAct.slice().sort((a,b)=>(parseD(a.end)||9e15)-(parseD(b.end)||9e15)).slice(0,6);
+  h+=`<div class="panel"><div class="ph"><h3>HOD BIM · Scan to BIM</h3><span class="src">${BIM?BP.length+' fail · '+BIM.staff.length+' staff':'GEO-BIM Tracker'}</span><div class="sp"></div><button class="link" data-go="app:bim">Buka BIM</button></div>`
+    +(BIM?Object.keys(BIM_ST).map(k=>`<div class="hb"><div class="n">${esc(k)}</div><div class="track"><span style="width:${BP.length?bimSt[k]/BP.length*100:0}%;background:${BIM_ST[k]}" data-tip="${esc(k)}: ${bimSt[k]} fail"></span></div><div class="val">${bimSt[k]}</div></div>`).join('')
+      +(bimList.length?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>No. fail</th><th>PIC</th><th>Progres</th><th class="num">Tarikh akhir</th></tr></thead><tbody>${bimList.map(p=>{const d=parseD(p.end),dd=d?daysTo(d):null;
+        return `<tr data-go="app:bim" style="cursor:pointer"><td><b style="font-weight:600">${esc(p.fileNo)}</b><div style="font-size:11.5px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</div></td><td style="font-size:12px">${esc((p.staffIds||[]).map(bimStaffName).filter(Boolean).join(', ')||'–')}</td><td>${progCell(p.progressPercent,dd!=null&&dd<0?'var(--bad)':null)}</td><td class="num">${d?dmy(d):'–'}${dd!=null?`<div style="font-size:11px;color:${dd<0?'var(--bad)':dd<=14?'var(--warn)':'var(--muted)'}">${dd<0?Math.abs(dd)+' hari lewat':dd===0?'hari ini':dd+' hari lagi'}</div>`:''}</td></tr>`;}).join('')}</tbody></table></div>`:'')
+      +`<dl class="kv"><dt>Purata progres fail aktif</dt><dd>${bimAvg}%</dd><dt>Jam kerja dilapor (7 hari)</dt><dd>${bimHrs7.toLocaleString('en-MY')} j</dd></dl>`
+      :'<div class="empty">Tiada data BIM dalam browser ini.<br><button class="link" data-go="app:bim" style="margin-top:8px">Buka HOD BIM</button></div>')
+    +'</div>';
+  h+='</div>';
+
   // --- row 3: collections + inventory
   const byClient={};INV.forEach(i=>{const c=i.client||'–';byClient[c]=byClient[c]||{p:0,o:0};byClient[c].p+=num(i.paid);byClient[c].o+=num(i.amt)-num(i.paid);});
   const clients=Object.entries(byClient).sort((a,b)=>(b[1].p+b[1].o)-(a[1].p+a[1].o));
@@ -794,8 +919,10 @@ function render(){
     +(clients.length?clients.map(([c,v])=>hbStack(c,[{v:v.p,c:'var(--c-rev)',l:'Dibayar',t:rm(v.p)},{v:v.o,c:'var(--c-exp)',l:'Tertunggak',t:rm(v.o)}],0,rmK(v.p+v.o)).replace('<div class="track">',`<div class="track" style="width:${(v.p+v.o)/maxC*100}%">`)).join(''):'<div class="empty">Tiada invois.</div>')
     +`<div class="lgd"><span><i style="background:var(--c-rev)"></i>Dibayar ${rmK(paid)}</span><span><i style="background:var(--c-exp)"></i>Tertunggak ${rmK(outst)}</span></div></div>`;
   h+=`<div class="panel"><div class="ph"><h3>Keadaan peralatan ikut pemegang</h3><span class="src">Google Sheets</span><div class="sp"></div><button class="link" data-go="app:inventory">Inventori</button></div>`
-    +(invTeams.length?invTeams.map(t=>hbStack(t.name,[{v:t.o,c:'var(--ok)',l:'Baik'},{v:t.w,c:'#d9a400',l:'Perlu perhatian'},{v:t.b,c:'var(--bad)',l:'Tidak baik'}],0,t.o+t.w+t.b)).join(''):'<div class="empty">Inventori: '+extMsg('inv')+'</div>')
-    +`<div class="lgd"><span><i style="background:var(--ok)"></i>Baik ${invOk}</span><span><i style="background:#d9a400"></i>Perhatian ${invWarn}</span><span><i style="background:var(--bad)"></i>Tidak baik ${invBad}</span><span style="margin-left:auto">${invTot} item</span></div></div>`;
+    +(invTeams.length?invTeams.map(t=>hbStack(t.name,[{v:t.o,c:'var(--ok)',l:'Baik'},{v:t.w,c:'#d9a400',l:'Belum lengkap'},{v:t.b,c:'var(--bad)',l:'Ada kerosakan'}],0,t.o+t.w+t.b)).join(''):'<div class="empty">Inventori: '+extMsg('inv')+'</div>')
+    +`<div class="lgd"><span><i style="background:var(--ok)"></i>Baik ${invOk}</span><span><i style="background:#d9a400"></i>Belum lengkap ${invWarn}</span><span><i style="background:var(--bad)"></i>Ada kerosakan ${invBad}</span><span style="margin-left:auto">${invTot} unit</span></div>`
+    +(EXT.inv&&EXT.inv.hasCal?`<dl class="kv"><dt>Kalibrasi tamat / hampir tamat</dt><dd style="${calItems.length?'color:var(--warn);font-weight:650':''}">${calItems.filter(x=>x.it.cal.state==='tamat').length} tamat · ${calItems.filter(x=>x.it.cal.state==='hampir').length} dalam ${CAL_WARN_DAYS} hari</dd></dl>`:'')
+    +'</div>';
   h+='</div>';
 
   // --- row 4: tracking pipeline, pelan+HR, quotation+planner
@@ -814,11 +941,16 @@ function render(){
       <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan lewat</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
       <div class="stat" data-go="app:pelan-qc"><div class="l">QC lulus</div><div class="v">${QX.length?Math.round(qxPass/QX.length*100)+'%':dash}</div></div>
       <div class="stat" data-go="app:pelan-qc"><div class="l">QC perlu rework</div><div class="v" style="${qxRw.length?'color:var(--bad)':''}">${QX.length?qxRw.length:dash}</div></div>
+      <div class="stat" data-go="app:pelan-qc"><div class="l">Kadar rework QC</div><div class="v" style="${qxRwRate?'color:var(--bad)':''}">${QX.length?qxRwRate+'%':dash}</div></div>
+      <div class="stat" data-go="app:pelan-checklist"><div class="l">Lulus pusingan 1</div><div class="v">${ckFirstRate!=null?ckFirstRate+'%':dash}</div></div>
     </div>
     <dl class="kv"><dt>Lukisan (mula / proses / semak / lulus)</dt><dd>${DRW?`${drSt['Belum Mula']} / ${drSt['Penyediaan Plan']} / ${drSt['Dalam Semakan']} / ${drSt['Diluluskan']}`:'Belum ada data'}</dd>
     <dt>Checklist (draf / semak / pulang / lulus)</dt><dd>${EXT.ck?`<span data-go="app:pelan-checklist" style="cursor:pointer">${ckN.DRAFT} / ${ckN.PENDING_CHECK} / <span style="${ckN.RETURNED?'color:var(--bad);font-weight:700':''}">${ckN.RETURNED}</span> / ${ckN.APPROVED}</span>`:extMsg('ck')}</dd>
     ${Object.keys(ckByChecker).length?`<dt>Menunggu semakan ikut checker</dt><dd>${Object.entries(ckByChecker).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
+    ${Object.keys(ckByDrafter).length?`<dt>Helaian ikut drafter</dt><dd>${Object.entries(ckByDrafter).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
+    ${EXT.ck&&EXT.ck.topErr.length?`<dt>Item checklist kerap gagal</dt><dd>${EXT.ck.topErr.slice(0,3).map(e=>esc(e.type+' '+e.no)+' ('+e.n+'×)').join(' · ')}</dd>`:''}
     <dt>Fail QC ikut bidang</dt><dd>${Object.entries(qxCat).map(([k,n])=>esc(k)+' '+n).join(' · ')||extMsg('qc')}</dd>
+    ${Object.keys(qxRwBySv).length?`<dt>Kes rework ikut surveyor</dt><dd>${Object.entries(qxRwBySv).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
     <dt>Kakitangan · kehadiran</dt><dd>${ST.length} · ${avgAtt}%</dd><dt>Cuti menunggu</dt><dd>${pendLeave.length}</dd></dl></div>`;
   h+=`<div class="panel"><div class="ph"><h3>Sebut harga & ramalan</h3><span class="src">Penjana · Perancangan</span></div>`
     +(q?`<div style="font-size:12px;color:var(--muted)">${esc(q.ref)} · ${esc(q.date)}</div><div style="font-weight:600;font-size:13px;margin:2px 0 4px">${esc(q.client)}</div><div style="font-size:11.5px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(q.title)}</div>
@@ -830,11 +962,13 @@ function render(){
   // --- summary report
   const R=[];
   R.push(`<b>Kerja ukur:</b> ${SS?`${SF.length} fail dalam Status Site — ${ssN.done} selesai, ${ssN.prog} dalam progres, ${ssN.new} baru direkod, ${ssLate.length} lewat jangka siap. Purata progres ${ssAvg}%${ssSoon.length?`, ${ssSoon.length} fail dengan jangka siap dalam 14 hari`:''}.`:'data Status Site belum dimuat.'}`);
+  if(EXT.lh)R.push(`<b>Laporan harian:</b> ${lh7.length} laporan dalam 7 hari (${lhToday.length} hari ini) daripada ${svRows.filter(x=>x[1].n7).length} surveyor${Object.keys(lhOut7).length?`, output ${Object.entries(lhOut7).map(([u,v])=>v.toLocaleString('en-MY',{maximumFractionDigits:2})+' '+esc(u)).join(', ')}`:''}. ${lhIsu14.length} isu lapangan dalam 14 hari${lhSlip.length?`, ${lhSlip.length} fail/kawasan dengan jangka siap dianjak`:''}.`);
+  if(BIM)R.push(`<b>BIM:</b> ${BP.length} fail Scan to BIM — ${bimAct.length} aktif (purata ${bimAvg}%), ${bimSt[BIM_DONE]} siap${bimOver.length?`, ${bimOver.length} lewat tarikh akhir`:''}${bimSoon.length?`, ${bimSoon.length} tamat dalam 14 hari`:''}. ${bimHrs7.toLocaleString('en-MY')} jam kerja dilapor minggu ini.`);
   if(P.length)R.push(`<b>Projek:</b> ${active.length} aktif daripada ${P.length} projek (${delayed.length} lewat, ${dueSoon.length} dengan tarikh akhir dalam 14 hari). ${crewsOn} krew sedang di tapak.`);
   R.push(`<b>Kewangan:</b> ${rm(billed)} telah diinvois, ${rm(paid)} diterima (${billed?Math.round(paid/billed*100):0}%). Baki belum dikutip ${rm(outst)}${clients.length?`, terbesar dari ${esc(clients.slice().sort((a,b)=>b[1].o-a[1].o)[0][0])}`:''}. Perbelanjaan direkod ${rm(expT)}.`);
-  R.push(`<b>Pelan:</b> ${DRW?`${DL.length} lukisan dalam Status Pelan — ${drSt['Diluluskan']} diluluskan, ${drSt['Dalam Semakan']} dalam semakan, ${drSt['Penyediaan Plan']} dalam penyediaan, ${drSt['Belum Mula']} belum mula${drOver.length?`, ${drOver.length} melepasi sasaran`:''}.`:'tiada data Status Pelan dalam browser ini.'}${EXT.ck?` Checklist: ${CKS.length} helaian — ${ckN.APPROVED} lulus, ${ckN.PENDING_CHECK} menunggu semakan, ${ckN.RETURNED} dipulangkan, ${ckN.DRAFT} draf${ckMulti.length?`, ${ckMulti.length} dah 3 round ke atas`:''}.`:''}${QX.length?` QC: ${QX.length} fail — ${qxPass} lulus, ${qxProg} dalam proses, ${qxRw.length} perlu rework.`:''}`);
+  R.push(`<b>Pelan:</b> ${DRW?`${DL.length} lukisan dalam Status Pelan — ${drSt['Diluluskan']} diluluskan, ${drSt['Dalam Semakan']} dalam semakan, ${drSt['Penyediaan Plan']} dalam penyediaan, ${drSt['Belum Mula']} belum mula${drOver.length?`, ${drOver.length} melepasi sasaran`:''}.`:'tiada data Status Pelan dalam browser ini.'}${EXT.ck?` Checklist: ${CKS.length} helaian — ${ckN.APPROVED} lulus, ${ckN.PENDING_CHECK} menunggu semakan, ${ckN.RETURNED} dipulangkan, ${ckN.DRAFT} draf${ckMulti.length?`, ${ckMulti.length} dah 3 round ke atas`:''}.`:''}${ckFirstRate!=null?` Kadar lulus pusingan 1: ${ckFirstRate}%.`:''}${QX.length?` QC: ${QX.length} fail — ${qxPass} lulus, ${qxProg} dalam proses, ${qxRw.length} perlu rework; kadar rework keseluruhan ${qxRwRate}%.`:''}`);
   R.push(`<b>Sumber manusia:</b> ${ST.length} kakitangan, purata kehadiran ${avgAtt}%, ${pendLeave.length} permohonan cuti menunggu kelulusan.`);
-  if(EXT.inv)R.push(`<b>Peralatan:</b> ${invTot} item dipegang ${invTeams.length} orang — ${invOk} baik, ${invWarn} perlu perhatian, ${invBad} tidak baik${badItems.length?` (${badItems.slice(0,3).map(x=>esc(x.it.name)+' / '+esc(x.team)).join(', ')}${badItems.length>3?', …':''})`:''}.`);
+  if(EXT.inv)R.push(`<b>Peralatan:</b> ${invTot} unit dipegang ${invTeams.length} orang — ${invOk} baik, ${invWarn} belum lengkap, ${invBad} ada kerosakan${badItems.length?` (${badItems.slice(0,3).map(x=>esc(x.it.name)+' / '+esc(x.team)).join(', ')}${badItems.length>3?', …':''})`:''}.${EXT.inv.hasCal?` ${calItems.length} alat perlu kalibrasi.`:''}`);
   R.push(`<b>Fail tracking:</b> ${trk.length?`${trk.length} fail, ${trkActive.length} aktif, ${trkClosed.length} ditutup, purata kemajuan ${trkAvg}%${trkOver.length?`, ${trkOver.length} melepasi tarikh tamat`:''}.`:'belum ada fail direkod.'}`);
   if(q)R.push(`<b>Sebut harga semasa:</b> ${esc(q.ref)} untuk ${esc(q.client)} bernilai RM ${q.total.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})} (termasuk SST ${q.taxRate}%).`);
   if(pl)R.push(`<b>Ramalan kerja:</b> ${pl.td.toFixed(1)} team-days${pl.days!=null?`, anggaran ${pl.days} hari kerja dengan ${pl.teams} team`:''}; kos ${rm(pl.cost)}, sebut harga ${rm(pl.quote)}, margin ${pl.margin.toFixed(1)}%.`);
