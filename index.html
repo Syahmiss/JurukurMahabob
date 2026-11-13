@@ -169,14 +169,20 @@ tr:last-child td{border-bottom:0}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:12.5px;margin-top:14px}
 .kv dt{color:var(--muted)}
 .kv dd{font-weight:550;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
-/* Panel HOD Pelan: 3 lajur (Status Pelan | Checklist | QC) */
-.pcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.pcol{min-width:0}
-.pcol+.pcol{border-left:1px solid var(--line2);padding-left:18px}
-.psec{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:var(--ind-800);margin-bottom:10px}
+/* Panel HOD Pelan: Status Pelan | Checklist | QC — 3 lajur sama tinggi; jadi 1 lajur bila PANEL sempit (container query) */
+.panel.pelan{container-type:inline-size}
+.pcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
+@container (max-width:680px){.pcols{grid-template-columns:minmax(0,1fr)}}
+.pcol{min-width:0;border:1px solid var(--line2);border-radius:var(--r-md);padding:12px 14px}
+.psec{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:var(--ind-800);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line2)}
 .psec .link{font-size:11.5px;padding:2px 6px}
-.pcol .kv{grid-template-columns:minmax(0,1fr) auto}
-@media (max-width:1320px){.pcols{grid-template-columns:minmax(0,1fr)}.pcol+.pcol{border-left:0;padding-left:0;border-top:1px solid var(--line2);padding-top:14px}}
+.pcol .stats{gap:8px}
+.pcol .stat{padding:9px 11px}
+.pcol .stat .v{font-size:18px}
+.pcol .kv{display:block;margin-top:10px}
+.pcol .kv dt{font-size:11.5px;margin-top:8px}
+.pcol .kv dd{text-align:left;font-size:12.5px;margin-top:1px}
+.errm{color:var(--bad);font-weight:600;cursor:help;border-bottom:1px dotted currentColor}
 
 /* summary report */
 .report{background:var(--ind-950);color:#dfe0fa;border-radius:var(--r-lg);padding:20px 24px}
@@ -577,13 +583,20 @@ function csvRows(txt){
   if(cur!==''||row.length){row.push(cur);rows.push(row);}
   return rows;
 }
+/* fetch dengan had masa. Sesetengah persekitaran (preview/iframe/extension) tak boleh hantar AbortSignal
+   ("AbortSignal object could not be cloned") — bila jadi, cuba semula tanpa signal; had masa tetap jalan guna Promise.race. */
+async function fetchT(url,opts,ms){
+  let ctl=null;try{ctl=new AbortController();}catch(e){}
+  let tm;const timeout=new Promise((_,rej)=>{tm=setTimeout(()=>{try{ctl&&ctl.abort();}catch(e){}const er=new Error('tamat masa');er.name='AbortError';rej(er);},ms);});
+  const go=sig=>fetch(url,sig?Object.assign({},opts,{signal:sig}):opts);
+  try{return await Promise.race([go(ctl&&ctl.signal).catch(e=>{if(/clone|AbortSignal/i.test(String(e&&e.message)))return go(null);throw e;}),timeout]);}
+  finally{clearTimeout(tm);}
+}
 async function getCSV(url){
-  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
-  try{const r=await fetch(url+'&_t='+Date.now(),{cache:'no-store',signal:ctl.signal});
+  try{const r=await fetchT(url+'&_t='+Date.now(),{cache:'no-store'},12000);
     if(!r.ok)throw new Error('HTTP '+r.status);const txt=await r.text();
     if(/^\s*</.test(txt))throw new Error('respons bukan CSV');return csvRows(txt);}
   catch(e){throw new Error(e.name==='AbortError'?'tamat masa':e.message);}
-  finally{clearTimeout(tm);}
 }
 /* Inventori: Nama | Peralatan | S/N | Detail | Status | Catatan | (Status Kalibrasi | Tarikh Kalibrasi) — gaya "merged".
    Logik SAMA dengan buildModel()/computeItem()/calInfo() dalam app Inventori Peralatan:
@@ -662,13 +675,11 @@ function parseQC(rows,cat){
 }
 /* Web App: POST text/plain (tiada preflight), Apps Script redirect ke googleusercontent yang beri CORS * */
 async function gasCall(url,fn,args){
-  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),25000);
-  try{const r=await fetch(url,{method:'POST',redirect:'follow',cache:'no-store',signal:ctl.signal,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args||[]})});
+  try{const r=await fetchT(url,{method:'POST',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args||[]})},25000);
     if(!r.ok)throw new Error('HTTP '+r.status);
     let j;try{j=await r.json();}catch(e){throw new Error('respons bukan JSON');}
     if(!j||j.ok!==true)throw new Error((j&&j.error)||'ralat Web App');return j.result;}
   catch(e){throw new Error(e.name==='AbortError'?'tamat masa':e.message);}
-  finally{clearTimeout(tm);}
 }
 function parseCK(res){
   if(!res||res.success===false)throw new Error((res&&res.message)||'data tidak sah');
@@ -793,7 +804,7 @@ function render(){
   const ckByChecker={};CKS.filter(x=>x.st==='PENDING_CHECK').forEach(x=>{const k=x.checker||'Belum ditetapkan';ckByChecker[k]=(ckByChecker[k]||0)+1;});
   const ckApproved=CKS.filter(x=>x.st==='APPROVED'),ckFirstRate=ckApproved.length?Math.round(ckApproved.filter(x=>x.round===1).length/ckApproved.length*100):null;
   const ckByDrafter={};CKS.forEach(x=>{const k=x.drafter||'Tiada nama';ckByDrafter[k]=(ckByDrafter[k]||0)+1;});
-  const extMsg=k=>EXT.err[k]?'Gagal dimuat ('+esc(EXT.err[k])+')':EXT.loading?'Memuatkan…':'Tiada data';
+  const extMsg=k=>EXT.err[k]?`<span class="errm" title="${esc(EXT.err[k])}">Gagal dimuat</span>`:EXT.loading?'Memuatkan…':'Tiada data';
   // Status Site — progres kerja ukur setiap fail
   const SS=EXT.ss,SF=SS?SS.files:[];
   const ssStat=f=>f.progress>=100?'done':(f.due&&f.due<t0)?'late':f.progress>0?'prog':'new';
@@ -942,12 +953,12 @@ function render(){
   h+='<div class="grid g21">';
   // HOD Pelan — satu panel: Status Pelan | Checklist Plan | Kualiti Pelan (QC)
   const qxRwList=qxRw.slice(0,5);
-  h+=`<div class="panel"><div class="ph"><h3>HOD Pelan</h3><span class="src">Status Pelan · Checklist · Kualiti Pelan (QC)</span></div>
+  h+=`<div class="panel pelan"><div class="ph"><h3>HOD Pelan</h3><span class="src">Status Pelan · Checklist · Kualiti Pelan (QC)</span></div>
     <div class="pcols">
     <div class="pcol"><div class="psec"><span>Status Pelan</span><button class="link" data-go="app:pelan-status">Buka</button></div>
       <div class="stats">
-        <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan dalam proses</div><div class="v">${DRW?DL.length-drSt['Diluluskan']:dash}</div></div>
-        <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan lewat</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
+        <div class="stat" data-go="app:pelan-status"><div class="l">Dalam proses</div><div class="v">${DRW?DL.length-drSt['Diluluskan']:dash}</div></div>
+        <div class="stat" data-go="app:pelan-status"><div class="l">Lewat sasaran</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
       </div>
       <dl class="kv"><dt>Mula / proses / semak / lulus</dt><dd>${DRW?`${drSt['Belum Mula']} / ${drSt['Penyediaan Plan']} / ${drSt['Dalam Semakan']} / ${drSt['Diluluskan']}`:'Belum ada data'}</dd></dl>
     </div>
@@ -981,8 +992,8 @@ function render(){
     <div class="stats">
       <div class="stat" data-go="ops:hr"><div class="l">Kakitangan</div><div class="v">${ST.length}</div></div>
       <div class="stat" data-go="ops:hr"><div class="l">Purata kehadiran</div><div class="v" style="${ST.length&&avgAtt<80?'color:var(--warn)':''}">${ST.length?avgAtt+'%':dash}</div></div>
-      <div class="stat" data-go="ops:hr"><div class="l">Cuti menunggu kelulusan</div><div class="v" style="${pendLeave.length?'color:var(--warn)':''}">${pendLeave.length}</div></div>
-      <div class="stat" data-go="ops:hr"><div class="l">Kehadiran bawah 80%</div><div class="v" style="${lowAtt.length?'color:var(--bad)':''}">${ST.length?lowAtt.length:dash}</div></div>
+      <div class="stat" data-go="ops:hr"><div class="l">Cuti menunggu</div><div class="v" style="${pendLeave.length?'color:var(--warn)':''}">${pendLeave.length}</div></div>
+      <div class="stat" data-go="ops:hr"><div class="l">Hadir &lt; 80%</div><div class="v" style="${lowAtt.length?'color:var(--bad)':''}">${ST.length?lowAtt.length:dash}</div></div>
     </div>
     ${deptRows.length?`<div style="margin-top:12px">${deptRows.map(([k,n])=>`<div class="hb"><div class="n" title="${esc(k||'–')}">${esc(k||'Tiada jabatan')}</div><div class="track"><span style="width:${n/maxD*100}%;background:var(--ind-600)" data-tip="${escA(k||'Tiada jabatan')}: ${n} orang"></span></div><div class="val">${n}</div></div>`).join('')}</div>`:''}
     ${pendLeave.length?`<dl class="kv"><dt>Cuti menunggu</dt><dd>${pendLeave.slice(0,4).map(l=>esc(l.name)+' ('+esc(l.type)+', '+dmy(parseD(l.date))+')').join(' · ')}${pendLeave.length>4?' · +'+(pendLeave.length-4)+' lagi':''}</dd></dl>`:''}
