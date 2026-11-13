@@ -38,7 +38,7 @@
     <style>
         /* ============================================================
            Design: JMC Operations Hub UI v2 (light, indigo + kuning)
-           Sidebar indigo tetap + topbar + kawasan kandungan
+           Tanpa sidebar & topbar: navigasi guna butang dalam hero
            ============================================================ */
         :root {
             /* Token Tailwind (nilai RGB) - dipetakan ke palet hub */
@@ -54,7 +54,6 @@
             --bg:#f6f7fb; --surface:#ffffff; --line:#e3e5ef; --line2:#eef0f6;
             --ink:#16182b; --ink2:#484d66; --muted:#757a94;
             --f:'Archivo','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
-            --sb:252px; --top:64px;
         }
         body { font-family: var(--f); background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
         h1, h2, h3, .font-display { font-family: var(--f); font-stretch: 110%; letter-spacing: -0.01em; }
@@ -68,34 +67,8 @@
         input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
         input[type="date"], input[type="time"] { color-scheme: light; }
 
-        /* ---------- Sidebar ---------- */
-        .sb { position: fixed; inset: 0 auto 0 0; width: var(--sb); background: var(--ind-950); color: #c3c5ef; display: flex; flex-direction: column; z-index: 60; transition: transform .22s ease; }
-        .sb .brand { display: flex; gap: 12px; align-items: center; padding: 20px 20px 18px; }
-        .sb .mark { width: 42px; height: 42px; border-radius: 12px; background: var(--yel); color: var(--ind-950); display: grid; place-items: center; flex: none; }
-        .sb .mark svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .sb .brand b { display: block; color: #fff; font-size: 15px; font-weight: 750; font-stretch: 112%; letter-spacing: .2px; line-height: 1.15; }
-        .sb .brand span { font-size: 11.5px; color: #9497cf; }
-        .sb .nav { flex: 1; overflow: auto; padding: 4px 12px 16px; }
-        .sb .grp { font-size: 11.5px; color: #8285c4; padding: 18px 12px 6px; font-weight: 600; }
-        .sb .nav button, .sb .nav a { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 12px; margin-bottom: 2px; border-radius: 10px; font-size: 13.5px; color: #cfd1f5; cursor: pointer; transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
-        .sb .nav button:hover, .sb .nav a:hover { background: rgba(255,255,255,.08); color: #fff; transform: translateX(4px); box-shadow: 0 6px 16px -8px rgba(0,0,0,.6); }
-        .sb .nav button.on { background: #fff; color: var(--ind-800); font-weight: 650; box-shadow: 0 8px 20px -10px rgba(0,0,0,.55); }
-        .sb .nav button.on:hover { transform: none; }
-        .sb .nav button.on svg { color: var(--ind-600); }
-        .sb .nav button.on::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-radius: 2px; background: var(--yel); }
-        .sb .nav button:focus-visible, .sb .nav a:focus-visible { outline: 2px solid var(--yel); }
-        .sb .nav svg { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-        .sb .sbfoot { margin: 0 12px 14px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.05); }
-        .sb .sbfoot small { font-size: 11px; color: #8285c4; line-height: 1.4; display: block; }
-        .scrim { display: none; }
-
-        /* ---------- Kolum utama & topbar ---------- */
-        .main-col { margin-left: var(--sb); min-height: 100vh; display: flex; flex-direction: column; }
-        .top { position: sticky; top: 0; z-index: 40; height: var(--top); flex: none; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; padding: 0 24px; }
-        .top h1 { font-size: 17px; font-weight: 700; font-stretch: 108%; letter-spacing: -.1px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .top .crumb { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .top .sp { flex: 1; }
-        .top .clock { font-size: 12.5px; color: var(--ink2); white-space: nowrap; font-variant-numeric: tabular-nums; padding: 6px 10px; border-radius: 8px; background: var(--bg); }
+        /* ---------- Kolum utama (tiada sidebar / topbar) ---------- */
+        .main-col { min-height: 100vh; display: flex; flex-direction: column; }
         .btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; cursor: pointer; transition: border-color .15s, color .15s, background .15s; text-decoration: none; }
         .btn:hover { border-color: var(--ind-600); color: var(--ind-600); }
         .btn.p { background: var(--ind-600); border-color: var(--ind-600); color: #fff; }
@@ -103,8 +76,9 @@
         .btn.back { background: var(--yel-50); border-color: #f1dc84; color: var(--yel-ink); }
         .btn.back:hover { background: var(--yel); border-color: var(--yel); color: var(--yel-ink); }
         .btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-        .burger { display: none; border: 0; background: none; padding: 6px; margin-left: -6px; border-radius: 8px; cursor: pointer; }
-        .burger svg { width: 22px; height: 22px; stroke: var(--ink); fill: none; stroke-width: 2; stroke-linecap: round; }
+        .btn.gold { background: var(--yel); border-color: var(--yel); color: var(--yel-ink); }
+        .btn.gold:hover { background: var(--yel-600); border-color: var(--yel-600); color: var(--yel-ink); }
+        .btn.on { background: var(--ind-950); border-color: var(--ind-950); color: #fff; }
 
         /* ---------- Hero: tajuk + jalur KPI ---------- */
         .hub-hero { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
@@ -112,7 +86,7 @@
         .hub-hero .hero-head { position: relative; display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 20px 24px 18px; }
         .hub-hero .hero-head h2 { font-size: 26px; font-weight: 780; font-stretch: 118%; letter-spacing: -.4px; line-height: 1.1; color: var(--ind-950); }
         .hub-hero .hero-head p { font-size: 12.5px; color: var(--muted); margin-top: 5px; max-width: 70ch; }
-        .hub-hero .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+        .hub-hero .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
         .hub-hero .kpis { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); background: linear-gradient(var(--surface), var(--bg)); }
         .hub-hero .kpi { padding: 15px 18px 16px; border-left: 1px solid var(--line); min-width: 0; transition: background .15s; }
         .hub-hero .kpi:first-child { border-left: 0; }
@@ -132,58 +106,19 @@
 
         @media (max-width: 1100px) { .hub-hero .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hub-hero .kpi:nth-child(3) { border-left: 0; } .hub-hero .kpi:nth-child(n+3) { border-top: 1px solid var(--line); } }
         @media (max-width: 860px) {
-            .sb { transform: translateX(-100%); }
-            body.nav-open .sb { transform: none; box-shadow: 12px 0 40px rgba(23,21,74,.35); }
-            body.nav-open .scrim { display: block; position: fixed; inset: 0; background: rgba(23,21,74,.4); z-index: 55; }
-            .main-col { margin-left: 0; }
-            .burger { display: block; }
-            .top .crumb, .top .clock { display: none; }
-            .top { padding: 0 16px; gap: 8px; }
             .hub-hero .hero-head { padding: 16px 16px 14px; }
             .hub-hero .hero-head h2 { font-size: 22px; }
             .hub-hero .contour { width: 360px; right: -120px; }
+            .hub-hero .hero-actions { margin-left: 0; width: 100%; }
         }
         @media (max-width: 560px) {
-            .top .btn span { display: none; }
             .hub-hero .kpi .v { font-size: 22px; }
         }
-        @media (prefers-reduced-motion: reduce) { .sb, .sb .nav button, .sb .nav a { transition: none !important; } }
     </style>
 </head>
 <body class="bg-canvas text-ink selection:bg-brand selection:text-white">
 
-    <aside class="sb" id="sb" aria-label="Navigasi">
-        <div class="brand">
-            <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></div>
-            <div><b>JURUKUR MAHABOB</b><span>Laporan Operasi Harian</span></div>
-        </div>
-        <nav class="nav">
-            <div class="grp">Laporan Harian</div>
-            <button type="button" id="navDashboard" class="nav-btn on" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i>Dashboard</button>
-            <button type="button" id="navForm" class="nav-btn" onclick="switchTab('form')"><i data-lucide="file-plus"></i>Borang Laporan</button>
-            <button type="button" id="navSurveyor" class="nav-btn" onclick="switchTab('surveyor')"><i data-lucide="users"></i>Statistik Surveyor</button>
-            <div class="grp">Sistem lain</div>
-            <a href="../operation/index.html"><i data-lucide="folder-kanban"></i>Progres Kerja</a>
-            <a href="../index.html"><i data-lucide="house"></i>Portal Utama</a>
-        </nav>
-        <div class="sbfoot"><small>Data diselaraskan terus daripada Google Sheets melalui Apps Script.</small></div>
-    </aside>
-    <div class="scrim" id="scrim" onclick="toggleNav(false)"></div>
-
     <div class="main-col">
-    <header class="top">
-        <button type="button" class="burger" id="burger" aria-label="Buka menu" onclick="toggleNav()"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
-        <!-- Kembali ke Portal Utama (index.html di root repo) -->
-        <a href="../index.html" class="btn back" title="Kembali ke Portal Utama" aria-label="Kembali ke Portal Utama"><i data-lucide="arrow-left"></i><span>Utama</span></a>
-        <div class="min-w-0">
-            <h1 id="pgTitle">Dashboard Laporan</h1>
-            <div class="crumb" id="pgCrumb">Rekod laporan operasi harian</div>
-        </div>
-        <div class="sp"></div>
-        <span class="clock" id="clock"></span>
-        <button type="button" class="btn" onclick="exportCSV()" title="Eksport rekod ke fail CSV"><i data-lucide="download"></i><span>Eksport CSV</span></button>
-        <button type="button" class="btn p" onclick="switchTab('form')" title="Hantar laporan harian baru"><i data-lucide="file-plus"></i><span>Hantar Laporan</span></button>
-    </header>
 
     <!-- Main Container -->
     <main class="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6">
@@ -205,7 +140,11 @@
                         <h2>Laporan Operasi Harian</h2>
                         <p>Pantau laporan harian, output kerja dan isu lapangan setiap surveyor terus daripada Google Sheets.</p>
                     </div>
-                    <div class="chips"><span class="chip info">Google Sheets</span><span class="chip ok">Apps Script</span></div>
+                    <div class="hero-actions">
+                        <a href="../index.html" class="btn back" title="Kembali ke Portal Utama"><i data-lucide="arrow-left"></i><span>Utama</span></a>
+                        <button type="button" class="btn p" onclick="switchTab('surveyor')" title="Lihat statistik prestasi setiap surveyor"><i data-lucide="users"></i><span>Statistik Surveyor</span></button>
+                        <button type="button" class="btn gold" onclick="switchTab('form')" title="Hantar laporan harian baru"><i data-lucide="file-plus"></i><span>Hantar Laporan</span></button>
+                    </div>
                 </div>
                 <div class="kpis">
                 <div class="kpi hl">
@@ -314,10 +253,11 @@
                     <div class="p-3 rounded-md bg-gold text-ink">
                         <i data-lucide="file-plus-2" class="w-6 h-6"></i>
                     </div>
-                    <div>
+                    <div class="flex-1 min-w-0">
                         <h2 class="text-xl font-bold text-ink hub-h">Borang Laporan Harian Jurukur</h2>
                         <p class="text-xs text-slate-500">Sila lengkapkan maklumat operasi lapangan dengan teliti</p>
                     </div>
+                    <button type="button" class="btn back" onclick="switchTab('dashboard')" title="Kembali ke Dashboard"><i data-lucide="arrow-left"></i><span>Dashboard</span></button>
                 </div>
 
                 <form id="dailyReportForm" onsubmit="handleFormSubmit(event)" class="space-y-6">
@@ -460,7 +400,8 @@
                     <h3 class="text-lg font-bold text-ink hub-h">Analisis Prestasi Mengikut Surveyor</h3>
                     <p class="text-xs text-slate-500">Prestasi produktiviti pegawai ukur berasaskan tempoh masa</p>
                 </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <button type="button" class="btn back" onclick="switchTab('dashboard')" title="Kembali ke Dashboard"><i data-lucide="arrow-left"></i><span>Dashboard</span></button>
                     <select id="filterMonth" onchange="onMonthFilterChange()" class="px-4 py-2.5 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
                         <option value="">Semua Bulan</option>
                     </select>
@@ -478,7 +419,10 @@
     <footer class="mt-8 border-t border-line bg-white text-slate-500">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row justify-between gap-2 text-xs">
             <span>&copy; <span id="footerYear"></span> JURUKUR MAHABOB &middot; Sistem Statistik Jurukur Tanah</span>
-            <span>Data diselaraskan daripada Google Sheets</span>
+            <span class="flex flex-wrap gap-4">
+                <a href="../operation/index.html" class="hover:text-brand inline-flex items-center gap-1"><i data-lucide="folder-kanban" class="w-3.5 h-3.5"></i>Progres Kerja</a>
+                <a href="../index.html" class="hover:text-brand inline-flex items-center gap-1"><i data-lucide="house" class="w-3.5 h-3.5"></i>Portal Utama</a>
+            </span>
         </div>
         <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
     </footer>
@@ -792,54 +736,25 @@
             }, 3500);
         }
 
-        const PAGE_HEADERS = {
-            dashboard: ['Dashboard Laporan', 'Rekod laporan operasi harian'],
-            form: ['Borang Laporan', 'Hantar laporan harian jurukur'],
-            surveyor: ['Statistik Surveyor', 'Analisis prestasi mengikut surveyor']
+        const PAGE_TITLES = {
+            dashboard: 'Dashboard Laporan',
+            form: 'Borang Laporan',
+            surveyor: 'Statistik Surveyor'
         };
 
-        // ---------- Shell hub: menu telefon, tajuk topbar & jam ----------
-        function toggleNav(force) {
-            const open = typeof force === 'boolean' ? force : !document.body.classList.contains('nav-open');
-            document.body.classList.toggle('nav-open', open);
-        }
-        function setPageHeader(tabName) {
-            const h = PAGE_HEADERS[tabName] || PAGE_HEADERS.dashboard;
-            const t = document.getElementById('pgTitle');
-            const c = document.getElementById('pgCrumb');
-            if (t) t.textContent = h[0];
-            if (c) c.textContent = h[1];
-            document.querySelectorAll('#sb .nav-btn').forEach(b => b.setAttribute('aria-current', b.classList.contains('on') ? 'page' : 'false'));
-        }
-        (function () {
-            const pad = n => String(n).padStart(2, '0');
-            const tick = () => {
-                const el = document.getElementById('clock');
-                const d = new Date();
-                if (el) el.textContent = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-            };
-            tick();
-            setInterval(tick, 30000);
-            document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleNav(false); });
-        })();
-
         function switchTab(tabName) {
-            document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
-            document.querySelectorAll("#sb .nav-btn").forEach(el => el.classList.remove("on"));
-
             const map = {
-                dashboard: ["viewDashboard", "navDashboard"],
-                form: ["viewForm", "navForm"],
-                surveyor: ["viewSurveyor", "navSurveyor"]
+                dashboard: "viewDashboard",
+                form: "viewForm",
+                surveyor: "viewSurveyor"
             };
-            const [viewId, navId] = map[tabName] || map.dashboard;
-            const view = document.getElementById(viewId);
-            const nav = document.getElementById(navId);
+            const key = map[tabName] ? tabName : 'dashboard';
+            document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+            const view = document.getElementById(map[key]);
             if (view) view.classList.remove("hidden");
-            if (nav) nav.classList.add("on");
-            setPageHeader(map[tabName] ? tabName : 'dashboard');
-            toggleNav(false);
-            if (tabName === 'surveyor') initSurveyorFilters();
+            document.title = `${PAGE_TITLES[key]} | JURUKUR MAHABOB`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (key === 'surveyor') initSurveyorFilters();
             refreshIcons();
         }
 
