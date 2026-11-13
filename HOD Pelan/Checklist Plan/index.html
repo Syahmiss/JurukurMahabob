@@ -617,7 +617,61 @@
     let customDialogModalInstance = null;
 
     // Semak sama ada berjalan dalam Google Apps Script atau hosting statik biasa
-    const isGasEnvironment = (typeof google !== 'undefined' && google.script && google.script.run);
+    /* =====================================================================
+       SAMBUNGAN APPS SCRIPT WEB APP (API)
+       ---------------------------------------------------------------------
+       Bila page ni dibuka dari GitHub / hub (bukan dari HtmlService), kita
+       sediakan "google.script.run" tiruan yang hantar panggilan ke doPost()
+       Web App. Kod lain dalam fail ni tak perlu berubah langsung.
+       Kalau API gagal semasa muat awal, app jatuh balik ke mod CSV (baca sahaja).
+       ===================================================================== */
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxZtlvQERuGapebTBHFHT2i6ZFEGRdUnRSDfEyVKPNUDNDsRO28iNKuZYRqFGoWHn5d/exec";
+    const GAS_API_TIMEOUT_MS = 30000;
+
+    async function callGasApi(fn, args) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), GAS_API_TIMEOUT_MS);
+      try {
+        // text/plain = "simple request" → tiada CORS preflight (Apps Script tak sokong OPTIONS)
+        const res = await fetch(GAS_API_URL, {
+          method: "POST", redirect: "follow", cache: "no-store", signal: ctl.signal,
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ fn: fn, args: args })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const text = await res.text();
+        let out;
+        try { out = JSON.parse(text); }
+        catch (e) { throw new Error("Respons Web App bukan JSON — semak doPost() & akses deployment 'Anyone'"); }
+        if (!out || out.ok !== true) throw new Error((out && out.error) || "Ralat tidak diketahui dari Web App");
+        return out.result;
+      } catch (e) {
+        throw new Error(e.name === "AbortError" ? "Web App tamat masa (" + (GAS_API_TIMEOUT_MS / 1000) + "s)" : e.message);
+      } finally { clearTimeout(timer); }
+    }
+
+    function makeGasRunner(onOk, onFail) {
+      return new Proxy({}, {
+        get(_, prop) {
+          if (typeof prop !== "string" || prop === "then") return undefined;
+          if (prop === "withSuccessHandler") return h => makeGasRunner(h, onFail);
+          if (prop === "withFailureHandler") return h => makeGasRunner(onOk, h);
+          if (prop === "withUserObject") return () => makeGasRunner(onOk, onFail);
+          return (...args) => {
+            callGasApi(prop, args)
+              .then(r => { if (onOk) onOk(r); })
+              .catch(err => { if (onFail) onFail(err); else console.error("[" + prop + "]", err); });
+          };
+        }
+      });
+    }
+
+    const IS_NATIVE_GAS = (typeof google !== 'undefined' && google.script && google.script.run);
+    const USING_GAS_API = !IS_NATIVE_GAS && !!GAS_API_URL;
+    if (USING_GAS_API) window.google = { script: { run: makeGasRunner(null, null) } };
+
+    // let (bukan const): ditukar ke false kalau API gagal semasa muat awal → mod CSV baca sahaja
+    let isGasEnvironment = !!(IS_NATIVE_GAS || USING_GAS_API);
 
     window.addEventListener("DOMContentLoaded", () => {
         customDialogModalInstance = new bootstrap.Modal(document.getElementById('customDialogModal'));
@@ -825,10 +879,20 @@
 
       google.script.run
         .withSuccessHandler(res => {
-          onDataLoaded(Object.assign({ source: "GAS" }, res));
+          onDataLoaded(Object.assign({ source: USING_GAS_API ? "API" : "GAS" }, res));
           if (typeof callbackAfterLoad === "function") callbackAfterLoad();
         })
-        .withFailureHandler(err => customAlert("Gagal memuatkan data: " + err.message))
+        .withFailureHandler(err => {
+          if (USING_GAS_API) {
+            // Web App tak dapat dicapai → guna Google Sheet terbitan (baca sahaja)
+            console.warn("Web App gagal, guna CSV:", err);
+            isGasEnvironment = false;
+            loadInitialData(callbackAfterLoad);
+            setTimeout(() => customAlert("Web App Apps Script tak dapat dicapai (" + err.message + "). Data dipaparkan dalam mod baca sahaja."), 300);
+            return;
+          }
+          customAlert("Gagal memuatkan data: " + err.message);
+        })
         .getInitialAppData();
     }
 
@@ -864,6 +928,7 @@
         loading: `<i class="bi bi-hourglass-split"></i> Menyegerak...`,
         CSV: `<i class="bi bi-cloud-check text-success"></i> Google Sheet (baca sahaja) · ${time}`,
         GAS: `<i class="bi bi-lightning-charge text-info"></i> Apps Script (langsung) · ${time}`,
+        API: `<i class="bi bi-lightning-charge text-info"></i> Web App API (langsung) · ${time}`,
         OFFLINE: `<i class="bi bi-wifi-off text-danger"></i> Tiada sambungan data`
       };
       el.innerHTML = map[state] || map.loading;
