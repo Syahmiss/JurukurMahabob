@@ -6,203 +6,212 @@
     <title>Dashboard Laporan Harian | JURUKUR MAHABOB</title>
     <!-- Tailwind CSS (CDN). Untuk production: guna assets/tailwind.css (npm run build:css) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
+    <!-- Font Awesome untuk ikon korporat -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Archivo', 'Segoe UI', 'system-ui', 'sans-serif'],
-                        display: ['Archivo', 'Segoe UI', 'system-ui', 'sans-serif']
+                        sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        brand: 'rgb(var(--brand-rgb) / <alpha-value>)',
-                        brand2: 'rgb(var(--brand2-rgb) / <alpha-value>)',
-                        gold: 'rgb(var(--gold-rgb) / <alpha-value>)',
-                        ink: 'rgb(var(--ink-rgb) / <alpha-value>)',
-                        canvas: 'rgb(var(--canvas-rgb) / <alpha-value>)',
-                        line: 'rgb(var(--line-rgb) / <alpha-value>)'
+                        jm: {
+                            navy: '#0A2540',
+                            blue: '#1E40AF',
+                            royal: '#1D4ED8',
+                            light: '#EFF6FF',
+                            gold: '#FACC15',
+                            amber: '#EAB308',
+                            goldDark: '#CA8A04'
+                        }
                     }
                 }
             }
         }
     </script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
-    <!-- PapaParse -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
     <style>
-        /* ============================================================
-           Design: JMC Operations Hub UI v2 (light, indigo + kuning)
-           Tanpa sidebar & topbar: navigasi guna butang dalam hero
-           ============================================================ */
-        :root {
-            /* Token Tailwind (nilai RGB) - dipetakan ke palet hub */
-            --brand-rgb: 67 56 202;     /* indigo-600  #4338CA */
-            --brand2-rgb: 91 81 224;    /* indigo-500  #5B51E0 */
-            --gold-rgb: 245 197 24;     /* kuning      #F5C518 */
-            --ink-rgb: 22 24 43;        /* teks utama  #16182B */
-            --canvas-rgb: 246 247 251;  /* latar       #F6F7FB */
-            --line-rgb: 227 229 239;    /* garisan     #E3E5EF */
-            /* Token hub */
-            --ind-950:#17154a; --ind-900:#1f1c63; --ind-800:#272483; --ind-600:#4338ca; --ind-500:#5b51e0; --ind-100:#e2e3fb; --ind-50:#eef0ff;
-            --yel:#f5c518; --yel-600:#d9a400; --yel-50:#fff8d6; --yel-ink:#2a2100;
-            --bg:#f6f7fb; --surface:#ffffff; --line:#e3e5ef; --line2:#eef0f6;
-            --ink:#16182b; --ink2:#484d66; --muted:#757a94;
-            --f:'Archivo','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
-        }
-        body { font-family: var(--f); background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
-        h1, h2, h3, .font-display { font-family: var(--f); font-stretch: 110%; letter-spacing: -0.01em; }
-        :focus-visible { outline: 2px solid var(--yel); outline-offset: 2px; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Had & gaya kecil yang sukar dicapai guna utiliti Tailwind semata-mata */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
         input[type="date"], input[type="time"] { color-scheme: light; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #F8FAFC; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-        /* ---------- Kolum utama (tiada sidebar / topbar) ---------- */
-        .main-col { min-height: 100vh; display: flex; flex-direction: column; }
-        .btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; cursor: pointer; transition: border-color .15s, color .15s, background .15s; text-decoration: none; }
-        .btn:hover { border-color: var(--ind-600); color: var(--ind-600); }
-        .btn.p { background: var(--ind-600); border-color: var(--ind-600); color: #fff; }
-        .btn.p:hover { background: var(--ind-800); border-color: var(--ind-800); color: #fff; }
-        .btn.back { background: var(--yel-50); border-color: #f1dc84; color: var(--yel-ink); }
-        .btn.back:hover { background: var(--yel); border-color: var(--yel); color: var(--yel-ink); }
-        .btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-        .btn.gold { background: var(--yel); border-color: var(--yel); color: var(--yel-ink); }
-        .btn.gold:hover { background: var(--yel-600); border-color: var(--yel-600); color: var(--yel-ink); }
-        .btn.on { background: var(--ind-950); border-color: var(--ind-950); color: #fff; }
+        .main-tab-btn.active { background-color: #FACC15; color: #0A2540; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+        .main-tab-btn:not(.active) { color: #BFDBFE; }
+        .main-tab-btn:not(.active):hover { background-color: rgba(255,255,255,.1); color: #fff; }
 
-        /* ---------- Hero: tajuk + jalur KPI ---------- */
-        .hub-hero { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-        .hub-hero .contour { position: absolute; right: -40px; top: -60px; width: 520px; height: 300px; pointer-events: none; color: var(--ind-600); opacity: .13; }
-        .hub-hero .hero-head { position: relative; display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 20px 24px 18px; }
-        .hub-hero .hero-head h2 { font-size: 26px; font-weight: 780; font-stretch: 118%; letter-spacing: -.4px; line-height: 1.1; color: var(--ind-950); }
-        .hub-hero .hero-head p { font-size: 12.5px; color: var(--muted); margin-top: 5px; max-width: 70ch; }
-        .hub-hero .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
-        .hub-hero .kpis { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); background: linear-gradient(var(--surface), var(--bg)); }
-        .hub-hero .kpi { padding: 15px 18px 16px; border-left: 1px solid var(--line); min-width: 0; transition: background .15s; }
-        .hub-hero .kpi:first-child { border-left: 0; }
-        .hub-hero .kpi:hover { background: var(--ind-50); }
-        .hub-hero .kpi .l { font-size: 12px; color: var(--muted); font-weight: 500; }
-        .hub-hero .kpi .v { font-size: 27px; font-weight: 720; font-stretch: 112%; margin-top: 4px; letter-spacing: -.6px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); line-height: 1.15; }
-        .hub-hero .kpi .v.multi { white-space: normal; font-size: 16px; letter-spacing: -.2px; line-height: 1.35; }
-        .hub-hero .kpi .s { font-size: 11.5px; color: var(--ink2); margin-top: 6px; }
-        .hub-hero .kpi.hl .v { display: inline-block; max-width: 100%; background: linear-gradient(transparent 66%, var(--yel) 66%, var(--yel) 92%, transparent 92%); }
-        .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 650; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
-        .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-        .chip.ok { background: #e5f4ec; color: #0f7a43; } .chip.info { background: var(--ind-50); color: var(--ind-600); } .chip.warn { background: #fdf1e1; color: #b45309; }
-
-        /* ---------- Panel ---------- */
-        .hub-h { display: flex; align-items: center; gap: 9px; font-stretch: 106%; }
-        .hub-h::before { content: ""; width: 4px; height: 16px; border-radius: 2px; background: var(--yel); flex: none; }
-
-        @media (max-width: 1100px) { .hub-hero .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hub-hero .kpi:nth-child(3) { border-left: 0; } .hub-hero .kpi:nth-child(n+3) { border-top: 1px solid var(--line); } }
-        @media (max-width: 860px) {
-            .hub-hero .hero-head { padding: 16px 16px 14px; }
-            .hub-hero .hero-head h2 { font-size: 22px; }
-            .hub-hero .contour { width: 360px; right: -120px; }
-            .hub-hero .hero-actions { margin-left: 0; width: 100%; }
-        }
-        @media (max-width: 560px) {
-            .hub-hero .kpi .v { font-size: 22px; }
-        }
+        .kpi-value.multi { white-space: normal; font-size: 16px; letter-spacing: -.2px; line-height: 1.35; }
     </style>
 </head>
-<body class="bg-canvas text-ink selection:bg-brand selection:text-white">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-jm-gold selection:text-jm-navy">
 
-    <div class="main-col">
+    <!-- Toolbar: Navigasi Tab Utama & Kemaskini Data -->
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 pt-6">
+        <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Navigasi Dashboard">
+                <button type="button" onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="main-tab-btn active px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
+                </button>
+                <button type="button" onclick="switchTab('form')" id="tab-btn-form" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-file-circle-plus"></i><span>Hantar Laporan</span>
+                </button>
+                <button type="button" onclick="switchTab('surveyor')" id="tab-btn-surveyor" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-users"></i><span>Statistik Surveyor</span>
+                </button>
+            </nav>
+            <div class="flex items-center space-x-3 justify-end">
+                <div id="lastUpdatedBadge" class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="syncStatusText">Menyambung data...</span>
+                </div>
+                <button type="button" onclick="fetchCSVData()" id="refreshBtn" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
+                    <span>Kemaskini Data</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Container -->
-    <main class="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6">
+    <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6 sm:py-8 space-y-6">
 
         <!-- TAB 1: DASHBOARD UTAMA -->
-        <div id="viewDashboard" class="tab-content space-y-8">
+        <div id="viewDashboard" class="tab-content space-y-6">
 
-            <section class="hub-hero">
-                <svg class="contour" viewBox="0 0 520 300" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-                    <ellipse cx="330" cy="150" rx="40" ry="24" transform="rotate(-12 330 150)"/>
-                    <ellipse cx="325" cy="152" rx="78" ry="48" transform="rotate(-12 325 152)"/>
-                    <ellipse cx="318" cy="156" rx="118" ry="74" transform="rotate(-10 318 156)"/>
-                    <ellipse cx="310" cy="160" rx="160" ry="100" transform="rotate(-8 310 160)"/>
-                    <ellipse cx="300" cy="165" rx="205" ry="128" transform="rotate(-6 300 165)"/>
-                    <ellipse cx="290" cy="170" rx="252" ry="158" transform="rotate(-4 290 170)"/>
-                </svg>
-                <div class="hero-head">
-                    <div class="min-w-0">
-                        <h2>Laporan Operasi Harian</h2>
-                        <p>Pantau laporan harian, output kerja dan isu lapangan setiap surveyor terus daripada Google Sheets.</p>
-                    </div>
-                    <div class="hero-actions">
-                        <button type="button" class="btn p" onclick="switchTab('surveyor')" title="Lihat statistik prestasi setiap surveyor"><i data-lucide="users"></i><span>Statistik Surveyor</span></button>
-                        <button type="button" class="btn gold" onclick="switchTab('form')" title="Hantar laporan harian baru"><i data-lucide="file-plus"></i><span>Hantar Laporan</span></button>
+            <!-- Active View Sub-Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-jm-blue ring-4 ring-blue-100"></span>
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Paparan Semasa:</span>
+                        <h2 class="text-base sm:text-lg font-extrabold text-jm-navy">Laporan Operasi Harian</h2>
                     </div>
                 </div>
-                <div class="kpis">
-                <div class="kpi hl">
-                    <div class="l">Jumlah Laporan</div>
-                    <div class="v" id="totalLaporan">0</div>
-                    <div class="s">Rekod dalam pangkalan data</div>
+                <p class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">
+                    Pantau laporan harian, output kerja &amp; isu lapangan setiap surveyor terus daripada Google Sheets
+                </p>
+            </div>
+
+            <!-- 4 KPI SUMMARY CARDS -->
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+                <!-- Card 1: Jumlah Laporan -->
+                <div class="bg-gradient-to-br from-jm-navy to-jm-blue text-white rounded-2xl p-5 shadow-md border border-blue-900 relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-jm-gold/10 group-hover:scale-110 transition-transform"></div>
+                    <div class="flex justify-between items-start">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Jumlah Laporan</p>
+                            <h2 id="totalLaporan" class="kpi-value text-2xl sm:text-3xl font-extrabold text-white mt-2 tracking-tight">0</h2>
+                        </div>
+                        <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow shrink-0">
+                            <i class="fa-solid fa-clipboard-list text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-blue-100">
+                        <span>Rekod dalam pangkalan data</span>
+                    </div>
                 </div>
-                <div class="kpi">
-                    <div class="l">Projek (File)</div>
-                    <div class="v" id="totalProjek">0</div>
-                    <div class="s">Fail ukur unik</div>
+
+                <!-- Card 2: Projek (File) -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-royal hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Projek (File)</p>
+                            <h2 id="totalProjek" class="kpi-value text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                        </div>
+                        <div class="p-3 bg-blue-50 text-jm-royal rounded-xl shrink-0">
+                            <i class="fa-solid fa-folder-open text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                        Fail ukur unik
+                    </div>
                 </div>
-                <div class="kpi">
-                    <div class="l">Kuantiti Siap</div>
-                    <div class="v" id="totalKuantiti">0</div>
-                    <div class="s">Output kerja mengikut unit</div>
+
+                <!-- Card 3: Kuantiti Siap -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-gold hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kuantiti Siap</p>
+                            <h2 id="totalKuantiti" class="kpi-value text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                        </div>
+                        <div class="p-3 bg-yellow-50 text-jm-goldDark rounded-xl shrink-0">
+                            <i class="fa-solid fa-ruler-combined text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                        Output kerja mengikut unit
+                    </div>
                 </div>
-                <div class="kpi">
-                    <div class="l">Isu Dilapor</div>
-                    <div class="v" id="totalIsu">0</div>
-                    <div class="s">Perlu perhatian lapangan</div>
+
+                <!-- Card 4: Isu Dilapor -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-slate-700 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Isu Dilapor</p>
+                            <h2 id="totalIsu" class="kpi-value text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                        </div>
+                        <div class="p-3 bg-slate-100 text-slate-700 rounded-xl shrink-0">
+                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                        Perlu perhatian lapangan
+                    </div>
                 </div>
-                </div>
+
             </section>
 
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white border border-line rounded-2xl p-6 shadow-sm">
-                    <h3 class="text-base font-semibold text-ink mb-4 flex items-center gap-2 hub-h">
-                        <i data-lucide="pie-chart" class="w-4 h-4 text-brand"></i> Taburan Kategori Kerja
-                    </h3>
-                    <div class="relative h-72">
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <h3 class="font-bold text-jm-navy text-base flex items-center gap-2"><i class="fa-solid fa-chart-pie text-jm-blue"></i> Taburan Kategori Kerja</h3>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-4">Pecahan jumlah rekod mengikut kategori kerja ukur</p>
+                    <div class="relative h-64">
                         <canvas id="categoryChart"></canvas>
                     </div>
                 </div>
 
-                <div class="bg-white border border-line rounded-2xl p-6 shadow-sm">
-                    <h3 class="text-base font-semibold text-ink mb-4 flex items-center gap-2 hub-h">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand"></i> Status Isu Lapangan
-                    </h3>
-                    <div class="relative h-72">
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <h3 class="font-bold text-jm-navy text-base flex items-center gap-2"><i class="fa-solid fa-chart-column text-jm-blue"></i> Status Isu Lapangan</h3>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-4">Perbandingan laporan tanpa isu berbanding ada isu</p>
+                    <div class="relative h-64">
                         <canvas id="statusChart"></canvas>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- Data Table Section -->
-            <div class="bg-white border border-line rounded-2xl shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-4">
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h3 class="text-lg font-bold text-ink hub-h">Rekod Laporan Operasi Harian</h3>
-                        <p class="text-xs text-slate-500">Senarai penuh data daripada pangkalan Google Sheets &amp; input tempatan</p>
+                        <h3 class="font-bold text-jm-navy text-lg">Rekod Laporan Operasi Harian</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Senarai penuh data daripada pangkalan Google Sheets &amp; input tempatan</p>
                     </div>
-                    <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <div class="relative flex-1 sm:w-64">
-                            <i data-lucide="search" class="absolute left-3.5 top-3 w-4 h-4 text-slate-400"></i>
-                            <input type="text" id="searchInput" oninput="filterTable()" placeholder="Cari No File / Kawasan / Surveyor..." class="w-full pl-10 pr-4 py-2 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" id="searchInput" oninput="filterTable()" placeholder="Cari No File / Kawasan / Surveyor..."
+                                class="w-full sm:w-64 pl-9 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
                         </div>
-                        <select id="filterCategory" onchange="filterTable()" class="px-4 py-2 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
+                        <select id="filterCategory" onchange="filterTable()" class="px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
                             <option value="">Semua Kategori</option>
                             <option value="Kadaster">Kadaster</option>
                             <option value="Kalibrasi">Kalibrasi</option>
@@ -212,8 +221,8 @@
                             <option value="TLS">TLS</option>
                             <option value="Topografi">Topografi</option>
                         </select>
-                        <button onclick="exportCSV()" class="px-4 py-2 rounded-md bg-brand/20 text-brand border border-brand/30 font-medium text-sm hover:bg-brand/30 transition flex items-center gap-2">
-                            <i data-lucide="download" class="w-4 h-4"></i> Eksport
+                        <button type="button" onclick="exportCSV()" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-file-arrow-down text-jm-blue"></i><span>Eksport</span>
                         </button>
                     </div>
                 </div>
@@ -221,57 +230,59 @@
                 <div class="w-full overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[1200px] text-xs">
                         <thead>
-                            <tr class="bg-canvas/60 border-b border-line uppercase tracking-wider text-slate-500 font-semibold">
-                                <th class="px-3 py-3">No File</th>
-                                <th class="px-3 py-3">Kawasan</th>
-                                <th class="px-3 py-3">Tarikh</th>
-                                <th class="px-3 py-3">Masa Mula</th>
-                                <th class="px-3 py-3">Masa Tamat</th>
-                                <th class="px-3 py-3">Kategori</th>
-                                <th class="px-3 py-3">Surveyor</th>
-                                <th class="px-3 py-3">Tugas</th>
-                                <th class="px-3 py-3">Kuantiti</th>
-                                <th class="px-3 py-3">Unit</th>
-                                <th class="px-3 py-3">Status Isu</th>
-                                <th class="px-3 py-3">Jangka Asal</th>
-                                <th class="px-3 py-3">Jangka Semasa</th>
-                                <th class="px-3 py-3">Gambar</th>
-                                <th class="px-3 py-3">Perancangan</th>
+                            <tr class="bg-jm-navy text-white uppercase tracking-wider">
+                                <th class="px-3 py-3.5 font-semibold">No File</th>
+                                <th class="px-3 py-3.5 font-semibold">Kawasan</th>
+                                <th class="px-3 py-3.5 font-semibold">Tarikh</th>
+                                <th class="px-3 py-3.5 font-semibold">Masa Mula</th>
+                                <th class="px-3 py-3.5 font-semibold">Masa Tamat</th>
+                                <th class="px-3 py-3.5 font-semibold">Kategori</th>
+                                <th class="px-3 py-3.5 font-semibold">Surveyor</th>
+                                <th class="px-3 py-3.5 font-semibold">Tugas</th>
+                                <th class="px-3 py-3.5 font-semibold">Kuantiti</th>
+                                <th class="px-3 py-3.5 font-semibold">Unit</th>
+                                <th class="px-3 py-3.5 font-semibold">Status Isu</th>
+                                <th class="px-3 py-3.5 font-semibold">Jangka Asal</th>
+                                <th class="px-3 py-3.5 font-semibold">Jangka Semasa</th>
+                                <th class="px-3 py-3.5 font-semibold">Gambar</th>
+                                <th class="px-3 py-3.5 font-semibold">Perancangan</th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody" class="divide-y divide-line text-slate-700"></tbody>
+                        <tbody id="tableBody" class="divide-y divide-slate-200 text-slate-700"></tbody>
                     </table>
                 </div>
-            </div>
+            </section>
         </div>
 
         <!-- TAB 2: BORANG LAPORAN HARIAN -->
         <div id="viewForm" class="tab-content hidden max-w-3xl mx-auto">
-            <div class="bg-white border border-line rounded-2xl shadow-sm p-8">
-                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-line">
-                    <div class="p-3 rounded-md bg-gold text-ink">
-                        <i data-lucide="file-plus-2" class="w-6 h-6"></i>
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                    <div class="p-3 rounded-xl bg-jm-gold text-jm-navy shrink-0">
+                        <i class="fa-solid fa-file-pen text-xl"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h2 class="text-xl font-bold text-ink hub-h">Borang Laporan Harian Jurukur</h2>
+                        <h2 class="text-xl font-extrabold text-jm-navy">Borang Laporan Harian Jurukur</h2>
                         <p class="text-xs text-slate-500">Sila lengkapkan maklumat operasi lapangan dengan teliti</p>
                     </div>
-                    <button type="button" class="btn back" onclick="switchTab('dashboard')" title="Kembali ke Dashboard"><i data-lucide="arrow-left"></i><span>Dashboard</span></button>
+                    <button type="button" onclick="switchTab('dashboard')" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-arrow-left"></i><span>Dashboard</span>
+                    </button>
                 </div>
 
                 <form id="dailyReportForm" onsubmit="handleFormSubmit(event)" class="space-y-6">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">No File</label>
-                            <div class="flex rounded-md bg-canvas border border-line overflow-hidden focus-within:border-brand">
-                                <span id="noFilePrefix" class="px-4 py-3 bg-white border-r border-line text-slate-500 font-semibold text-sm flex items-center">MCP</span>
-                                <input type="text" id="f_nofile" placeholder="001/26" list="noFileList" autocomplete="off" oninput="updateKawasanSuggestions()" class="flex-1 px-4 py-3 bg-transparent text-ink focus:outline-none text-sm" required>
+                            <div class="flex rounded-xl bg-slate-50 border border-slate-300 overflow-hidden focus-within:border-jm-blue focus-within:ring-2 focus-within:ring-jm-blue/30">
+                                <span id="noFilePrefix" class="px-4 py-3 bg-white border-r border-slate-300 text-slate-500 font-semibold text-sm flex items-center">MCP</span>
+                                <input type="text" id="f_nofile" placeholder="001/26" list="noFileList" autocomplete="off" oninput="updateKawasanSuggestions()" class="flex-1 px-4 py-3 bg-transparent text-jm-navy focus:outline-none text-sm" required>
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kawasan Lapangan</label>
-                            <input type="text" id="f_kawasan" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mahabob" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                            <input type="text" id="f_kawasan" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mahabob" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm">
                             <datalist id="kawasanList"></datalist>
                             <datalist id="noFileList"></datalist>
                             <p class="mt-1.5 text-[11px] text-slate-400">Satu No File boleh ada beberapa kawasan. Pilih dari cadangan supaya ejaan sama.</p>
@@ -279,12 +290,12 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tarikh</label>
-                            <input type="date" id="f_tarikh" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <input type="date" id="f_tarikh" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Surveyor</label>
-                            <select id="f_surveyor" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <select id="f_surveyor" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                                 <option value="">Pilih Surveyor...</option>
                                 <option value="Badrul">Badrul</option>
                                 <option value="Riduwan">Riduwan</option>
@@ -296,17 +307,17 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Masa Mula</label>
-                            <input type="time" id="f_mula" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <input type="time" id="f_mula" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Masa Tamat</label>
-                            <input type="time" id="f_tamat" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <input type="time" id="f_tamat" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                         </div>
 
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
-                            <select id="f_kategori" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <select id="f_kategori" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                                 <option value="">Pilih Kategori...</option>
                                 <option value="Kadaster">Kadaster</option>
                                 <option value="Kalibrasi">Kalibrasi</option>
@@ -322,8 +333,8 @@
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Tugas (Skop Kerja)</label>
-                            <button type="button" onclick="addTugasRow()" class="text-xs text-brand hover:underline flex items-center gap-1 font-medium">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Tugas
+                            <button type="button" onclick="addTugasRow()" class="text-xs text-jm-blue hover:underline flex items-center gap-1 font-semibold">
+                                <i class="fa-solid fa-plus"></i> Tambah Tugas
                             </button>
                         </div>
                         <div id="tugasContainer" class="space-y-2"></div>
@@ -332,12 +343,12 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kuantiti</label>
-                            <input type="number" step="any" min="0" id="f_kuantiti" placeholder="0.00" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required style="-moz-appearance: textfield;">
+                            <input type="number" step="any" min="0" id="f_kuantiti" placeholder="0.00" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required style="-moz-appearance: textfield;">
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Unit</label>
-                            <select id="f_unit" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <select id="f_unit" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                                 <option value="">Pilih Unit...</option>
                                 <option value="Lot">Lot</option>
                                 <option value="Meter">Meter</option>
@@ -351,29 +362,29 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Status Isu (Pilihan)</label>
-                        <input type="text" id="f_status" placeholder="Cth: Cuaca hujan lebat / Tiada isu" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                        <input type="text" id="f_status" placeholder="Cth: Cuaca hujan lebat / Tiada isu" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Jangka Siap Asal</label>
-                            <input type="date" id="f_asal" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <input type="date" id="f_asal" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Jangka Siap Semasa</label>
-                            <input type="date" id="f_semasa" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
+                            <input type="date" id="f_semasa" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Gambar Lapangan (Pilihan)</label>
                         <div class="flex flex-col gap-3">
-                            <input type="file" id="f_gambar" accept="image/*" onchange="handleImagePreview(event)" class="w-full px-4 py-2.5 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-brand/10 file:text-brand hover:file:bg-brand/20 cursor-pointer">
-                            <div id="imagePreviewContainer" class="hidden relative w-40 h-40 rounded-md overflow-hidden border border-line bg-canvas">
+                            <input type="file" id="f_gambar" accept="image/*" onchange="handleImagePreview(event)" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-blue/10 file:text-jm-blue hover:file:bg-jm-blue/20 cursor-pointer">
+                            <div id="imagePreviewContainer" class="hidden relative w-40 h-40 rounded-xl overflow-hidden border border-slate-300 bg-slate-50">
                                 <img id="imagePreview" src="" alt="Pratonton Gambar" class="w-full h-full object-cover">
                                 <button type="button" onclick="clearImageSelection()" class="absolute top-1.5 right-1.5 p-1 rounded-full bg-red-600 text-white hover:bg-red-700 transition shadow">
-                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    <i class="fa-solid fa-xmark text-xs"></i>
                                 </button>
                             </div>
                         </div>
@@ -381,12 +392,12 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Perancangan Seterusnya</label>
-                        <textarea id="f_perancangan" rows="3" placeholder="Nyatakan perancangan kerja..." class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required></textarea>
+                        <textarea id="f_perancangan" rows="3" placeholder="Nyatakan perancangan kerja..." class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required></textarea>
                     </div>
 
-                    <div class="flex justify-end gap-3 pt-4 border-t border-line">
-                        <button type="button" onclick="switchTab('dashboard')" class="px-6 py-3 rounded-md bg-canvas border border-line text-slate-600 font-medium text-sm hover:bg-canvas transition">Batal</button>
-                        <button type="submit" id="submitBtn" class="px-6 py-3 rounded-md bg-gold text-ink font-semibold text-sm hover:brightness-95 transition disabled:opacity-60 disabled:cursor-not-allowed">Hantar Laporan</button>
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                        <button type="button" onclick="switchTab('dashboard')" class="px-6 py-3 rounded-xl bg-slate-100 border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-200 transition">Batal</button>
+                        <button type="submit" id="submitBtn" class="px-6 py-3 rounded-xl bg-jm-gold text-jm-navy font-bold text-sm hover:bg-jm-amber transition disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">Hantar Laporan</button>
                     </div>
                 </form>
             </div>
@@ -394,17 +405,19 @@
 
         <!-- TAB 3: STATISTIK SURVEYOR -->
         <div id="viewSurveyor" class="tab-content hidden space-y-6">
-            <div class="bg-white border border-line rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                    <h3 class="text-lg font-bold text-ink hub-h">Analisis Prestasi Mengikut Surveyor</h3>
+                    <h3 class="text-lg font-extrabold text-jm-navy">Analisis Prestasi Mengikut Surveyor</h3>
                     <p class="text-xs text-slate-500">Prestasi produktiviti pegawai ukur berasaskan tempoh masa</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                    <button type="button" class="btn back" onclick="switchTab('dashboard')" title="Kembali ke Dashboard"><i data-lucide="arrow-left"></i><span>Dashboard</span></button>
-                    <select id="filterMonth" onchange="onMonthFilterChange()" class="px-4 py-2.5 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
+                    <button type="button" onclick="switchTab('dashboard')" class="px-3.5 py-2.5 bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-arrow-left"></i><span>Dashboard</span>
+                    </button>
+                    <select id="filterMonth" onchange="onMonthFilterChange()" class="px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-sm text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue">
                         <option value="">Semua Bulan</option>
                     </select>
-                    <select id="filterWeek" onchange="renderSurveyorStats()" class="px-4 py-2.5 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
+                    <select id="filterWeek" onchange="renderSurveyorStats()" class="px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-sm text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue">
                         <option value="">Semua Minggu</option>
                     </select>
                 </div>
@@ -415,28 +428,24 @@
 
     </main>
 
-    <footer class="mt-8 border-t border-line bg-white text-slate-500">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row justify-between gap-2 text-xs">
-            <span>&copy; <span id="footerYear"></span> JURUKUR MAHABOB &middot; Sistem Statistik Jurukur Tanah</span>
-            <span class="flex flex-wrap gap-4">
-                <a href="../operation/index.html" class="hover:text-brand inline-flex items-center gap-1"><i data-lucide="folder-kanban" class="w-3.5 h-3.5"></i>Progres Kerja</a>
-                <a href="../index.html" class="hover:text-brand inline-flex items-center gap-1"><i data-lucide="house" class="w-3.5 h-3.5"></i>Portal Utama</a>
-            </span>
-        </div>
-        <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+    <footer class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6 text-xs text-slate-400 border-t border-slate-200 mt-8 flex flex-col sm:flex-row justify-between gap-2">
+        <span>&copy; <span id="footerYear"></span> <strong class="text-jm-navy">JURUKUR MAHABOB</strong> &middot; Sistem Statistik Jurukur Tanah</span>
+        <span class="flex flex-wrap gap-4">
+            <a href="../operation/index.html" class="hover:text-jm-blue inline-flex items-center gap-1"><i class="fa-solid fa-diagram-project"></i>Progres Kerja</a>
+            <a href="../index.html" class="hover:text-jm-blue inline-flex items-center gap-1"><i class="fa-solid fa-house"></i>Portal Utama</a>
+        </span>
     </footer>
-    </div><!-- /.main-col -->
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-6 right-6 z-[120] px-4 py-3 rounded-[10px] text-sm flex items-center gap-3 transition-all transform translate-y-2 opacity-0 hidden max-w-sm shadow-xl">
-        <i id="toastIcon" class="w-5 h-5 shrink-0"></i>
+    <div id="toast" class="fixed bottom-6 right-6 z-[120] px-4 py-3 rounded-xl text-sm flex items-center gap-3 transition-all transform translate-y-2 opacity-0 hidden max-w-sm shadow-xl">
+        <i id="toastIcon" class="w-5 text-center shrink-0"></i>
         <span id="toastMsg">Mesej notifikasi...</span>
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loader" class="fixed inset-0 bg-canvas/80 backdrop-blur-sm z-50 flex items-center justify-center" style="display: none;">
+    <div id="loader" class="fixed inset-0 bg-slate-50/80 backdrop-blur-sm z-50 flex items-center justify-center" style="display: none;">
         <div class="flex flex-col items-center gap-3">
-            <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-jm-blue"></i>
             <p class="text-sm font-medium text-slate-600">Memuatkan data operasi...</p>
         </div>
     </div>
@@ -450,7 +459,8 @@
         const LOCAL_KEY = "geo_local_reports";
         // Nilai yang dianggap "tiada isu" (termasuk "Tiada isu" seperti contoh placeholder borang)
         const NO_ISSUE_VALUES = new Set(['', '-', '0', 'tiada', 'tiada isu', 'tiada masalah', 'tak ada', 'takde', 'none', 'no', 'nil', 'n/a', 'na']);
-        const CHART_COLORS = ['#4338CA', '#F5C518', '#5B51E0', '#17154A', '#0F7A43', '#B45309', '#C52A2A', '#757A94'];
+        // Palet warna navy/gold/royal supaya selari dengan design sistem baru
+        const CHART_COLORS = ['#0A2540', '#FACC15', '#1D4ED8', '#3B82F6', '#CA8A04', '#334155', '#DC2626', '#64748B'];
         const NAMA_BULAN = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
 
         // Prefix No File. Tukar di sini sahaja (dan dalam Apps Script: FILE_PREFIXES)
@@ -504,9 +514,9 @@
         let toastHideTimer = null;
 
         // ---------- Helper ----------
-        function refreshIcons() {
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
+        // Reka bentuk baru guna Font Awesome (statik, tak perlu re-init JS macam Lucide).
+        // Fungsi dikekalkan sebagai no-op supaya semua panggilan refreshIcons() sedia ada tak perlu diubah.
+        function refreshIcons() {}
 
         function pad2(n) { return String(n).padStart(2, '0'); }
 
@@ -699,7 +709,7 @@
             if (tarikhInput) tarikhInput.value = todayLocalIso();
             const prefixEl = document.getElementById("noFilePrefix");
             if (prefixEl) prefixEl.textContent = FILE_PREFIX;
-            refreshIcons();
+            document.getElementById("footerYear").textContent = new Date().getFullYear();
             switchTab('dashboard');
             fetchCSVData();
         });
@@ -715,19 +725,18 @@
             clearTimeout(toastHideTimer);
 
             toastMsg.innerText = msg;
-            toast.className = "fixed bottom-6 right-6 z-[120] px-4 py-3 rounded-[10px] text-sm flex items-center gap-3 transition-all transform translate-y-0 opacity-100 max-w-sm shadow-xl bg-[#17154a] text-white border-l-4";
+            toast.className = "fixed bottom-6 right-6 z-[120] px-4 py-3 rounded-xl text-sm flex items-center gap-3 transition-all transform translate-y-0 opacity-100 max-w-sm shadow-xl bg-jm-navy text-white border-l-4";
 
             if (type === "success") {
-                toast.classList.add("border-[#f5c518]");
-                toastIcon.setAttribute("data-lucide", "check-circle");
+                toast.classList.add("border-jm-gold");
+                toastIcon.className = "fa-solid fa-circle-check text-jm-gold shrink-0";
             } else if (type === "error") {
                 toast.classList.add("border-red-500");
-                toastIcon.setAttribute("data-lucide", "alert-circle");
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-red-400 shrink-0";
             } else {
-                toast.classList.add("border-indigo-300");
-                toastIcon.setAttribute("data-lucide", "info");
+                toast.classList.add("border-blue-300");
+                toastIcon.className = "fa-solid fa-circle-info text-blue-300 shrink-0";
             }
-            refreshIcons();
 
             toastTimer = setTimeout(() => {
                 toast.classList.add("translate-y-2", "opacity-0");
@@ -752,6 +761,12 @@
             const view = document.getElementById(map[key]);
             if (view) view.classList.remove("hidden");
             document.title = `${PAGE_TITLES[key]} | JURUKUR MAHABOB`;
+
+            // Kemaskini gaya butang tab navigasi aktif
+            document.querySelectorAll(".main-tab-btn").forEach(btn => btn.classList.remove("active"));
+            const activeBtn = document.getElementById(`tab-btn-${key}`);
+            if (activeBtn) activeBtn.classList.add("active");
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (key === 'surveyor') initSurveyorFilters();
             refreshIcons();
@@ -765,8 +780,8 @@
         // ---------- Tugas rows ----------
         function tugasRowHtml() {
             return `
-                <input type="text" placeholder="Masukkan skop tugas..." class="flex-1 px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm" required>
-                <button type="button" onclick="removeTugasRow(this)" class="p-3 rounded-md bg-red-50 text-red-600 border border-red-500/30 hover:bg-red-100 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <input type="text" placeholder="Masukkan skop tugas..." class="flex-1 px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-jm-navy focus:outline-none focus:ring-2 focus:ring-jm-blue/30 focus:border-jm-blue text-sm" required>
+                <button type="button" onclick="removeTugasRow(this)" class="p-3 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition"><i class="fa-solid fa-trash text-sm"></i></button>
             `;
         }
 
@@ -950,10 +965,16 @@
         function fetchCSVData() {
             fetchRekodKawasan();
             const loader = document.getElementById("loader");
+            const refreshIcon = document.getElementById("refreshIcon");
+            const syncStatusText = document.getElementById("syncStatusText");
             if (loader) loader.style.display = "flex";
+            if (refreshIcon) refreshIcon.classList.add("fa-spin");
+            if (syncStatusText) syncStatusText.textContent = "Memuatkan data...";
 
             if (typeof Papa === 'undefined') {
                 if (loader) loader.style.display = "none";
+                if (refreshIcon) refreshIcon.classList.remove("fa-spin");
+                if (syncStatusText) syncStatusText.textContent = "Ralat Pustaka";
                 masterData = localOnlyData();
                 applyData();
                 showToast("PapaParse gagal dimuatkan, hanya data tempatan dipaparkan.", "error");
@@ -967,11 +988,18 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     if (loader) loader.style.display = "none";
+                    if (refreshIcon) refreshIcon.classList.remove("fa-spin");
                     masterData = mergeData(results.data || []);
                     applyData();
+                    if (syncStatusText) {
+                        const timeStr = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' });
+                        syncStatusText.textContent = `Dikemaskini: ${timeStr}`;
+                    }
                 },
                 error: function(err) {
                     if (loader) loader.style.display = "none";
+                    if (refreshIcon) refreshIcon.classList.remove("fa-spin");
+                    if (syncStatusText) syncStatusText.textContent = "Gagal Sambungan";
                     console.error("CSV Parse Error:", err);
                     masterData = localOnlyData();
                     applyData();
@@ -1015,7 +1043,7 @@
             tbody.innerHTML = "";
 
             if (!data.length) {
-                tbody.innerHTML = `<tr><td colspan="15" class="text-center py-8 text-slate-400">Tiada rekod data dijumpai.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="15" class="text-center py-8 text-slate-400"><i class="fa-solid fa-folder-open text-2xl text-slate-300 mb-2 block"></i>Tiada rekod data dijumpai.</td></tr>`;
                 return;
             }
 
@@ -1031,34 +1059,34 @@
                 }
 
                 const isuHtml = hasIssue(row.statusIsu)
-                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 border border-red-500/30 inline-block">${escapeHtml(row.statusIsu)}</span>`
+                    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 inline-block">${escapeHtml(row.statusIsu)}</span>`
                     : `<span class="text-slate-400">${row.statusIsu ? escapeHtml(row.statusIsu) : '-'}</span>`;
 
                 const localBadge = row._local
-                    ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/30" title="Belum muncul dalam Google Sheets">Tempatan</span>`
+                    ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700 border border-amber-300" title="Belum muncul dalam Google Sheets">Tempatan</span>`
                     : '';
 
                 let gambarHtml = `<span class="text-slate-400">-</span>`;
                 if (row.gambar) {
                     if (row.gambar.startsWith("http") || row.gambar.startsWith("data:image")) {
-                        gambarHtml = `<a href="${escapeHtml(row.gambar)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2 py-1 rounded bg-brand/10 text-brand hover:bg-brand/20 font-medium text-[11px] transition"><i data-lucide="image" class="w-3.5 h-3.5"></i> Lihat</a>`;
+                        gambarHtml = `<a href="${escapeHtml(row.gambar)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-jm-blue/10 text-jm-blue hover:bg-jm-blue/20 font-semibold text-[11px] transition"><i class="fa-solid fa-image"></i> Lihat</a>`;
                     } else {
                         gambarHtml = `<span class="text-slate-600">${escapeHtml(row.gambar)}</span>`;
                     }
                 }
 
                 const tr = document.createElement("tr");
-                tr.className = "border-b border-line hover:bg-canvas transition text-xs";
+                tr.className = "border-b border-slate-200 hover:bg-blue-50/50 transition text-xs";
                 tr.innerHTML = `
-                    <td class="px-3 py-3 font-medium text-ink whitespace-nowrap">${escapeHtml(row.noFile || '-')}${localBadge}</td>
-                    <td class="px-3 py-3 whitespace-nowrap">${row.kawasan ? `<span class="inline-flex items-center gap-1 text-ink font-medium"><i data-lucide="map-pin" class="w-3 h-3 text-brand"></i>${escapeHtml(row.kawasan)}</span>` : '<span class="text-slate-400">-</span>'}</td>
+                    <td class="px-3 py-3 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(row.noFile || '-')}${localBadge}</td>
+                    <td class="px-3 py-3 whitespace-nowrap">${row.kawasan ? `<span class="inline-flex items-center gap-1 text-slate-800 font-medium"><i class="fa-solid fa-location-dot text-jm-blue text-[11px]"></i>${escapeHtml(row.kawasan)}</span>` : '<span class="text-slate-400">-</span>'}</td>
                     <td class="px-3 py-3 text-slate-600 whitespace-nowrap">${escapeHtml(formatTarikh(row.tarikh))}</td>
                     <td class="px-3 py-3 text-slate-500 whitespace-nowrap">${escapeHtml(row.masaMula ? normTime(row.masaMula) : '-')}</td>
                     <td class="px-3 py-3 text-slate-500 whitespace-nowrap">${escapeHtml(row.masaTamat ? normTime(row.masaTamat) : '-')}</td>
-                    <td class="px-3 py-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand/10 text-brand border border-brand/20 inline-block">${escapeHtml(row.kategori || '-')}</span></td>
-                    <td class="px-3 py-3 text-ink font-medium whitespace-nowrap">${escapeHtml(row.surveyor || '-')}</td>
+                    <td class="px-3 py-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-jm-royal inline-block">${escapeHtml(row.kategori || '-')}</span></td>
+                    <td class="px-3 py-3 text-slate-800 font-semibold whitespace-nowrap">${escapeHtml(row.surveyor || '-')}</td>
                     <td class="px-3 py-3 min-w-[200px]">${tugasHtml}</td>
-                    <td class="px-3 py-3 text-ink font-semibold whitespace-nowrap">${escapeHtml(row.kuantiti || '-')}</td>
+                    <td class="px-3 py-3 text-jm-navy font-bold whitespace-nowrap">${escapeHtml(row.kuantiti || '-')}</td>
                     <td class="px-3 py-3 text-slate-500 whitespace-nowrap">${escapeHtml(row.unit || '-')}</td>
                     <td class="px-3 py-3 whitespace-nowrap">${isuHtml}</td>
                     <td class="px-3 py-3 text-slate-500 whitespace-nowrap">${escapeHtml(formatTarikh(row.jangkaAsal))}</td>
@@ -1088,8 +1116,8 @@
         function renderCharts(data) {
             if (typeof Chart === 'undefined') return;
             if (Chart.defaults && Chart.defaults.font) {
-                Chart.defaults.font.family = "'Archivo', 'Segoe UI', system-ui, sans-serif";
-                Chart.defaults.color = '#757A94';
+                Chart.defaults.font.family = "'Inter', 'Segoe UI', system-ui, sans-serif";
+                Chart.defaults.color = '#64748B';
             }
 
             const catCount = {};
@@ -1113,12 +1141,15 @@
                         datasets: [{
                             data: Object.values(catCount),
                             backgroundColor: labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-                            borderWidth: 0
+                            borderColor: '#FFFFFF',
+                            borderWidth: 3,
+                            hoverOffset: 6
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        cutout: '62%',
                         plugins: { legend: { position: 'bottom', labels: { color: '#64748B', boxWidth: 12 } } }
                     }
                 });
@@ -1133,8 +1164,9 @@
                         labels: Object.keys(statusCount),
                         datasets: [{
                             data: Object.values(statusCount),
-                            backgroundColor: ['#0F7A43', '#C52A2A'],
-                            borderRadius: 8
+                            backgroundColor: ['#1D4ED8', '#DC2626'],
+                            borderRadius: 8,
+                            barPercentage: 0.5
                         }]
                     },
                     options: {
@@ -1143,7 +1175,7 @@
                         plugins: { legend: { display: false } },
                         scales: {
                             x: { ticks: { color: '#64748B' }, grid: { display: false } },
-                            y: { beginAtZero: true, ticks: { color: '#64748B', precision: 0 }, grid: { color: '#E5E7EB' } }
+                            y: { beginAtZero: true, ticks: { color: '#64748B', precision: 0 }, grid: { color: '#F1F5F9' } }
                         }
                     }
                 });
@@ -1238,7 +1270,7 @@
 
             const surveyors = Object.keys(surveyorMap).sort((a, b) => a.localeCompare(b));
             if (!surveyors.length) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">Tiada data statistik surveyor untuk tempoh ini.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400"><i class="fa-solid fa-chart-simple text-2xl text-slate-300 mb-2 block"></i>Tiada data statistik surveyor untuk tempoh ini.</div>`;
                 return;
             }
 
@@ -1247,38 +1279,38 @@
                 const unitStr = Object.entries(info.units).map(([u, v]) => `${fmtNum(v)} ${u}`).join(", ") || "0 Unit";
 
                 const catListHtml = Object.entries(info.categories).map(([c, count]) =>
-                    `<div class="flex justify-between text-xs text-slate-500 py-0.5"><span>${escapeHtml(c)}</span><span class="text-ink font-medium">${count} tugas</span></div>`
+                    `<div class="flex justify-between text-xs text-slate-500 py-0.5"><span>${escapeHtml(c)}</span><span class="text-jm-navy font-medium">${count} tugas</span></div>`
                 ).join("");
 
                 const card = document.createElement("div");
-                card.className = "bg-white border border-line rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-brand/40 transition";
+                card.className = "bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-jm-blue/40 hover:shadow-md transition";
                 card.innerHTML = `
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-md bg-gold flex items-center justify-center text-ink font-display font-extrabold text-lg">
+                                <div class="w-10 h-10 rounded-xl bg-jm-gold flex items-center justify-center text-jm-navy font-extrabold text-lg">
                                     ${escapeHtml(sName.charAt(0).toUpperCase())}
                                 </div>
                                 <div>
-                                    <h3 class="text-ink font-semibold text-base">${escapeHtml(sName)}</h3>
+                                    <h3 class="text-jm-navy font-bold text-base">${escapeHtml(sName)}</h3>
                                     <span class="text-xs text-slate-500">Pegawai Ukur</span>
                                 </div>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-brand/15 text-brand border border-brand/30">${info.totalTasks} Tugas</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-jm-royal">${info.totalTasks} Tugas</span>
                         </div>
                         <div class="space-y-3 mb-6">
-                            <div class="p-3 rounded-md bg-canvas/50 border border-line flex justify-between items-center gap-3">
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center gap-3">
                                 <span class="text-xs text-slate-500 shrink-0">Jumlah Kuantiti Siap</span>
-                                <span class="text-sm font-bold text-ink text-right">${escapeHtml(unitStr)}</span>
+                                <span class="text-sm font-bold text-jm-navy text-right">${escapeHtml(unitStr)}</span>
                             </div>
-                            <div class="p-3 rounded-md bg-canvas/50 border border-line flex justify-between items-center">
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
                                 <span class="text-xs text-slate-500">Jumlah Isu Dilaporkan</span>
                                 <span class="text-sm font-bold ${info.issues > 0 ? 'text-red-600' : 'text-emerald-600'}">${info.issues} Isu</span>
                             </div>
                         </div>
                         <div>
                             <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pecahan Kategori</h4>
-                            <div class="space-y-1 bg-canvas/30 p-3 rounded-md border border-line">
+                            <div class="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
                                 ${catListHtml}
                             </div>
                         </div>
@@ -1457,7 +1489,7 @@
             }));
             const csv = Papa.unparse(rows);
             // BOM supaya Excel baca UTF-8 dengan betul
-            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["﻿" + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
