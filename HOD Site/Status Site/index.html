@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Progres Kerja Ukur | JURUKUR MAHABOB</title>
+    <!-- Tailwind CSS (CDN). Untuk production: guna assets/tailwind.css (npm run build:css) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Urbanist', 'Inter', 'sans-serif']
+                    },
+                    colors: {
+                        brand: 'rgb(var(--brand-rgb) / <alpha-value>)',
+                        brand2: 'rgb(var(--brand2-rgb) / <alpha-value>)',
+                        gold: 'rgb(var(--gold-rgb) / <alpha-value>)',
+                        ink: 'rgb(var(--ink-rgb) / <alpha-value>)',
+                        canvas: 'rgb(var(--canvas-rgb) / <alpha-value>)',
+                        line: 'rgb(var(--line-rgb) / <alpha-value>)'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Urbanist:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ===== Token warna: tukar di sini sahaja (nilai RGB) ===== */
+        :root {
+            --brand-rgb: 34 34 211;     /* biru royal  #2222D3 */
+            --brand2-rgb: 79 82 232;    /* biru terang #4F52E8 */
+            --gold-rgb: 255 229 0;      /* kuning      #FFE500 */
+            --ink-rgb: 17 24 39;        /* teks utama  #111827 */
+            --canvas-rgb: 245 246 250;  /* latar halaman */
+            --line-rgb: 229 231 235;    /* garisan / border */
+        }
+        body { font-family: 'Inter', sans-serif; background-color: rgb(var(--canvas-rgb)); color: rgb(var(--ink-rgb)); }
+        h1, h2, h3, .font-display { font-family: 'Urbanist', 'Inter', sans-serif; letter-spacing: -0.01em; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgb(var(--canvas-rgb)); }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+        input[type="date"], input[type="time"] { color-scheme: light; }
+
+        /* Hero biru dengan corak grid ukur */
+        .hero {
+            background:
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 48px),
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 48px),
+                linear-gradient(115deg, rgb(var(--brand2-rgb)) 0%, rgb(var(--brand-rgb)) 70%);
+        }
+        .hero::after {
+            content: ""; position: absolute; right: -80px; top: -80px; width: 360px; height: 360px;
+            border-radius: 9999px; border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 0 0 40px rgba(255,255,255,0.03), 0 0 0 80px rgba(255,255,255,0.03);
+            pointer-events: none;
+        }
+        /* Kad KPI kuning / biru silih ganti */
+        .kpi-gold { background: rgb(var(--gold-rgb)); color: rgb(var(--ink-rgb)); }
+        .kpi-blue { background: linear-gradient(135deg, rgb(var(--brand2-rgb)), rgb(var(--brand-rgb))); color: #fff; }
+        .kpi { transition: transform .2s ease, box-shadow .2s ease; }
+        .kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(17, 24, 39, .35); }
+        @keyframes pulseAccent {
+            0%, 100% { border-color: rgb(var(--brand-rgb)); box-shadow: 0 0 0 3px rgba(34, 34, 211, 0.15); }
+            50% { border-color: rgb(var(--gold-rgb)); box-shadow: 0 0 0 3px rgba(255, 229, 0, 0.35); }
+        }
+        .new-card-highlight { animation: pulseAccent 2.5s infinite; }
+        /* Senarai kerja dalam kad: sembunyi penanda lalai <summary> */
+        details > summary::-webkit-details-marker { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-canvas text-ink selection:bg-brand selection:text-white">
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: DASHBOARD -->
+        <div id="view-dashboard" class="view-section space-y-8">
+
+                        <section class="hero relative overflow-hidden rounded-lg text-white">
+                <div class="relative z-10 p-6 sm:p-10 lg:p-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+                    <div class="max-w-2xl">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gold mb-3">Integrasi Google Sheets &amp; Apps Script</p>
+                        <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">Progres Kerja Ukur<br>Mengikut Fail</h1>
+                        <p class="mt-4 text-sm sm:text-base text-white/85 leading-relaxed">Kad progres dijana daripada rekod kerja lapangan, manakala peratus siap diselaraskan terus daripada laporan statistik surveyor.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="refreshAllData()" id="btnRefresh" class="px-5 py-3 rounded-md bg-white/10 border border-white/30 text-white font-semibold text-sm hover:bg-white/20 transition flex items-center gap-2"><span id="refreshIcon" class="inline-flex"><i data-lucide="refresh-cw" class="w-4 h-4"></i></span> Muat Semula</button>
+                        <button onclick="switchTab('tambah')" class="px-5 py-3 rounded-md bg-gold text-ink font-semibold text-sm hover:brightness-95 transition flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Tambah Kerja Baru</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="kpi kpi-gold rounded-lg p-6 flex gap-4">
+                    <i data-lucide="folder-kanban" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Fail Kerja</p>
+                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statTotalFiles">0</div>
+                        <p class="text-sm mt-1 opacity-80">Kad progres aktif</p>
+                    </div>
+                </div>
+                <div class="kpi kpi-blue rounded-lg p-6 flex gap-4">
+                    <i data-lucide="trending-up" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Purata Progres</p>
+                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statAvgProgress">0%</div>
+                        <p class="text-sm mt-1 opacity-80">Sumber: sheet statistik</p>
+                    </div>
+                </div>
+                <div class="kpi kpi-gold rounded-lg p-6 flex gap-4">
+                    <i data-lucide="layers" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Kategori Aktif</p>
+                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statTotalCategories">0</div>
+                        <p class="text-sm mt-1 opacity-80"><span id="statTotalTasksText">0 rekod tugasan lapangan</span></p>
+                    </div>
+                </div>
+                <div class="kpi kpi-blue rounded-lg p-6 flex gap-4">
+                    <i data-lucide="users" class="w-8 h-8 shrink-0 mt-1" stroke-width="1.5"></i>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">Surveyor Terlibat</p>
+                        <div class="font-display text-3xl font-extrabold mt-1 break-words" id="statTotalSurveyors">0</div>
+                        <p class="text-sm mt-1 opacity-80">Mengikut kategori &amp; fail</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kad Progres Mengikut Fail -->
+            <div class="bg-white border border-line rounded-lg shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-ink">Kad Progres Mengikut Fail</h3>
+                        <p class="text-xs text-slate-500">Kad kerja yang ditambah berserta peratusan siap daripada data statistik</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:w-64">
+                            <i data-lucide="search" class="absolute left-3.5 top-3 w-4 h-4 text-slate-400"></i>
+                            <input type="text" id="searchInput" oninput="renderDashboardCards()" placeholder="Cari No File / Kawasan / Surveyor..." class="w-full pl-10 pr-4 py-2 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
+                        </div>
+                        <select id="filterKategoriSelect" onchange="renderDashboardCards()" class="px-4 py-2 rounded-md bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-brand">
+                            <option value="ALL">Semua Kategori</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="fileCardsContainer" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+                    <div class="col-span-full py-12 text-center text-slate-500">
+                        <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                        <p class="text-sm">Memuatkan kad progres fail dan peratusan kerja...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: TAMBAH KERJA -->
+        <div id="view-tambah" class="view-section hidden max-w-3xl mx-auto">
+            <div class="bg-white border border-line rounded-lg shadow-sm p-8">
+                <div class="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-line">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 rounded-md bg-gold text-ink">
+                            <i data-lucide="file-plus-2" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 id="formTitle" class="text-xl font-bold text-ink">Borang Tambah Kerja Lapangan</h2>
+                            <p id="formSubtitle" class="text-xs text-slate-500">Data dihantar ke Google Sheets melalui Apps Script dan menjana kad progres secara automatik</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="switchTab('dashboard')" class="hidden sm:flex px-4 py-2 rounded-md bg-canvas border border-line text-slate-600 font-medium text-sm hover:bg-canvas transition items-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali
+                    </button>
+                </div>
+
+                <div id="editBanner" class="hidden mb-6 p-3 rounded-md border border-amber-300 bg-amber-50 text-amber-800 text-xs flex items-start gap-2">
+                    <i data-lucide="pencil" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                    <span id="editBannerText">Mod edit</span>
+                </div>
+
+                <form id="fieldWorkForm" onsubmit="submitForm(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">No File</label>
+                            <input type="text" id="idFile" required placeholder="Cth: MCP 001/26" list="existingFilesList" autocomplete="off" oninput="updateKawasanSuggestions()" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                            <datalist id="existingFilesList"></datalist>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kawasan Lapangan</label>
+                            <input type="text" id="kawasan" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mangkuk" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                            <datalist id="kawasanList"></datalist>
+                            <p class="mt-1.5 text-[11px] text-slate-400">Satu No File boleh ada beberapa kawasan. Pilih dari cadangan supaya ejaan sama.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tarikh Kerja</label>
+                            <input type="date" id="tarikh" required class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="relative">
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kategori (Pilihan Pelbagai)</label>
+                            <div id="kategoriDropdownToggle" onclick="toggleDropdown('kategori')" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-sm cursor-pointer flex justify-between items-center select-none hover:border-brand/50 transition">
+                                <span id="kategoriSelectedText" class="text-slate-500 truncate">Pilih Kategori...</span>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 ml-2 shrink-0"></i>
+                            </div>
+                            <div id="kategoriDropdownMenu" class="hidden absolute z-30 mt-1.5 w-full bg-white border border-line rounded-md shadow-lg p-2 max-h-60 overflow-y-auto space-y-1"></div>
+                        </div>
+
+                        <div class="relative">
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Surveyor (Pilihan Pelbagai)</label>
+                            <div id="surveyorDropdownToggle" onclick="toggleDropdown('surveyor')" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-sm cursor-pointer flex justify-between items-center select-none hover:border-brand/50 transition">
+                                <span id="surveyorSelectedText" class="text-slate-500 truncate">Pilih Surveyor...</span>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 ml-2 shrink-0"></i>
+                            </div>
+                            <div id="surveyorDropdownMenu" class="hidden absolute z-30 mt-1.5 w-full bg-white border border-line rounded-md shadow-lg p-2 max-h-60 overflow-y-auto space-y-1"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tugas / Deskripsi</label>
+                        <input type="text" id="tugas" required placeholder="Cth: Cerapan Sempadan" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Kuantiti</label>
+                            <input type="number" id="kuantiti" step="any" required placeholder="0.00" class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Unit</label>
+                            <select id="unit" required class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                                <option value="" disabled selected>Pilih Unit...</option>
+                                <option value="Lot">Lot</option>
+                                <option value="Ekar">Ekar</option>
+                                <option value="Meter">Meter</option>
+                                <option value="Point">Point</option>
+                                <option value="Stesen">Stesen</option>
+                                <option value="Kawasan">Kawasan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tarikh Jangka Siap</label>
+                        <input type="date" id="jangkaSiap" required class="w-full px-4 py-3 rounded-md bg-canvas border border-line text-ink focus:outline-none focus:border-brand text-sm">
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-line">
+                        <button type="button" id="cancelBtn" onclick="switchTab('dashboard')" class="px-6 py-3 rounded-md bg-canvas border border-line text-slate-600 font-medium text-sm hover:bg-canvas transition">Batal</button>
+                        <button type="submit" id="submitBtn" class="px-6 py-3 rounded-md bg-gold text-ink font-semibold text-sm hover:brightness-95 transition flex items-center gap-2">
+                            <i data-lucide="send" class="w-4 h-4"></i> <span>Simpan & Jana Kad Progres</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 3: DATA SHEET -->
+        <div id="view-statistik" class="view-section hidden space-y-6">
+            <div class="bg-white border border-line rounded-lg shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-line">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">Sumber URL 2 (Peratus Kerja)</span>
+                    <h3 class="text-lg font-bold text-ink mt-2">Jadual Statistik & Peratusan Progres</h3>
+                </div>
+                <div id="statsTableContainer" class="w-full overflow-x-auto">
+                    <p class="text-slate-400 text-sm py-8 text-center">Memuatkan jadual statistik...</p>
+                </div>
+            </div>
+
+            <div class="bg-white border border-line rounded-lg shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-line">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/30">Sumber URL 1 (Rekod Kerja Lapangan)</span>
+                    <h3 class="text-lg font-bold text-ink mt-2">Jadual Rekod Kerja</h3>
+                </div>
+                <div id="recordsTableContainer" class="w-full overflow-x-auto">
+                    <p class="text-slate-400 text-sm py-8 text-center">Memuatkan jadual rekod kerja...</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="mt-12 bg-ink text-white/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row justify-between gap-2 text-xs">
+            <span>&copy; <span id="footerYear"></span> JURUKUR MAHABOB &middot; Sistem Statistik Jurukur Tanah</span>
+            <span>Data diselaraskan daripada Google Sheets</span>
+        </div>
+        <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-6 right-6 z-50 px-4 py-3 rounded-md shadow-sm border text-sm flex items-center gap-3 transition-all transform translate-y-2 opacity-0 hidden max-w-sm">
+        <i id="toastIcon" class="w-5 h-5 shrink-0"></i>
+        <span id="toastMsg">Mesej notifikasi...</span>
+    </div>
+
+    <script>
+        // 1. URL Google Apps Script Web App (Integrasi Active Sheet)
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjImKeAe2CyiR2EEtUmG89HUo1bEQc0RDGDya6rY9TpR2Ttddcye5Ih1m_dI0wMz8PaA/exec";
+
+        // 2. URL CSV 1: Rekod Kerja Lapangan (Sumber Penjanaan Kad Progres & Sasaran Kuantiti)
+        const CSV_REKOD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW5BxrFQw07_bCiTfbARTgXh8qYvbMnLo4Uur7iM6ROw42DMmluHxrxXd3bKxVADyj_dLu_pCoEob8/pub?gid=1800236702&single=true&output=csv";
+
+        // 3. URL CSV 2: Laporan Statistik Surveyor (Sumber Kuantiti Siap & Peratus Progres Bar)
+        const CSV_STAT_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR9K9IiWtk4r4MouH9wGT5DeKJWGXyaKcKgj43dnC48KG_87QE7jO7wOJF6jzKQn2XwsJipuQRRj9MZ/pub?gid=1353013862&single=true&output=csv";
+
+        // Senarai sama dengan Dashboard Laporan Harian supaya kategori Engineering/Strata dari sheet statistik tak tercicir
+        const DEFAULT_KATEGORI = ["Kadaster", "Kalibrasi", "Lidar", "Pemetaan Utiliti", "Strata", "TLS", "Topografi"];
+        const DEFAULT_SURVEYORS = ["Badrul", "Riduwan", "Ridhzuan", "Helmi", "Syahmi"];
+
+        // Nama kategori lama (English) dipetakan ke nama BM supaya data lama & baru dikira sama
+        const KATEGORI_ALIASES = {
+            'cadastral': 'Kadaster', 'kadastral': 'Kadaster', 'kadaster': 'Kadaster',
+            'calibration': 'Kalibrasi', 'kalibrasi': 'Kalibrasi',
+            'topography': 'Topografi', 'topografi': 'Topografi',
+            'utility mapping': 'Pemetaan Utiliti', 'pemetaan utiliti': 'Pemetaan Utiliti',
+            'lidar': 'Lidar', 'tls': 'TLS', 'strata': 'Strata'
+        };
+
+        const NAV_ACTIVE = "nav-btn px-2 sm:px-3 py-2 text-sm sm:text-[15px] font-semibold border-b-2 transition flex items-center gap-2 border-brand text-brand";
+        const NAV_INACTIVE = "nav-btn px-2 sm:px-3 py-2 text-sm sm:text-[15px] font-semibold border-b-2 transition flex items-center gap-2 border-transparent text-ink hover:text-brand";
+
+        let rawRekodRows = [];
+        let rawStatRows = [];
+        let localAddedRecords = [];
+        let selectedKategoriList = [];
+        let selectedSurveyorList = [];
+        let lastAddedFileId = null;
+        let editingRecord = null;      // { id, updatedAt } bila borang dalam mod edit
+        const localEdits = new Map();  // id -> rekod yang baru diedit (sementara CSV belum dikemas kini)
+        let isRefreshing = false;
+        let toastTimer = null;
+        let toastHideTimer = null;
+
+        function refreshIcons() {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function pad2(n) { return String(n).padStart(2, '0'); }
+
+        // Tarikh hari ini ikut waktu tempatan (toISOString guna UTC, salah sebelum 8 pagi di Malaysia)
+        function todayLocalIso() {
+            const d = new Date();
+            return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+        }
+
+        // Sokong YYYY-MM-DD (input borang) dan DD/MM/YYYY (format Google Sheets Malaysia)
+        function parseTarikh(value) {
+            const s = String(value || '').trim();
+            let y, m, d;
+            let match = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+            if (match) {
+                y = +match[1]; m = +match[2]; d = +match[3];
+            } else {
+                match = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+                if (!match) return null;
+                d = +match[1]; m = +match[2]; y = +match[3];
+                if (y < 100) y += 2000;
+            }
+            if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+            return { y, m, d };
+        }
+
+        function tarikhToIso(value) {
+            const p = parseTarikh(value);
+            return p ? `${p.y}-${pad2(p.m)}-${pad2(p.d)}` : '';
+        }
+
+        function formatTarikh(value) {
+            const p = parseTarikh(value);
+            if (p) return `${pad2(p.d)}/${pad2(p.m)}/${p.y}`;
+            const raw = String(value || '').trim();
+            return raw || '-';
+        }
+
+        // "MCP 001/26 Mangkuk" -> { file: "MCP 001/26", kawasan: "Mangkuk" } (sama dengan Apps Script)
+        // Prefix No File. Data lama dengan prefix LEGACY_PREFIXES dibaca sebagai MCP.
+        const FILE_PREFIX = 'MCP';
+        const LEGACY_PREFIXES = ['MGK'];
+
+        // Tahun No File diseragamkan 2 digit: "2026" -> "26" (format MCP 001/26)
+        function shortYear(y) {
+            const n = parseInt(y, 10);
+            if (String(y).length === 4 && n >= 2000 && n <= 2099) return String(n - 2000).padStart(2, '0');
+            return String(y);
+        }
+
+        function canonicalPrefix(prefix) {
+            const p = String(prefix || '').toUpperCase();
+            return LEGACY_PREFIXES.includes(p) ? FILE_PREFIX : p;
+        }
+
+        function splitFileAndKawasan(value) {
+            let s = String(value || '').trim().replace(/\s+/g, ' ');
+            if (/^\d+\s*\//.test(s)) s = FILE_PREFIX + ' ' + s; // "001/26" -> "MCP 001/26"
+            const m = s.match(/^([A-Za-z]{2,6})\s*(\d+)\s*\/\s*(\d+)\s*[-–·,:|]?\s*(.*)$/);
+            if (!m) return { file: s, kawasan: '' };
+            return { file: canonicalPrefix(m[1]) + ' ' + m[2].padStart(3, '0') + '/' + shortYear(m[3]), kawasan: m[4].trim() };
+        }
+
+        function kawasanKey(value) {
+            return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        }
+
+        function kawasanLabel(value) {
+            return String(value || '').trim().replace(/\s+/g, ' ');
+        }
+
+        function canonicalKategori(value) {
+            const s = String(value || '').trim();
+            return KATEGORI_ALIASES[s.toLowerCase()] || s;
+        }
+
+        function isOfficialKategori(value) {
+            const c = canonicalKategori(value).toLowerCase();
+            return DEFAULT_KATEGORI.some(k => k.toLowerCase() === c);
+        }
+
+        // Surveyor dalam senarai rasmi. "Mangkuk1..5" (nama lama) masih diterima untuk data lama.
+        function isKnownSurveyor(value) {
+            const s = String(value || '').trim().toLowerCase();
+            return DEFAULT_SURVEYORS.some(n => n.toLowerCase() === s) || /^mangkuk\s*\d+$/.test(s);
+        }
+
+        // Nama surveyor/kategori bukan No File walaupun corak "huruf+nombor"
+        function isSurveyorOrCategoryName(str) {
+            return isKnownSurveyor(str) || isOfficialKategori(str);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshIcons();
+            const today = todayLocalIso();
+            const tarikhInput = document.getElementById('tarikh');
+            const jangkaInput = document.getElementById('jangkaSiap');
+            if (tarikhInput) tarikhInput.value = today;
+            if (jangkaInput) jangkaInput.value = today;
+
+            document.addEventListener('click', (e) => {
+                const katToggle = document.getElementById('kategoriDropdownToggle');
+                const katMenu = document.getElementById('kategoriDropdownMenu');
+                if (katToggle && katMenu && !katToggle.contains(e.target) && !katMenu.contains(e.target)) {
+                    katMenu.classList.add('hidden');
+                }
+                const survToggle = document.getElementById('surveyorDropdownToggle');
+                const survMenu = document.getElementById('surveyorDropdownMenu');
+                if (survToggle && survMenu && !survToggle.contains(e.target) && !survMenu.contains(e.target)) {
+                    survMenu.classList.add('hidden');
+                }
+            });
+
+            renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
+            switchTab('dashboard');
+            refreshAllData();
+        });
+
+        function switchTab(tabName, keepEdit = false) {
+            if (editingRecord && !keepEdit) exitEditMode();
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            const activeView = document.getElementById(`view-${tabName}`);
+            if (activeView) activeView.classList.remove('hidden');
+
+            ['dashboard', 'tambah', 'statistik'].forEach(id => {
+                const btn = document.getElementById(`nav-${id}`);
+                if (btn) btn.className = id === tabName ? NAV_ACTIVE : NAV_INACTIVE;
+            });
+        }
+
+        function renderDropdownMenus(kategoriOptions, surveyorOptions) {
+            const optionHtml = (type, value, isChecked) => `
+                <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-canvas cursor-pointer transition text-sm text-slate-700">
+                    <input type="checkbox" value="${escapeHtml(value)}" ${isChecked ? 'checked' : ''} onchange="onMultiSelectChange('${type}', this)"
+                        class="w-4 h-4 rounded accent-brand">
+                    <span class="font-medium">${escapeHtml(value)}</span>
+                </label>
+            `;
+
+            const katMenu = document.getElementById('kategoriDropdownMenu');
+            if (katMenu) {
+                katMenu.innerHTML = kategoriOptions.map(kat => optionHtml('kategori', kat, selectedKategoriList.includes(kat))).join('');
+            }
+            const survMenu = document.getElementById('surveyorDropdownMenu');
+            if (survMenu) {
+                survMenu.innerHTML = surveyorOptions.map(surv => optionHtml('surveyor', surv, selectedSurveyorList.includes(surv))).join('');
+            }
+        }
+
+        function toggleDropdown(type) {
+            const menuId = type === 'kategori' ? 'kategoriDropdownMenu' : 'surveyorDropdownMenu';
+            const otherId = type === 'kategori' ? 'surveyorDropdownMenu' : 'kategoriDropdownMenu';
+            document.getElementById(otherId)?.classList.add('hidden');
+            document.getElementById(menuId)?.classList.toggle('hidden');
+        }
+
+        function syncMultiSelectLabels() {
+            const pairs = [['kategoriSelectedText', selectedKategoriList, 'Pilih Kategori...'], ['surveyorSelectedText', selectedSurveyorList, 'Pilih Surveyor...']];
+            pairs.forEach(([id, list, placeholder]) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerText = list.length ? list.join(', ') : placeholder;
+                el.className = list.length ? 'text-brand font-medium truncate' : 'text-slate-500 truncate';
+            });
+        }
+
+        function onMultiSelectChange(type, checkbox) {
+            const val = checkbox.value;
+            if (type === 'kategori') {
+                if (checkbox.checked) {
+                    if (!selectedKategoriList.includes(val)) selectedKategoriList.push(val);
+                } else {
+                    selectedKategoriList = selectedKategoriList.filter(item => item !== val);
+                }
+                const labelEl = document.getElementById('kategoriSelectedText');
+                if (selectedKategoriList.length > 0) {
+                    labelEl.innerText = selectedKategoriList.join(', ');
+                    labelEl.className = 'text-brand font-medium truncate';
+                } else {
+                    labelEl.innerText = 'Pilih Kategori...';
+                    labelEl.className = 'text-slate-500 truncate';
+                }
+            } else {
+                if (checkbox.checked) {
+                    if (!selectedSurveyorList.includes(val)) selectedSurveyorList.push(val);
+                } else {
+                    selectedSurveyorList = selectedSurveyorList.filter(item => item !== val);
+                }
+                const labelEl = document.getElementById('surveyorSelectedText');
+                if (selectedSurveyorList.length > 0) {
+                    labelEl.innerText = selectedSurveyorList.join(', ');
+                    labelEl.className = 'text-brand font-medium truncate';
+                } else {
+                    labelEl.innerText = 'Pilih Surveyor...';
+                    labelEl.className = 'text-slate-500 truncate';
+                }
+            }
+        }
+
+        async function fetchCsvText(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.text();
+        }
+
+        async function refreshAllData() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+            const icon = document.getElementById('refreshIcon');
+            if (icon) icon.classList.add('animate-spin');
+
+            try {
+                const cacheBuster = `&_t=${Date.now()}`;
+                // allSettled: satu sumber gagal tak padam data sumber yang lain
+                const [resRekod, resStat] = await Promise.allSettled([
+                    fetchCsvText(CSV_REKOD_URL + cacheBuster),
+                    fetchCsvText(CSV_STAT_URL + cacheBuster)
+                ]);
+                const failed = [];
+                if (resRekod.status === 'fulfilled') rawRekodRows = parseCSV(resRekod.value);
+                else failed.push('Rekod Kerja');
+                if (resStat.status === 'fulfilled') rawStatRows = parseCSV(resStat.value);
+                else failed.push('Statistik');
+
+                syncDynamicOptionsAndRender();
+                if (failed.length) {
+                    showToast(`Gagal memuat ${failed.join(' & ')}. Data sebelum ini dikekalkan.`, 'error');
+                }
+            } catch (err) {
+                console.error("Ralat memproses data CSV:", err);
+                showToast('Ralat memproses data. Sila cuba muat semula.', 'error');
+            } finally {
+                if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 400);
+                isRefreshing = false;
+            }
+        }
+
+        // Parser CSV Pintar (Menyokong koma & baris baharu di dalam tanda petikan "...")
+        function parseCSV(csvText) {
+            if (!csvText || !csvText.trim()) return [];
+            const rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < csvText.length; i++) {
+                const ch = csvText[i];
+                const nextCh = csvText[i + 1];
+
+                if (ch === '"') {
+                    if (inQuotes && nextCh === '"') {
+                        currentCell += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (ch === ',' && !inQuotes) {
+                    currentRow.push(currentCell.trim());
+                    currentCell = '';
+                } else if ((ch === '\r' || ch === '\n') && !inQuotes) {
+                    if (ch === '\r' && nextCh === '\n') i++;
+                    currentRow.push(currentCell.trim());
+                    if (currentRow.some(cell => cell !== '')) rows.push(currentRow);
+                    currentRow = [];
+                    currentCell = '';
+                } else {
+                    currentCell += ch;
+                }
+            }
+            if (currentCell !== '' || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                if (currentRow.some(cell => cell !== '')) rows.push(currentRow);
+            }
+
+            if (rows.length === 0) return [];
+
+            const firstRow = rows[0].map(h => h.replace(/^"|"$/g, '').trim());
+            const headerKeywords = ['no', 'file', 'fail', 'tarikh', 'surveyor', 'kategori', 'tugas', 'kuantiti', 'unit', 'siap', 'peratus', 'progress', 'progres', '%', 'status', 'kerja', 'nama', 'timestamp', 'masa'];
+            const firstRowText = firstRow.join(' ').toLowerCase();
+            const hasExplicitHeaders = headerKeywords.some(kw => firstRowText.includes(kw));
+
+            const headers = hasExplicitHeaders
+                ? firstRow.map((h, i) => h || `Lajur_${i + 1}`)
+                : firstRow.map((_, i) => `Lajur_${i + 1}`);
+
+            const startIdx = hasExplicitHeaders ? 1 : 0;
+            const result = [];
+
+            for (let r = startIdx; r < rows.length; r++) {
+                const vals = rows[r];
+                if (vals.every(v => !v)) continue;
+                const obj = { __headers: headers, __rawValues: vals, __hasExplicitHeaders: hasExplicitHeaders };
+                headers.forEach((h, idx) => {
+                    obj[h] = vals[idx] !== undefined ? vals[idx].replace(/^"|"$/g, '').trim() : '';
+                });
+                result.push(obj);
+            }
+            return result;
+        }
+
+        function isLikelyDateOrNumberOrUnit(str) {
+            if (!str) return true;
+            const s = String(str).trim();
+            if (!s) return true;
+            if (/^-?\d+(\.\d+)?%?$/.test(s)) return true;
+            if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(s) || /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/.test(s)) return true;
+            if (/^\d{1,2}:\d{2}(:\d{2})?(\s?(AM|PM|am|pm))?$/.test(s)) return true;
+            const nonCategoryTerms = [
+                'lot', 'ekar', 'meter', 'm', 'ha', 'hektar', 'unit',
+                'timestamp', 'masa mula', 'masa tamat', 'masa', 'kuantiti', 'qty',
+                'tarikh', 'tarikh mula', 'tarikh siap', 'jangka siap', 'no file', 'no fail', 'surveyor', 'tugas'
+            ];
+            if (nonCategoryTerms.includes(s.toLowerCase())) return true;
+            return false;
+        }
+
+        function isMetadataHeader(headerName) {
+            if (!headerName) return true;
+            const hLower = String(headerName).trim().toLowerCase();
+            const excludedHeaders = [
+                'timestamp', 'masa mula', 'masa tamat', 'masa', 'time', 'start', 'end',
+                'kuantiti', 'qty', 'quantity', 'jumlah', 'total', 'bilangan', 'luas',
+                'no file', 'no fail', 'no. fail', 'no. file', 'id file', 'fail', 'file', 'rujukan',
+                'tarikh', 'date', 'jangka siap', 'siap', 'target', 'due',
+                'surveyor', 'juruukur', 'penyelia', 'petugas', 'pic', 'nama',
+                'status', 'tugas', 'kerja', 'task', 'deskripsi', 'perkara', 'aktiviti',
+                'unit', 'ukuran', 'peratus', 'progress', 'progres', '%', 'catatan', 'remarks', 'nota',
+                'kawasan', 'lokasi', 'gambar'
+            ];
+            if (/^lajur_\d+$/i.test(hLower)) return true;
+            return excludedHeaders.some(ex => hLower === ex || hLower.includes(ex));
+        }
+
+        function splitMultiValues(rawStr) {
+            if (!rawStr) return [];
+            return String(rawStr)
+                .split(/[,;\n\r|]+|\s+&\s+|\s+dan\s+/i)
+                .map(s => s.replace(/^["'•\-*\s]+|["'\s]+$/g, '').trim())
+                .filter(s => s && !isLikelyDateOrNumberOrUnit(s) && !isMetadataHeader(s))
+                .map(canonicalKategori);
+        }
+
+        // "MCP 001/26 Mangkuk", "MGK 001/26" (lama) dan "MCP 1/26" dianggap fail yang sama
+        function normalizeFileId(idStr) {
+            if (!idStr) return '';
+            const s = String(idStr).toUpperCase().replace(/^["']+|["']+$/g, '').trim();
+            // Kunci perbandingan: buang sifar di depan supaya "MCP 13/26" == "MCP 013/26"
+            const m = s.match(/^([A-Z]{2,6})\s*(\d+)\s*\/\s*(\d+)/);
+            if (m) return canonicalPrefix(m[1]) + String(parseInt(m[2], 10)) + '/' + String(parseInt(shortYear(m[3]), 10));
+            return s.replace(/\s+/g, '');
+        }
+
+        function addUniqueCaseInsensitive(targetSet, value) {
+            if (!value) return;
+            const cleanVal = String(value).trim();
+            if (!cleanVal || isLikelyDateOrNumberOrUnit(cleanVal) || isMetadataHeader(cleanVal)) return;
+            const exists = Array.from(targetSet).some(item => item.toLowerCase() === cleanVal.toLowerCase());
+            if (!exists) targetSet.add(cleanVal);
+        }
+
+        function syncDynamicOptionsAndRender() {
+            const parsedRekod = extractNormalizedRows(rawRekodRows, 'rekod');
+            const parsedStat = extractNormalizedRows(rawStatRows, 'stat');
+
+            // Buang rekod tempatan yang dah masuk dalam sheet, supaya tugas tak dikira dua kali
+            const rekodKey = r => [normalizeFileId(r.idFile), kawasanKey(r.kawasan), tarikhToIso(r.tarikh), String(r.tugas || '').trim().toLowerCase()].join('|');
+            const rekodKeys = new Set(parsedRekod.map(rekodKey));
+            const sheetIds = new Set(parsedRekod.map(r => r.id).filter(Boolean));
+            localAddedRecords = localAddedRecords.filter(l => !(l.id && sheetIds.has(l.id)) && !rekodKeys.has(rekodKey(l)));
+
+            // Suntingan tempatan dipakai sehingga CSV menunjukkan versi yang sama atau lebih baru
+            const applyEdit = r => {
+                const edit = r.id ? localEdits.get(r.id) : null;
+                if (!edit) return r;
+                if (r.sourceType === 'rekod' && r.updatedAt && r.updatedAt >= edit.updatedAt) {
+                    localEdits.delete(r.id);
+                    return r;
+                }
+                return { ...r, ...edit };
+            };
+            const editedRekod = parsedRekod.map(applyEdit);
+            localAddedRecords = localAddedRecords.map(applyEdit);
+
+            const combinedRecords = [...localAddedRecords, ...editedRekod];
+            window.__rekodById = new Map(combinedRecords.filter(r => r.id).map(r => [r.id, r]));
+
+            const allKategoriSet = new Set(DEFAULT_KATEGORI);
+            const existingFilesSet = new Set();
+            const fileSurveyorBackupMap = {};
+            const fileCategoriesFromStatMap = {};
+            const categoryPercentMap = {};
+            const categorySurveyorBackupMap = {};
+
+            combinedRecords.forEach(r => {
+                if (r.idFile) existingFilesSet.add(r.idFile);
+                if (r.idFile) {
+                    const fNorm = normalizeFileId(r.idFile);
+                    if (r.surveyor) {
+                        if (!fileSurveyorBackupMap[fNorm]) fileSurveyorBackupMap[fNorm] = new Set();
+                        splitMultiValues(r.surveyor).forEach(s => {
+                            if (isKnownSurveyor(s)) {
+                                addUniqueCaseInsensitive(fileSurveyorBackupMap[fNorm], s);
+                            }
+                        });
+                    }
+                }
+            });
+
+            parsedStat.forEach(r => {
+                if (r.idFile) {
+                    const fNorm = normalizeFileId(r.idFile);
+                    if (r.surveyor) {
+                        if (!fileSurveyorBackupMap[fNorm]) fileSurveyorBackupMap[fNorm] = new Set();
+                        splitMultiValues(r.surveyor).forEach(s => {
+                            if (isKnownSurveyor(s)) {
+                                addUniqueCaseInsensitive(fileSurveyorBackupMap[fNorm], s);
+                            }
+                        });
+                    }
+                    if (r.kategori) {
+                        if (!fileCategoriesFromStatMap[fNorm]) fileCategoriesFromStatMap[fNorm] = new Set();
+                        splitMultiValues(r.kategori).forEach(k => {
+                            if (isOfficialKategori(k)) {
+                                addUniqueCaseInsensitive(fileCategoriesFromStatMap[fNorm], k);
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Senarai kawasan bagi setiap fail (untuk cadangan dalam borang)
+            const kawasanByFile = {};
+            [...combinedRecords, ...parsedStat].forEach(r => {
+                const k = kawasanKey(r.kawasan);
+                if (!r.idFile || !k) return;
+                const fNorm = normalizeFileId(r.idFile);
+                if (!kawasanByFile[fNorm]) kawasanByFile[fNorm] = new Map();
+                if (!kawasanByFile[fNorm].has(k)) kawasanByFile[fNorm].set(k, kawasanLabel(r.kawasan));
+            });
+
+            window.__processedData = {
+                kawasanByFile,
+                combinedRecords,
+                parsedRekod: [...localAddedRecords, ...editedRekod],
+                parsedStat,
+                fileSurveyorBackupMap,
+                fileCategoriesFromStatMap,
+                categoryPercentMap,
+                categorySurveyorBackupMap
+            };
+
+            const datalist = document.getElementById('existingFilesList');
+            if (datalist) {
+                datalist.innerHTML = Array.from(existingFilesSet).map(f => `<option value="${escapeHtml(f)}">`).join('');
+            }
+
+            const filterSelect = document.getElementById('filterKategoriSelect');
+            if (filterSelect) {
+                const currentVal = filterSelect.value;
+                const katArr = Array.from(allKategoriSet).sort();
+                filterSelect.innerHTML = `<option value="ALL">Semua Kategori</option>` + katArr.map(k => `<option value="${escapeHtml(k)}" ${currentVal === k ? 'selected' : ''}>${escapeHtml(k)}</option>`).join('');
+            }
+
+            renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
+            updateKawasanSuggestions();
+            renderDashboardCards();
+            renderRawTables();
+        }
+
+        function updateKawasanSuggestions() {
+            const list = document.getElementById('kawasanList');
+            const map = window.__processedData?.kawasanByFile;
+            if (!list || !map) return;
+            const typed = document.getElementById('idFile')?.value || '';
+            let labels;
+            if (typed.trim()) {
+                const fNorm = normalizeFileId(splitFileAndKawasan(typed).file);
+                labels = Array.from((map[fNorm] || new Map()).values());
+            } else {
+                const all = new Map();
+                Object.values(map).forEach(m => m.forEach((v, k) => { if (!all.has(k)) all.set(k, v); }));
+                labels = Array.from(all.values());
+            }
+            list.innerHTML = labels.sort((a, b) => a.localeCompare(b)).map(k => `<option value="${escapeHtml(k)}">`).join('');
+        }
+
+        function extractNormalizedRows(rows, sourceType = 'rekod') {
+            let lastContext = { idFile: '', tarikh: '', surveyor: '', jangkaSiap: '' };
+            const normalizedList = [];
+
+            (rows || []).forEach(row => {
+                const headers = row.__headers || Object.keys(row);
+                const vals = row.__rawValues || headers.map(h => row[h]);
+                const hasHeaders = row.__hasExplicitHeaders !== false;
+
+                const findIndexByHeaderKeywords = (keywords, excludeKeywords = []) => {
+                    if (!hasHeaders) return -1;
+                    for (let i = 0; i < headers.length; i++) {
+                        const hLower = String(headers[i] || '').toLowerCase().trim();
+                        if (excludeKeywords.some(ex => hLower.includes(ex))) continue;
+                        if (keywords.some(kw => hLower === kw || hLower.includes(kw))) return i;
+                    }
+                    return -1;
+                };
+
+                const findAllValuesByHeaderKeywords = (keywords, excludeKeywords = []) => {
+                    if (!hasHeaders) return [];
+                    const collected = [];
+                    for (let i = 0; i < headers.length; i++) {
+                        const hLower = String(headers[i] || '').toLowerCase().trim();
+                        if (excludeKeywords.some(ex => hLower.includes(ex))) continue;
+                        if (keywords.some(kw => hLower === kw || hLower.includes(kw))) {
+                            const v = (vals[i] || '').trim();
+                            if (v && v.toLowerCase() !== 'false' && v !== '-') {
+                                if (v.toLowerCase() === 'true' || v === '✓' || v === '✔') {
+                                    if (!isMetadataHeader(headers[i])) collected.push(headers[i].trim());
+                                } else {
+                                    collected.push(v);
+                                }
+                            }
+                        }
+                    }
+                    return collected;
+                };
+
+                const fileColIdx = findIndexByHeaderKeywords(['no file', 'no fail', 'no. fail', 'no. file', 'id file', 'no rujukan', 'rujukan', 'fail', 'file'], ['tarikh', 'masa', 'timestamp']);
+                let idFile = fileColIdx !== -1 ? (vals[fileColIdx] || '').trim() : '';
+
+                // Teka No File hanya jika sheet TIADA lajur No File. Jika lajur wujud tapi kosong (sel bergabung),
+                // biar ia warisi No File baris sebelumnya di bawah, jangan ambil nama surveyor sebagai No File.
+                if (fileColIdx === -1) {
+                    for (let i = 0; i < vals.length; i++) {
+                        const candidate = (vals[i] || '').trim();
+                        if (candidate && !isLikelyDateOrNumberOrUnit(candidate) && !isMetadataHeader(candidate) && !isSurveyorOrCategoryName(candidate)) {
+                            if (/[A-Za-z]+[\s\-_/]*\d+/i.test(candidate)) {
+                                idFile = candidate;
+                                break;
+                            }
+                        }
+                    }
+                    if (!idFile && vals[0] && !isLikelyDateOrNumberOrUnit(vals[0]) && !isMetadataHeader(vals[0]) && !isSurveyorOrCategoryName(vals[0])) {
+                        idFile = vals[0];
+                    }
+                }
+
+                // Kawasan: lajur Kawasan, atau teks selepas nombor fail (data lama "MCP 001/26 Mangkuk")
+                const kawasanColIdx = findIndexByHeaderKeywords(['kawasan', 'lokasi', 'tapak']);
+                let kawasan = kawasanColIdx !== -1 ? kawasanLabel(vals[kawasanColIdx]) : '';
+                if (idFile) {
+                    const parts = splitFileAndKawasan(idFile);
+                    idFile = parts.file;
+                    if (!kawasan) kawasan = parts.kawasan;
+                }
+
+                // No File kosong (sel bergabung) warisi No File baris atas.
+                // Kawasan TIDAK diwarisi: kawasan kosong kekal "tidak dinyatakan", jangan diteka.
+                if (idFile) {
+                    lastContext.idFile = idFile;
+                } else if (!idFile && lastContext.idFile && sourceType === 'rekod') {
+                    idFile = lastContext.idFile;
+                }
+
+                const tarikhColIdx = findIndexByHeaderKeywords(['tarikh mula', 'tarikh kerja', 'tarikh', 'date'], ['siap', 'jangka', 'target', 'due', 'masa', 'timestamp']);
+                const jangkaColIdx = findIndexByHeaderKeywords(['jangka siap', 'tarikh siap', 'jangka', 'siap', 'target', 'due'], ['masa', 'timestamp']);
+                const tugasColIdx = findIndexByHeaderKeywords(['tugas', 'kerja', 'task', 'aktiviti', 'perkara', 'deskripsi'], ['kategori', 'peratus', 'fail', 'file', 'masa', 'kuantiti', 'jarak', 'luas']);
+                const qtyColIdx = findIndexByHeaderKeywords(
+                    ['kuantiti', 'qty', 'quantity', 'jarak', 'luas', 'bilangan', 'jumlah', 'meter', 'ekar', 'lot', 'ukuran'],
+                    ['peratus', '%', 'masa', 'timestamp', 'tarikh', 'jangka', 'siap', 'no file', 'no fail', 'unit']
+                );
+                const unitColIdx = findIndexByHeaderKeywords(['unit', 'ukuran'], ['kuantiti', 'masa', 'jarak', 'luas']);
+                const pctColIdx = findIndexByHeaderKeywords(['peratus', 'progress', 'progres', '%'], ['kuantiti', 'jarak']);
+
+                let tarikh = tarikhColIdx !== -1 ? (vals[tarikhColIdx] || '').trim() : '';
+                let jangkaSiap = jangkaColIdx !== -1 ? (vals[jangkaColIdx] || '').trim() : '';
+                let tugas = tugasColIdx !== -1 ? (vals[tugasColIdx] || '').trim() : '';
+                let rawQty = qtyColIdx !== -1 ? (vals[qtyColIdx] || '').trim() : '';
+                let unit = unitColIdx !== -1 ? (vals[unitColIdx] || '').trim() : '';
+                let rawPct = pctColIdx !== -1 ? (vals[pctColIdx] || '').trim() : '';
+
+                if (rawQty && !unit) {
+                    const unitMatch = rawQty.match(/\b(lot|ekar|meter|m|km|ha|hektar)\b/i);
+                    if (unitMatch) unit = unitMatch[1];
+                }
+
+                if (sourceType === 'stat' && !rawQty) {
+                    for (let i = 0; i < vals.length; i++) {
+                        if (i === fileColIdx || i === tarikhColIdx || i === jangkaColIdx || i === pctColIdx || i === unitColIdx) continue;
+                        const hName = String(headers[i] || '').toLowerCase();
+                        if (
+                            hName.includes('timestamp') || hName.includes('masa') || hName.includes('tarikh') ||
+                            hName.includes('jangka') || hName.includes('siap') || hName.includes('file') ||
+                            hName.includes('fail') || hName.includes('surveyor') || hName.includes('nama') ||
+                            hName.includes('kategori') || hName.includes('tugas')
+                        ) continue;
+                        const cellText = (vals[i] || '').trim();
+                        if (cellText && /^-?\d+(\.\d+)?(\s*(lot|ekar|meter|m|km|ha|unit))?$/i.test(cellText)) {
+                            rawQty = cellText;
+                            break;
+                        }
+                    }
+                }
+
+                let kategoriValues = findAllValuesByHeaderKeywords(['kategori', 'jenis', 'skop', 'category'], ['masa', 'timestamp', 'kuantiti', 'tarikh', 'surveyor', 'fail', 'file']);
+                let surveyorValues = findAllValuesByHeaderKeywords(['surveyor', 'juruukur', 'nama surveyor', 'penyelia', 'petugas', 'pic', 'nama'], ['fail', 'file', 'kategori', 'masa', 'timestamp', 'kuantiti']);
+
+                vals.forEach((cellVal, idx) => {
+                    if (idx === fileColIdx || idx === tarikhColIdx || idx === jangkaColIdx || idx === qtyColIdx) return;
+                    const cleanCell = String(cellVal || '').trim();
+                    if (!cleanCell) return;
+                    splitMultiValues(cleanCell).forEach(part => {
+                        const matchedDefaultKat = isOfficialKategori(part) ? canonicalKategori(part) : null;
+                        if (matchedDefaultKat && !kategoriValues.some(kv => canonicalKategori(kv).toLowerCase() === matchedDefaultKat.toLowerCase())) {
+                            kategoriValues.push(matchedDefaultKat);
+                        }
+                    });
+                });
+
+                if (kategoriValues.length === 0 && !hasHeaders && vals.length >= 4) {
+                    if (!isLikelyDateOrNumberOrUnit(vals[3])) kategoriValues.push(vals[3]);
+                }
+                if (surveyorValues.length === 0 && !hasHeaders && vals.length >= 3) {
+                    if (!isLikelyDateOrNumberOrUnit(vals[2])) surveyorValues.push(vals[2]);
+                }
+
+                let hasMatrixEntries = false;
+                // ID rekod & masa dikemaskini (untuk ciri edit). Padanan nama header tepat.
+                const exactIdx = names => hasHeaders ? headers.findIndex(h => names.includes(String(h || '').trim().toLowerCase())) : -1;
+                const idColIdx = exactIdx(['id', 'id rekod']);
+                const updColIdx = exactIdx(['dikemaskini', 'last updated']);
+                const recId = idColIdx !== -1 ? String(vals[idColIdx] || '').trim() : '';
+                const updatedAt = updColIdx !== -1 ? String(vals[updColIdx] || '').trim() : '';
+
+                const knownColIndices = new Set([fileColIdx, kawasanColIdx, tarikhColIdx, jangkaColIdx, tugasColIdx, qtyColIdx, unitColIdx, pctColIdx, idColIdx, updColIdx]);
+                headers.forEach((h, idx) => {
+                    const hRaw = String(h || '').trim();
+                    const isOfficialKatHeader = isOfficialKategori(hRaw);
+                    const hTrim = isOfficialKatHeader ? canonicalKategori(hRaw) : hRaw;
+                    if (!knownColIndices.has(idx) && (!isMetadataHeader(hTrim) || isOfficialKatHeader)) {
+                        const cellVal = (vals[idx] || '').trim();
+                        if (cellVal && cellVal.toLowerCase() !== 'false' && cellVal !== '0' && cellVal !== '-') {
+                            const numVal = parseFloat(cellVal.replace(/[^0-9.-]/g, ''));
+                            if (cellVal.toLowerCase() === 'true' || cellVal === '✓' || cellVal === '✔') {
+                                kategoriValues.push(hTrim);
+                            } else if (sourceType === 'stat' && isOfficialKatHeader && !isNaN(numVal) && numVal > 0 && idFile) {
+                                hasMatrixEntries = true;
+                                normalizedList.push({
+                                    idFile: idFile,
+                                    kawasan: kawasan,
+                                    tarikh: tarikh,
+                                    surveyor: surveyorValues.join(', '),
+                                    kategori: hTrim,
+                                    tugas: tugas || hTrim,
+                                    kuantiti: numVal,
+                                    unit: unit,
+                                    jangkaSiap: jangkaSiap,
+                                    peratus: null,
+                                    sourceType: sourceType,
+                                    isMatrixCol: true
+                                });
+                            }
+                        }
+                    }
+                });
+
+                const parsedQty = parseFloat(String(rawQty).replace(/[^0-9.-]/g, ''));
+                const kuantiti = !isNaN(parsedQty) ? parsedQty : 0;
+
+                let peratus = null;
+                if (rawPct !== '') {
+                    const p = parseFloat(String(rawPct).replace(/[^0-9.-]/g, ''));
+                    if (!isNaN(p)) {
+                        peratus = (p > 0 && p <= 1 && !String(rawPct).includes('%')) ? p * 100 : p;
+                    }
+                }
+
+                if (!hasMatrixEntries && (idFile || kategoriValues.length > 0 || surveyorValues.length > 0 || kuantiti > 0)) {
+                    normalizedList.push({
+                        id: recId,
+                        updatedAt: updatedAt,
+                        idFile: idFile,
+                        kawasan: kawasan,
+                        tarikh: tarikh,
+                        surveyor: surveyorValues.join(', '),
+                        kategori: kategoriValues.join(', '),
+                        tugas: tugas,
+                        kuantiti: kuantiti,
+                        unit: unit,
+                        jangkaSiap: jangkaSiap,
+                        peratus: peratus,
+                        sourceType: sourceType
+                    });
+                }
+            });
+
+            return normalizedList;
+        }
+
+        // Laporan dikira untuk kategori jika kategori laporan SAMA (selepas tukar nama lama ke BM).
+        // Teks Tugas hanya digunakan jika laporan langsung tiada kategori (data lama).
+        function statMatchesCategory(st, catName) {
+            const target = canonicalKategori(catName).toLowerCase().trim();
+            const stCats = splitMultiValues(st.kategori).map(c => c.toLowerCase().trim());
+            if (stCats.length) return stCats.includes(target);
+            return canonicalKategori(st.tugas).toLowerCase().trim() === target;
+        }
+
+        // statFilter (pilihan): hadkan laporan statistik kepada satu kawasan
+        function resolveProgressDetailsForFile(fileKey, kategoriList, rekodTasksForFile, statFilter) {
+            const { parsedStat } = window.__processedData || {};
+            const fNorm = normalizeFileId(fileKey);
+
+            const statRecsForFile = (parsedStat || []).filter(r => {
+                if (!r.idFile) return false;
+                if (normalizeFileId(r.idFile) !== fNorm) return false;
+                return !statFilter || statFilter(r);
+            });
+
+            let fileLevelTargetQty = 0;
+            let fileLevelUnit = '';
+            (rekodTasksForFile || []).forEach(t => {
+                const q = parseFloat(t.kuantiti);
+                if (!isNaN(q) && q > 0 && fileLevelTargetQty === 0) fileLevelTargetQty = q;
+                if (!fileLevelUnit && t.unit) fileLevelUnit = t.unit;
+            });
+
+            let totalFileStatDoneQty = 0;
+            let uncategorizedStatDoneQty = 0;
+            const totalFileExplicitPcts = [];
+            const effectiveCategories = (kategoriList && kategoriList.length > 0) ? kategoriList : ['Umum'];
+
+            statRecsForFile.forEach(st => {
+                const q = parseFloat(st.kuantiti);
+                const validQty = (!isNaN(q) && q > 0) ? q : 0;
+                totalFileStatDoneQty += validQty;
+
+                if (st.peratus !== null && !isNaN(st.peratus) && st.peratus >= 0) {
+                    totalFileExplicitPcts.push(st.peratus);
+                }
+
+                const matchesAnyCardCat = effectiveCategories.some(ec => statMatchesCategory(st, ec));
+
+                if (!matchesAnyCardCat) uncategorizedStatDoneQty += validQty;
+            });
+
+            // Sasaran fail hanya dipinjam oleh kategori jika rekod kerja langsung tiada kategori.
+            // Jika tidak, kategori yang cuma ada dalam laporan (tak dirancang) tak dapat sasaran palsu.
+            const rekodHasCategories = (rekodTasksForFile || []).some(t => splitMultiValues(t.kategori).length > 0);
+
+            const categoryProgressList = effectiveCategories.map(catName => {
+                const catLower = catName.toLowerCase().trim();
+                let catTargetQty = 0;
+                let catUnit = '';
+
+                (rekodTasksForFile || []).forEach(t => {
+                    const rowCats = splitMultiValues(t.kategori).map(c => c.toLowerCase().trim());
+                    const isMatch = (catLower === 'umum' && rowCats.length === 0) || rowCats.includes(catLower);
+                    if (isMatch) {
+                        const q = parseFloat(t.kuantiti);
+                        if (!isNaN(q) && q > 0 && catTargetQty === 0) catTargetQty = q;
+                        if (!catUnit && t.unit) catUnit = t.unit;
+                    }
+                });
+
+                if (catTargetQty === 0 && fileLevelTargetQty > 0 && !rekodHasCategories) catTargetQty = fileLevelTargetQty;
+                if (!catUnit && fileLevelUnit) catUnit = fileLevelUnit;
+
+                let catDoneQty = 0;
+                const catExplicitPcts = [];
+
+                statRecsForFile.forEach(st => {
+                    const isDirectCatMatch = statMatchesCategory(st, catName);
+
+                    if (isDirectCatMatch) {
+                        const q = parseFloat(st.kuantiti);
+                        if (!isNaN(q) && q > 0) catDoneQty += q;
+                        if (st.peratus !== null && !isNaN(st.peratus) && st.peratus >= 0) catExplicitPcts.push(st.peratus);
+                        if (!catUnit && st.unit) catUnit = st.unit;
+                    }
+                });
+
+                // Laporan tanpa kategori hanya boleh diberi kepada kategori jika fail ada SATU kategori sahaja
+                if (catDoneQty === 0 && uncategorizedStatDoneQty > 0 && effectiveCategories.length === 1) catDoneQty = uncategorizedStatDoneQty;
+
+                let catPct = 0;
+                if (catTargetQty > 0 && catDoneQty > 0) {
+                    catPct = (catDoneQty / catTargetQty) * 100;
+                } else if (catExplicitPcts.length > 0) {
+                    catPct = catExplicitPcts.reduce((a, b) => a + b, 0) / catExplicitPcts.length;
+                } else if (catDoneQty === 0 && totalFileExplicitPcts.length > 0 && effectiveCategories.length === 1) {
+                    catPct = totalFileExplicitPcts.reduce((a, b) => a + b, 0) / totalFileExplicitPcts.length;
+                }
+
+                catPct = Math.min(100, Math.max(0, catPct));
+
+                return {
+                    kategori: catName,
+                    percentage: Math.round(catPct * 10) / 10,
+                    doneQty: Math.round(catDoneQty * 100) / 100,
+                    targetQty: Math.round(catTargetQty * 100) / 100,
+                    unit: catUnit || 'Unit',
+                    hasTarget: catTargetQty > 0 || catExplicitPcts.length > 0 || catPct > 0
+                };
+            });
+
+            // Purata hanya kategori yang ada sasaran (kategori yang cuma dilaporkan tak cairkan peratus)
+            const countedCats = categoryProgressList.filter(c => c.hasTarget);
+            const overallPct = countedCats.length > 0
+                ? countedCats.reduce((sum, item) => sum + item.percentage, 0) / countedCats.length
+                : 0;
+
+            const totalDone = totalFileStatDoneQty > 0
+                ? totalFileStatDoneQty
+                : categoryProgressList.reduce((sum, item) => sum + item.doneQty, 0);
+            const totalTarget = fileLevelTargetQty > 0
+                ? fileLevelTargetQty
+                : categoryProgressList.reduce((sum, item) => sum + item.targetQty, 0);
+            const primaryUnit = fileLevelUnit || categoryProgressList[0]?.unit || 'Unit';
+
+            return {
+                percentage: Math.round(overallPct * 10) / 10,
+                doneQty: Math.round(totalDone * 100) / 100,
+                targetQty: Math.round(totalTarget * 100) / 100,
+                unit: primaryUnit,
+                categoryProgressList: categoryProgressList
+            };
+        }
+
+        function renderDashboardCards() {
+            const container = document.getElementById('fileCardsContainer');
+            if (!container || !window.__processedData) return;
+
+            const { combinedRecords, parsedStat, fileSurveyorBackupMap, fileCategoriesFromStatMap } = window.__processedData;
+            const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+            const filterKat = document.getElementById('filterKategoriSelect')?.value || 'ALL';
+
+            const fileGroupsMap = new Map();
+
+            combinedRecords.forEach((rec, idx) => {
+                const rawFileId = (rec.idFile || `FAIL-${idx + 1}`).trim();
+                const normKey = normalizeFileId(rawFileId);
+
+                if (!fileGroupsMap.has(normKey)) {
+                    fileGroupsMap.set(normKey, {
+                        normKey: normKey,
+                        idFile: rawFileId,
+                        tarikhMula: rec.tarikh || '-',
+                        jangkaSiap: rec.jangkaSiap || '-',
+                        surveyors: new Set(),
+                        categories: new Set(),
+                        tasks: [],
+                        rekodEntries: [],
+                        quantitiesByUnit: {},
+                        explicitPcts: [],
+                        isNewlyAdded: rec.isNewlyAdded || (lastAddedFileId && normalizeFileId(lastAddedFileId) === normKey)
+                    });
+                }
+
+                const grp = fileGroupsMap.get(normKey);
+                if (rec.tarikh && (grp.tarikhMula === '-' || !grp.tarikhMula)) grp.tarikhMula = rec.tarikh;
+                if (rec.jangkaSiap && (grp.jangkaSiap === '-' || !grp.jangkaSiap)) grp.jangkaSiap = rec.jangkaSiap;
+
+                splitMultiValues(rec.surveyor).forEach(s => {
+                    if (isKnownSurveyor(s)) addUniqueCaseInsensitive(grp.surveyors, s);
+                });
+
+                splitMultiValues(rec.kategori).forEach(k => {
+                    if (isOfficialKategori(k)) addUniqueCaseInsensitive(grp.categories, canonicalKategori(k));
+                });
+
+                if (rec.sourceType !== 'stat') {
+                    grp.rekodEntries.push(rec);
+                    if (rec.tugas || rec.kategori) {
+                        grp.tasks.push({
+                            tugas: rec.tugas || rec.kategori,
+                            kategori: rec.kategori,
+                            kuantiti: rec.kuantiti,
+                            unit: rec.unit || 'Unit'
+                        });
+                    }
+                    if (rec.kuantiti > 0) {
+                        const u = rec.unit || 'Unit';
+                        if (!grp.quantitiesByUnit[u]) grp.quantitiesByUnit[u] = rec.kuantiti;
+                    }
+                } else if (rec.peratus !== null && !isNaN(rec.peratus)) {
+                    grp.explicitPcts.push(rec.peratus);
+                }
+            });
+
+            let fileGroups = Array.from(fileGroupsMap.values()).map(grp => {
+                const fNorm = grp.normKey;
+
+                if (fileCategoriesFromStatMap && fileCategoriesFromStatMap[fNorm]) {
+                    fileCategoriesFromStatMap[fNorm].forEach(k => {
+                        if (isOfficialKategori(k)) addUniqueCaseInsensitive(grp.categories, canonicalKategori(k));
+                    });
+                }
+
+                if (fileSurveyorBackupMap && fileSurveyorBackupMap[fNorm]) {
+                    fileSurveyorBackupMap[fNorm].forEach(s => {
+                        if (isKnownSurveyor(s)) addUniqueCaseInsensitive(grp.surveyors, s);
+                    });
+                }
+
+                const categoriesArr = Array.from(grp.categories);
+                const surveyorsArr = Array.from(grp.surveyors);
+
+                // ---- Pecahan ikut kawasan ----
+                const statRowsForFile = (parsedStat || []).filter(r => r.idFile && normalizeFileId(r.idFile) === fNorm);
+                const allRows = [...grp.rekodEntries, ...statRowsForFile];
+                const labels = new Map();
+                allRows.forEach(r => {
+                    const k = kawasanKey(r.kawasan);
+                    if (k && !labels.has(k)) labels.set(k, kawasanLabel(r.kawasan));
+                });
+                // Rekod tanpa kawasan TIDAK dicampur ke mana-mana kawasan; ia dikumpul
+                // dalam "Kawasan tidak dinyatakan" supaya progres setiap kawasan tepat.
+                const keyOf = r => kawasanKey(r.kawasan);
+                const keys = Array.from(labels.keys());
+                if (allRows.some(r => keyOf(r) === '')) keys.push('');
+
+                const kawasanProgress = keys.map(key => {
+                    const rekodK = grp.rekodEntries.filter(r => keyOf(r) === key);
+                    const statK = statRowsForFile.filter(r => keyOf(r) === key);
+                    const catSet = new Set();
+                    [...rekodK, ...statK].forEach(r => splitMultiValues(r.kategori).forEach(k => {
+                        if (isOfficialKategori(k)) addUniqueCaseInsensitive(catSet, canonicalKategori(k));
+                    }));
+                    const cats = catSet.size ? Array.from(catSet) : categoriesArr;
+                    const prog = resolveProgressDetailsForFile(grp.idFile, cats, rekodK, st => keyOf(st) === key);
+                    const jangkaList = rekodK.map(r => tarikhToIso(r.jangkaSiap)).filter(Boolean).sort();
+
+                    // Jumlah kawasan = jumlah semua kategori, supaya "Siap x / y" sepadan dengan peratus
+                    const catList = prog.categoryProgressList || [];
+                    const units = new Set(catList.filter(c => c.targetQty > 0 || c.doneQty > 0).map(c => c.unit));
+                    const mixedUnits = units.size > 1;
+                    // "Siap x / y" ikut kategori yang ada sasaran sahaja, supaya sepadan dengan peratus
+                    const targeted = catList.filter(c => c.hasTarget);
+                    const basis = targeted.length ? targeted : catList;
+                    const sum = f => Math.round(basis.reduce((t, c) => t + (c[f] || 0), 0) * 100) / 100;
+                    return {
+                        key,
+                        label: key ? labels.get(key) : 'Kawasan tidak dinyatakan',
+                        percentage: prog.percentage,
+                        doneQty: catList.length ? sum('doneQty') : prog.doneQty,
+                        targetQty: catList.length ? sum('targetQty') : prog.targetQty,
+                        unit: units.size === 1 ? Array.from(units)[0] : prog.unit,
+                        mixedUnits,
+                        // Kawasan tanpa sasaran kuantiti (dan tiada peratus dari sheet) tak boleh dikira peratusnya
+                        hasTarget: catList.some(c => c.targetQty > 0) || prog.percentage > 0,
+                        categoryProgressList: prog.categoryProgressList || [],
+                        jangkaSiap: jangkaList.length ? jangkaList[jangkaList.length - 1] : '',
+                        tugasCount: rekodK.length
+                    };
+                }).sort((a, b) => (a.key === '') - (b.key === '') || a.label.localeCompare(b.label));
+
+                // Progres fail = purata progres semua kawasan
+                // Progres fail = purata kawasan yang ADA sasaran sahaja
+                const counted = kawasanProgress.filter(k => k.hasTarget);
+                const fileProgress = counted.length
+                    ? counted.reduce((sum, k) => sum + k.percentage, 0) / counted.length
+                    : 0;
+
+                // Sasaran kuantiti = jumlah sasaran setiap kawasan, ikut unit
+                const aggregatedQuantities = {};
+                kawasanProgress.forEach(k => k.categoryProgressList.forEach(c => {
+                    if (c.targetQty > 0) aggregatedQuantities[c.unit] = Math.round(((aggregatedQuantities[c.unit] || 0) + c.targetQty) * 100) / 100;
+                }));
+
+                const jangkaAll = kawasanProgress.map(k => k.jangkaSiap).filter(Boolean).sort();
+
+                return {
+                    ...grp,
+                    categoriesArr,
+                    surveyorsArr,
+                    kawasanProgress,
+                    kawasanLabels: kawasanProgress.filter(k => k.key).map(k => k.label),
+                    progress: Math.round(fileProgress * 10) / 10,
+                    quantitiesByUnit: aggregatedQuantities,
+                    jangkaSiap: jangkaAll.length ? jangkaAll[jangkaAll.length - 1] : grp.jangkaSiap
+                };
+            });
+
+            const allSurveyorsGlobal = new Set();
+            const allCategoriesGlobal = new Set();
+            fileGroups.forEach(g => {
+                g.surveyorsArr.forEach(s => allSurveyorsGlobal.add(s));
+                g.categoriesArr.forEach(c => allCategoriesGlobal.add(c));
+            });
+
+            const avgProgressGlobal = fileGroups.length > 0
+                ? Math.round(fileGroups.reduce((sum, g) => sum + g.progress, 0) / fileGroups.length)
+                : 0;
+
+            document.getElementById('statTotalFiles').innerText = fileGroups.length;
+            document.getElementById('statAvgProgress').innerText = `${avgProgressGlobal}%`;
+            document.getElementById('statTotalCategories').innerText = allCategoriesGlobal.size;
+            document.getElementById('statTotalSurveyors').innerText = allSurveyorsGlobal.size;
+            document.getElementById('statTotalTasksText').innerText = `${combinedRecords.length} rekod kerja aktif`;
+
+            if (filterKat !== 'ALL') {
+                fileGroups = fileGroups.filter(g => g.categoriesArr.some(c => c.toLowerCase() === filterKat.toLowerCase()));
+            }
+            if (searchQuery) {
+                fileGroups = fileGroups.filter(g =>
+                    g.idFile.toLowerCase().includes(searchQuery) ||
+                    g.kawasanLabels.some(k => k.toLowerCase().includes(searchQuery)) ||
+                    g.surveyorsArr.some(s => s.toLowerCase().includes(searchQuery)) ||
+                    g.categoriesArr.some(c => c.toLowerCase().includes(searchQuery)) ||
+                    g.tasks.some(t => t.tugas.toLowerCase().includes(searchQuery))
+                );
+            }
+
+            if (fileGroups.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-slate-400">
+                        <i data-lucide="folder-open" class="w-8 h-8 mx-auto mb-3 text-slate-600"></i>
+                        <p class="text-sm font-medium text-slate-600">Tiada Kad Progres Dijumpai</p>
+                        <p class="text-xs mt-1">Sila tambah kerja baru atau ubah kata kunci carian.</p>
+                    </div>
+                `;
+                refreshIcons();
+                return;
+            }
+
+            container.innerHTML = fileGroups.map(grp => {
+                const rawPct = isNaN(grp.progress) ? 0 : grp.progress;
+                const pct = Math.min(100, Math.max(0, Math.round(rawPct)));
+
+                const badgeStatus = pct >= 100
+                    ? `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 shrink-0">Selesai</span>`
+                    : pct > 0
+                        ? `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-brand/15 text-brand border border-brand/30 shrink-0">Dalam Progres</span>`
+                        : `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-600 border border-blue-500/30 shrink-0">Baru Direkod</span>`;
+
+                const surveyorDisplay = grp.surveyorsArr.length > 0
+                    ? grp.surveyorsArr.map(s => `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-canvas/50 border border-line text-slate-700 text-xs font-medium"><i data-lucide="user-check" class="w-3 h-3 text-brand"></i>${escapeHtml(s)}</span>`).join(' ')
+                    : `<span class="text-xs text-slate-400 italic">Tiada nama surveyor</span>`;
+
+                const kategoriDisplay = grp.categoriesArr.length > 0
+                    ? grp.categoriesArr.map(k => `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand/10 text-brand border border-brand/20 inline-block">${escapeHtml(k)}</span>`).join(' ')
+                    : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-canvas text-slate-500 border border-line inline-block">Umum</span>`;
+
+                const qtySummary = Object.entries(grp.quantitiesByUnit)
+                    .map(([u, val]) => `<span class="px-2.5 py-1 rounded-lg bg-canvas border border-line text-xs font-semibold text-ink">${val} <span class="text-brand">${escapeHtml(u)}</span></span>`)
+                    .join(' ');
+
+                const latestTask = grp.tasks.length > 0 ? grp.tasks[0].tugas : 'Kerja ukur lapangan direkodkan';
+
+                // Senarai kerja (setiap baris Tambah Kerja) dengan butang Edit
+                const kerjaListHtml = grp.rekodEntries.map(r => {
+                    const meta = [
+                        r.kawasan ? escapeHtml(r.kawasan) : '<span class="text-amber-600">Tiada kawasan</span>',
+                        escapeHtml([...new Set(splitMultiValues(r.kategori))].join(', ') || 'Umum'),
+                        r.kuantiti > 0 ? `${r.kuantiti} ${escapeHtml(r.unit || 'Unit')}` : '',
+                        r.jangkaSiap ? `Siap ${escapeHtml(formatTarikh(r.jangkaSiap))}` : ''
+                    ].filter(Boolean).join(' · ');
+                    const canEdit = /^[A-Za-z0-9-]{6,64}$/.test(r.id || '');
+                    const btn = canEdit
+                        ? `<button type="button" data-id="${escapeHtml(r.id)}" onclick="openEditKerja(this.dataset.id)" class="shrink-0 px-2.5 py-1.5 rounded-md border border-line bg-white text-xs font-semibold text-brand hover:bg-brand/10 transition flex items-center gap-1" aria-label="Edit kerja ${escapeHtml(r.tugas || '')}"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Edit</button>`
+                        : `<span class="shrink-0 px-2.5 py-1.5 rounded-md border border-dashed border-line text-[10px] text-slate-400" title="Rekod belum ada ID. Jalankan setup() dalam Apps Script Progres, atau tunggu CSV dikemas kini.">Tiada ID</span>`;
+                    return `
+                        <li class="flex items-start justify-between gap-2 py-2">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-ink truncate">${escapeHtml(r.tugas || 'Tanpa tugas')}</p>
+                                <p class="text-[11px] text-slate-500">${meta}</p>
+                            </div>
+                            ${btn}
+                        </li>`;
+                }).join('');
+                const highlightClass = grp.isNewlyAdded ? 'new-card-highlight' : '';
+
+                const categoryBars = list => (list || []).map(catProg => {
+                    const cPct = Math.min(100, Math.max(0, Math.round(catProg.percentage || 0)));
+                    const cBarWidth = catProg.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0;
+                    const cBarColor = cPct >= 80
+                        ? 'from-emerald-500 to-emerald-400'
+                        : cPct >= 40
+                            ? 'from-brand2 to-brand'
+                            : 'from-blue-600 to-blue-400';
+
+                    const cFractionText = catProg.targetQty > 0
+                        ? `<span class="text-[10px] text-slate-500">Siap: <strong class="text-emerald-600">${catProg.doneQty}</strong> / <strong class="text-slate-700">${catProg.targetQty} ${escapeHtml(catProg.unit)}</strong></span>`
+                        : (catProg.doneQty > 0 ? `<span class="text-[10px] text-slate-500">Siap: <strong class="text-emerald-600">${catProg.doneQty}</strong></span>` : '');
+
+                    return `
+                        <div class="space-y-1.5 py-1">
+                            <div class="flex justify-between items-center gap-2 text-xs">
+                                <span class="text-slate-600 font-medium flex items-center gap-1.5 truncate">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-brand shrink-0"></span>
+                                    <span class="truncate">${escapeHtml(catProg.kategori)}</span>
+                                </span>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    ${cFractionText}
+                                    ${catProg.hasTarget ? `<span class="font-bold text-ink">${cPct}%</span>` : `<span class="text-[10px] font-semibold text-slate-400">Tiada sasaran</span>`}
+                                </div>
+                            </div>
+                            <div class="w-full h-2 bg-canvas rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r ${cBarColor} rounded-full transition-all duration-700" style="width: ${cBarWidth}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const kawasanHtml = grp.kawasanProgress.map(kw => {
+                    const kPct = Math.min(100, Math.max(0, Math.round(kw.percentage || 0)));
+                    const kBarColor = kPct >= 80 ? 'bg-emerald-500' : 'bg-brand';
+                    const kQty = kw.mixedUnits
+                        ? `${kw.categoryProgressList.length} kategori, unit berbeza: lihat pecahan di bawah`
+                        : kw.targetQty > 0
+                        ? `Siap <strong class="text-emerald-600">${kw.doneQty}</strong> / <strong class="text-slate-700">${kw.targetQty} ${escapeHtml(kw.unit)}</strong>`
+                        : (kw.doneQty > 0
+                            ? `Siap <strong class="text-emerald-600">${kw.doneQty}${kw.unit && kw.unit !== 'Unit' ? ' ' + escapeHtml(kw.unit) : ''}</strong> · ${kw.key && kw.tugasCount === 0 ? '<span class="text-amber-600 font-medium">kawasan ini tiada dalam Tambah Kerja, semak ejaan</span>' : 'tiada sasaran dalam rekod kerja'}`
+                            : 'Belum ada laporan');
+                    const kJangka = kw.jangkaSiap ? ` · Jangka siap <strong class="text-slate-700">${escapeHtml(formatTarikh(kw.jangkaSiap))}</strong>` : '';
+                    return `
+                        <div class="p-3 rounded-md border ${kw.key ? 'border-line bg-canvas/40' : 'border-dashed border-amber-400/60 bg-amber-50/50'}">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-sm font-semibold text-ink flex items-center gap-1.5 min-w-0">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 ${kw.key ? 'text-brand' : 'text-amber-500'} shrink-0"></i>
+                                    <span class="truncate">${escapeHtml(kw.label)}</span>
+                                </span>
+                                ${kw.hasTarget
+                                    ? `<span class="text-sm font-bold text-ink shrink-0">${kPct}%</span>`
+                                    : `<span class="text-[11px] font-semibold text-slate-400 shrink-0">Tiada sasaran</span>`}
+                            </div>
+                            <div class="w-full h-2.5 bg-white border border-line rounded-full overflow-hidden mt-2">
+                                <div class="h-full ${kBarColor} rounded-full transition-all duration-700" style="width: ${kw.hasTarget && kPct > 0 ? Math.max(kPct, 3) : 0}%"></div>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1.5">${kQty}${kJangka}</p>
+                            ${kw.categoryProgressList.length > 1 ? `<div class="mt-2 pt-2 border-t border-line">${categoryBars(kw.categoryProgressList)}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="bg-white border border-line rounded-lg p-6 shadow-sm flex flex-col gap-4 hover:border-brand/40 transition ${highlightClass}">
+                        <div class="space-y-4">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-10 h-10 rounded-md bg-gold flex items-center justify-center text-ink shrink-0">
+                                        <i data-lucide="folder-kanban" class="w-5 h-5"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h3 class="text-ink font-semibold text-base truncate">${escapeHtml(grp.idFile)}</h3>
+                                        <span class="text-xs text-slate-500">No. Fail Projek${grp.kawasanLabels.length > 1 ? ` · ${grp.kawasanLabels.length} kawasan` : (grp.kawasanLabels.length === 1 ? ` · ${escapeHtml(grp.kawasanLabels[0])}` : '')}</span>
+                                    </div>
+                                </div>
+                                ${badgeStatus}
+                            </div>
+
+                            <div class="flex flex-wrap gap-1.5">${kategoriDisplay}</div>
+
+                            <div>
+                                <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Surveyor Bertugas</h4>
+                                <div class="flex flex-wrap gap-1.5">${surveyorDisplay}</div>
+                            </div>
+
+                            <div class="p-3 rounded-md bg-canvas/50 border border-line space-y-2">
+                                <div class="flex items-center justify-between text-xs gap-2">
+                                    <span class="text-slate-600 truncate flex items-center gap-1.5"><i data-lucide="briefcase" class="w-3.5 h-3.5 text-brand shrink-0"></i>${escapeHtml(latestTask)}</span>
+                                    <span class="text-slate-400 shrink-0">${grp.tasks.length} Tugas</span>
+                                </div>
+                                ${qtySummary ? `<div class="flex flex-wrap gap-1.5">${qtySummary}</div>` : ''}
+                                ${kerjaListHtml ? `
+                                <details class="group/kerja pt-1">
+                                    <summary class="cursor-pointer select-none text-xs font-semibold text-brand flex items-center gap-1 list-none">
+                                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 transition-transform group-open/kerja:rotate-90"></i>
+                                        Senarai kerja &amp; edit (${grp.rekodEntries.length})
+                                    </summary>
+                                    <ul class="mt-1 divide-y divide-line">${kerjaListHtml}</ul>
+                                </details>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Progres Kawasan (${grp.kawasanProgress.length})</h4>
+                                    <span class="text-xs font-semibold text-brand">Keseluruhan: ${pct}%</span>
+                                </div>
+                                <div class="space-y-2">
+                                    ${kawasanHtml}
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-line">
+                                <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>Mula: <strong class="text-slate-600">${escapeHtml(formatTarikh(grp.tarikhMula))}</strong></span>
+                                <span class="flex items-center gap-1"><i data-lucide="flag" class="w-3.5 h-3.5 text-brand"></i>Siap: <strong class="text-slate-600">${escapeHtml(formatTarikh(grp.jangkaSiap))}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            refreshIcons();
+        }
+
+        function renderRawTables() {
+            const renderTable = (rows, containerId) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                if (!rows || rows.length === 0) {
+                    container.innerHTML = `<p class="text-slate-400 text-sm py-8 text-center">Tiada data dijumpai dalam pautan CSV ini.</p>`;
+                    return;
+                }
+                const headers = rows[0].__headers || Object.keys(rows[0]).filter(k => !k.startsWith('__'));
+                let html = `<table class="w-full text-left border-collapse text-xs"><thead><tr class="bg-canvas/60 border-b border-line uppercase tracking-wider text-slate-500 font-semibold">`;
+                headers.forEach(h => {
+                    html += `<th class="px-3 py-3 whitespace-nowrap">${escapeHtml(h)}</th>`;
+                });
+                html += `</tr></thead><tbody class="divide-y divide-line text-slate-700">`;
+                rows.forEach(r => {
+                    html += `<tr class="hover:bg-canvas transition">`;
+                    headers.forEach(h => {
+                        html += `<td class="px-3 py-3 text-slate-600">${escapeHtml(r[h] || '-')}</td>`;
+                    });
+                    html += `</tr>`;
+                });
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+            };
+
+            renderTable(rawStatRows, 'statsTableContainer');
+            renderTable(rawRekodRows, 'recordsTableContainer');
+        }
+
+        // POST ke Apps Script dan baca respons JSON {status, message, row}.
+        // text/plain = "simple request", jadi tiada CORS preflight; Apps Script pulangkan header CORS sendiri.
+        async function postToAppsScript(payload) {
+            const res = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload),
+                redirect: 'follow'
+            });
+            if (!res.ok) {
+                const err = new Error(`HTTP ${res.status}`);
+                err.userMessage = `Pelayan membalas ralat (HTTP ${res.status}).`;
+                throw err;
+            }
+            try {
+                return await res.json();
+            } catch (e) {
+                const err = new Error('Respons bukan JSON');
+                err.userMessage = 'Respons pelayan tidak sah. Pastikan Apps Script versi baru sudah di-deploy.';
+                throw err;
+            }
+        }
+
+        // ---------- Edit kerja ----------
+        function setFormMode(mode) {
+            const isEdit = mode === 'edit';
+            const title = document.getElementById('formTitle');
+            const sub = document.getElementById('formSubtitle');
+            const banner = document.getElementById('editBanner');
+            const cancel = document.getElementById('cancelBtn');
+            const submit = document.getElementById('submitBtn');
+            if (title) title.innerText = isEdit ? 'Edit Kerja Lapangan' : 'Borang Tambah Kerja Lapangan';
+            if (sub) sub.innerText = isEdit
+                ? 'Perubahan disimpan terus pada baris asal dalam Google Sheets.'
+                : 'Data dihantar ke Google Sheets melalui Apps Script dan menjana kad progres secara automatik';
+            if (banner) banner.classList.toggle('hidden', !isEdit);
+            if (cancel) cancel.innerText = isEdit ? 'Batal Edit' : 'Batal';
+            if (submit && !submit.disabled) {
+                submit.innerHTML = isEdit
+                    ? `<i data-lucide="save" class="w-4 h-4"></i> <span>Simpan Perubahan</span>`
+                    : `<i data-lucide="send" class="w-4 h-4"></i> <span>Simpan & Jana Kad Progres</span>`;
+            }
+            refreshIcons();
+        }
+
+        function resetFieldWorkForm() {
+            document.getElementById('fieldWorkForm').reset();
+            document.getElementById('tarikh').value = todayLocalIso();
+            document.getElementById('jangkaSiap').value = todayLocalIso();
+            selectedKategoriList = [];
+            selectedSurveyorList = [];
+            renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
+            syncMultiSelectLabels();
+        }
+
+        function exitEditMode() {
+            editingRecord = null;
+            resetFieldWorkForm();
+            setFormMode('add');
+        }
+
+        function openEditKerja(id) {
+            const rec = window.__rekodById && window.__rekodById.get(id);
+            if (!rec) {
+                showToast('Rekod tidak dijumpai. Tekan Muat Semula dan cuba lagi.', 'error');
+                return;
+            }
+            switchTab('tambah', true);
+            editingRecord = { id: rec.id, updatedAt: rec.updatedAt || '' };
+            resetFieldWorkForm();
+
+            document.getElementById('idFile').value = rec.idFile || '';
+            document.getElementById('kawasan').value = rec.kawasan || '';
+            document.getElementById('tarikh').value = tarikhToIso(rec.tarikh) || '';
+            document.getElementById('jangkaSiap').value = tarikhToIso(rec.jangkaSiap) || '';
+            document.getElementById('tugas').value = rec.tugas || '';
+            document.getElementById('kuantiti').value = rec.kuantiti > 0 ? rec.kuantiti : '';
+            const unitSel = document.getElementById('unit');
+            const unitOpt = Array.from(unitSel.options).find(o => o.value.toLowerCase() === String(rec.unit || '').toLowerCase());
+            unitSel.value = unitOpt ? unitOpt.value : '';
+
+            // Hanya pilihan rasmi boleh dipilih; nilai lama yang tiada dalam senarai dimaklumkan
+            const pick = (raw, options, mapFn) => {
+                const chosen = [], unknown = [];
+                splitMultiValues(raw).forEach(v => {
+                    const val = mapFn ? mapFn(v) : v;
+                    const hit = options.find(o => o.toLowerCase() === String(val).toLowerCase());
+                    if (hit) { if (!chosen.includes(hit)) chosen.push(hit); } else unknown.push(v);
+                });
+                return { chosen, unknown };
+            };
+            const kat = pick(rec.kategori, DEFAULT_KATEGORI, canonicalKategori);
+            const surv = pick(rec.surveyor, DEFAULT_SURVEYORS);
+            selectedKategoriList = kat.chosen;
+            selectedSurveyorList = surv.chosen;
+            renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
+            syncMultiSelectLabels();
+            updateKawasanSuggestions();
+
+            const bannerText = document.getElementById('editBannerText');
+            if (bannerText) {
+                bannerText.innerText = `Mengedit: ${rec.idFile || '-'} · ${rec.kawasan || 'tiada kawasan'} · ${rec.tugas || '-'}.`
+                    + (kat.unknown.length || surv.unknown.length || !unitOpt
+                        ? ` Sila pilih semula: ${[...kat.unknown, ...surv.unknown, ...(!unitOpt && rec.unit ? [rec.unit] : [])].join(', ') || 'Unit'} (tiada dalam senarai).`
+                        : '');
+            }
+            setFormMode('edit');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function submitForm(e) {
+            e.preventDefault();
+            const submitBtnGuard = document.getElementById('submitBtn');
+            if (submitBtnGuard && submitBtnGuard.disabled) return;
+
+            if (selectedKategoriList.length === 0) {
+                showModal('Pilih Kategori', 'Sila pilih sekurang-kurangnya satu Kategori Kerja.', 'error');
+                return;
+            }
+            if (selectedSurveyorList.length === 0) {
+                showModal('Pilih Surveyor', 'Sila pilih sekurang-kurangnya seorang Surveyor.', 'error');
+                return;
+            }
+
+            // Jika kawasan ditaip dalam No File ("MCP 001/26 Mangkuk"), pindahkan ke medan Kawasan
+            const fileParts = splitFileAndKawasan(document.getElementById('idFile').value);
+            let kawasan = kawasanLabel(document.getElementById('kawasan').value);
+            if (fileParts.kawasan) {
+                if (kawasan && kawasanKey(kawasan) !== kawasanKey(fileParts.kawasan)) {
+                    showModal('Kawasan Bercanggah', 'Kawasan ditulis dalam No File dan medan Kawasan, tapi tak sama. Tulis kawasan dalam medan Kawasan sahaja.', 'error');
+                    return;
+                }
+                kawasan = kawasan || fileParts.kawasan;
+            }
+            if (!fileParts.file) {
+                showModal('No File Kosong', 'Sila isi No File.', 'error');
+                return;
+            }
+            if (!new RegExp('^' + FILE_PREFIX + ' \\d+/\\d+$').test(fileParts.file)) {
+                showModal('Format No File', `No File mesti dalam format ${FILE_PREFIX} 001/26.`, 'error');
+                return;
+            }
+            if (!kawasan) {
+                showModal('Kawasan Kosong', 'Sila isi Kawasan Lapangan.', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="w-4 h-4 border-2 border-ink border-t-transparent rounded-full animate-spin"></span> <span>Menghantar...</span>`;
+
+            const isEdit = Boolean(editingRecord);
+            const payload = {
+                idFile: fileParts.file,
+                kawasan,
+                tarikh: document.getElementById('tarikh').value,
+                surveyor: selectedSurveyorList.join(', '),
+                kategori: selectedKategoriList.join(', '),
+                tugas: document.getElementById('tugas').value.trim(),
+                kuantiti: parseFloat(document.getElementById('kuantiti').value) || 0,
+                unit: document.getElementById('unit').value,
+                jangkaSiap: document.getElementById('jangkaSiap').value
+            };
+            if (isEdit) {
+                payload.action = 'update';
+                payload.id = editingRecord.id;
+                payload.updatedAt = editingRecord.updatedAt;
+            }
+
+            try {
+                const result = await postToAppsScript(payload);
+                if (result.status === 'duplicate') {
+                    showModal('Rekod Sudah Wujud', isEdit ? 'Kerja lain dengan maklumat yang sama sudah ada. Perubahan tidak disimpan.' : 'Kerja yang sama sudah ada dalam sheet. Tiada rekod baru disimpan.', 'error');
+                    return;
+                }
+                if (result.status === 'conflict') {
+                    showModal('Rekod Telah Berubah', result.message || 'Rekod ini telah diubah oleh orang lain. Muat semula dan cuba lagi.', 'error');
+                    return;
+                }
+                if (result.status !== 'ok') {
+                    showModal('Gagal Disimpan', result.message || 'Rekod gagal disimpan.', 'error');
+                    return;
+                }
+
+                lastAddedFileId = payload.idFile;
+                const saved = { ...payload, id: result.id || payload.id || '', updatedAt: result.updatedAt || '', peratus: null, isNewlyAdded: true, sourceType: 'rekod' };
+                delete saved.action;
+                if (isEdit) {
+                    localEdits.set(saved.id, saved);
+                } else {
+                    localAddedRecords.unshift(saved);
+                }
+
+                editingRecord = null;
+                resetFieldWorkForm();
+                setFormMode('add');
+                syncDynamicOptionsAndRender();
+                switchTab('dashboard');
+
+                if (isEdit) {
+                    showModal('Kerja Dikemas Kini', `Perubahan untuk "${payload.idFile}" (${payload.kawasan}) disimpan pada baris ${result.row}.`, 'success');
+                } else {
+                    showModal('Kerja Berjaya Ditambah', `Fail "${payload.idFile}" (${payload.kawasan}) disimpan dalam sheet (baris ${result.row}) dan kad progres telah dijana.`, 'success');
+                }
+
+                setTimeout(() => { refreshAllData(); }, 2500);
+            } catch (error) {
+                console.error("Ralat menghantar borang:", error);
+                showModal('Ralat Hantaran', error.userMessage || 'Gagal menghubungi pelayan Google Apps Script. Sila cuba lagi.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                setFormMode(editingRecord ? 'edit' : 'add');
+            }
+        }
+
+        // Notifikasi gaya toast (sama seperti Dashboard Laporan Harian)
+        function showToast(msg, type = "success") {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toastMsg");
+            const toastIcon = document.getElementById("toastIcon");
+            if (!toast || !toastMsg || !toastIcon) return;
+
+            toastMsg.innerText = msg;
+            toast.className = "fixed top-6 right-6 z-50 px-4 py-3 rounded-md shadow-sm border text-sm flex items-center gap-3 transition-all transform translate-y-0 opacity-100 max-w-sm";
+
+            if (type === "success") {
+                toast.classList.add("bg-emerald-50", "border-emerald-500/30", "text-emerald-800");
+                toastIcon.setAttribute("data-lucide", "check-circle");
+            } else if (type === "error") {
+                toast.classList.add("bg-red-50", "border-red-500/30", "text-red-800");
+                toastIcon.setAttribute("data-lucide", "alert-circle");
+            } else {
+                toast.classList.add("bg-white", "border-line", "text-slate-700");
+                toastIcon.setAttribute("data-lucide", "info");
+            }
+            refreshIcons();
+
+            setTimeout(() => {
+                toast.classList.add("translate-y-2", "opacity-0");
+                setTimeout(() => toast.classList.add("hidden"), 300);
+            }, 3500);
+        }
+
+        // Kekalkan nama fungsi asal supaya panggilan sedia ada tak berubah
+        function showModal(title, message, type) {
+            showToast(`${title} — ${message}`, type === 'success' ? 'success' : 'error');
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
