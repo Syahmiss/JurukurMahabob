@@ -268,6 +268,7 @@ tr:last-child td{border-bottom:0}
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="1.5"/><path d="M16 8V3H3v13h5"/></symbol>
   <symbol id="i-report" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></symbol>
   <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3 2.5 8 12 13l9.5-5z"/><path d="m2.5 12 9.5 5 9.5-5M2.5 16l9.5 5 9.5-5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="m7.5 8 1.3 1.3L11 7M7.5 13l1.3 1.3L11 12M13.5 8.3H17M13.5 13.3H17M7.5 17.5h9.5"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
@@ -289,6 +290,7 @@ tr:last-child td{border-bottom:0}
     <button data-v="ops:pelan" title="Ringkasan Pelan"><svg><use href="#i-map"/></svg><span class="tx">Ringkasan Pelan</span></button>
     <button data-v="app:pelan-status" title="Status Pelan"><svg><use href="#i-layers"/></svg><span class="tx">Status Pelan</span></button>
     <button data-v="app:pelan-qc" title="Kualiti Pelan (QC)"><svg><use href="#i-check"/></svg><span class="tx">Kualiti Pelan (QC)</span></button>
+    <button data-v="app:pelan-checklist" title="Checklist Plan"><svg><use href="#i-list"/></svg><span class="tx">Checklist Plan</span></button>
     <div class="grp">HR &amp; Akaun</div>
     <button data-v="ops:hr" title="HOD HR"><svg><use href="#i-users"/></svg><span class="tx">HOD HR</span></button>
     <button data-v="ops:akaun" title="HOD Akaun"><svg><use href="#i-cash"/></svg><span class="tx">HOD Akaun</span></button>
@@ -357,6 +359,7 @@ const APPS={
   'site':{url:'HOD Site/index.html',t:'Laporan Harian Tapak',c:'HOD Site · Google Sheets'},
   'pelan-status':{url:'HOD Pelan/Status Pelan/index.html',t:'Status Pelan',c:'HOD Pelan · Laporan pelukis pelan'},
   'pelan-qc':{url:'HOD Pelan/Kualiti Pelan/index.html',t:'Kualiti Pelan (QC)',c:'HOD Pelan · Semakan QC dari Google Sheets'},
+  'pelan-checklist':{url:'HOD Pelan/Checklist Plan/index.html',t:'Checklist Plan',c:'HOD Pelan · Senarai semak digital pelan'},
   'inventory':{url:'Inventori Peralatan/index.html',t:'Inventori Peralatan',c:'Alat operasi · Google Sheets'}
 };
 const appUrl=k=>encodeURI(APPS[k].url);
@@ -489,12 +492,15 @@ function trackStage(f){const s=STAGES.find(([k])=>!f.stages||!f.stages[k]||f.sta
 function trackProg(f){return Math.round(STAGES.filter(([k])=>f.stages&&f.stages[k]&&f.stages[k].status==='done').length/STAGES.length*100);}
 
 /* ================= DATA LUAR (Google Sheets terbitan CSV — sumber sama dengan aplikasi folder) ================= */
-const EXT={inv:null,qc:null,err:{},loading:false};
+const EXT={inv:null,qc:null,ck:null,err:{},loading:false};
 const EXT_SRC={
   inv:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTo5oCD7Wd6vTJNFs1WZti8ZKgkHjp869JylM1NbJwFll8rQ6VoHtgkNSoFHnAjON77i9xZC4QwnA91/pub?gid=0&single=true&output=csv',
   qcBase:'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9VxT7lq3YC30mu8I2jIDQoorMyxaegkRkHD6geR5KEAmuf9sO88LIzGgw3a83aiYA7H-egUhcbex/pub?output=csv',
-  qcTabs:[['ENGINEERING',399274151],['TITLE',1201764382],['UMAP',421455856]]
+  qcTabs:[['ENGINEERING',399274151],['TITLE',1201764382],['UMAP',421455856]],
+  /* Checklist Plan — Web App Apps Script (doPost dalam Api.gs) */
+  ckApi:'https://script.google.com/macros/s/AKfycbxZtlvQERuGapebTBHFHT2i6ZFEGRdUnRSDfEyVKPNUDNDsRO28iNKuZYRqFGoWHn5d/exec'
 };
+const CK_ST={DRAFT:['Draf','mute'],PENDING_CHECK:['Menunggu semakan','info'],RETURNED:['Dipulangkan','bad'],APPROVED:['Diluluskan','ok']};
 const nk=x=>String(x==null?'':x).toUpperCase().replace(/[^A-Z0-9]/g,'');
 function csvRows(txt){
   txt=txt.replace(/^\uFEFF/,'');const rows=[];let row=[],cur='',q=false;
@@ -540,6 +546,26 @@ function parseQC(rows,cat){
       PERKARA:get(r,['PERKARA','PROJEK','TAJUK','DESCRIPTION','PROJECT']),'NAMA SURVEYOR':get(r,['NAMA SURVEYOR','SURVEYOR','PEGAWAI']),STATUS:st};
   });
 }
+/* Web App: POST text/plain (tiada preflight), Apps Script redirect ke googleusercontent yang beri CORS * */
+async function gasCall(url,fn,args){
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),25000);
+  try{const r=await fetch(url,{method:'POST',redirect:'follow',cache:'no-store',signal:ctl.signal,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args||[]})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    let j;try{j=await r.json();}catch(e){throw new Error('respons bukan JSON');}
+    if(!j||j.ok!==true)throw new Error((j&&j.error)||'ralat Web App');return j.result;}
+  catch(e){throw new Error(e.name==='AbortError'?'tamat masa':e.message);}
+  finally{clearTimeout(tm);}
+}
+function parseCK(res){
+  if(!res||res.success===false)throw new Error((res&&res.message)||'data tidak sah');
+  const proj={};(res.projects||[]).forEach(p=>{proj[p.project_id]=p.file_ref||p.project_title||p.project_id;});
+  const sheets=(res.drawingSheets||[]).map(s=>({
+    id:s.sheet_id,no:s.sheet_number||s.drawing_no||s.sheet_id||'–',type:String(s.drawing_type||'').trim().toUpperCase(),
+    st:String(s.current_status||'DRAFT').trim().toUpperCase(),round:Number(s.current_round)||1,
+    drafter:s.drafter_name||'',checker:s.assigned_checker_name||'',proj:proj[s.project_id]||s.file_ref||s.project_id||''
+  })).filter(s=>s.st!=='INACTIVE');
+  return {sheets:sheets,at:new Date()};
+}
 async function loadExt(){
   if(EXT.loading)return;EXT.loading=true;scheduleRender();
   const inv=getCSV(EXT_SRC.inv).then(r=>{EXT.inv=parseInv(r);delete EXT.err.inv;}).catch(e=>{EXT.err.inv=e.message;});
@@ -548,7 +574,8 @@ async function loadExt(){
     if(ok.length)EXT.qc=ok.flatMap(x=>x.value);
     if(ok.length<res.length)EXT.err.qc=(res.length-ok.length)+' tab gagal dimuat';else delete EXT.err.qc;
   });
-  await Promise.allSettled([inv,qc]);EXT.loading=false;scheduleRender();
+  const ck=gasCall(EXT_SRC.ckApi,'getInitialAppData').then(r=>{EXT.ck=parseCK(r);delete EXT.err.ck;}).catch(e=>{EXT.err.ck=e.message;});
+  await Promise.allSettled([inv,qc,ck]);EXT.loading=false;scheduleRender();
 }
 
 /* ================= CHARTS ================= */
@@ -601,6 +628,10 @@ function render(){
   // Kualiti Pelan (QC) — Google Sheets
   const QX=EXT.qc||[],qxPass=QX.filter(i=>i.STATUS==='LULUS').length,qxProg=QX.filter(i=>i.STATUS==='DALAM PROSES QC').length,qxRw=QX.filter(i=>i.STATUS==='REWORK REQUIRED');
   const qxCat={};QX.forEach(i=>{qxCat[i.MAKLUMAT]=(qxCat[i.MAKLUMAT]||0)+1;});
+  // Checklist Plan — Web App
+  const CKS=EXT.ck?EXT.ck.sheets:[],ckN={DRAFT:0,PENDING_CHECK:0,RETURNED:0,APPROVED:0};CKS.forEach(x=>{if(ckN[x.st]!=null)ckN[x.st]++;});
+  const ckRet=CKS.filter(x=>x.st==='RETURNED'),ckMulti=CKS.filter(x=>x.round>=3&&x.st!=='APPROVED');
+  const ckByChecker={};CKS.filter(x=>x.st==='PENDING_CHECK').forEach(x=>{const k=x.checker||'Belum ditetapkan';ckByChecker[k]=(ckByChecker[k]||0)+1;});
   const extMsg=k=>EXT.err[k]?'Gagal dimuat ('+esc(EXT.err[k])+')':EXT.loading?'Memuatkan…':'Tiada data';
   // --- inventory
   let invTot=0,invOk=0,invWarn=0,invBad=0;const invTeams=[],badItems=[];
@@ -622,6 +653,9 @@ function render(){
   drOver.forEach(d=>A.push({s:'warn',t:'Lukisan lewat: '+(d.dwgNo||d.title||'–'),d:[DRW.projName[d.projectId],d.drafter,num(d.progress)+'%','sasaran '+dmy(drDue(d))].filter(Boolean).join(' · '),go:'app:pelan-status'}));
   qxRw.slice(0,6).forEach(i=>A.push({s:'bad',t:'QC perlu rework: '+i['NO. FAIL'],d:[i.MAKLUMAT,i.PERKARA,i['NAMA SURVEYOR']].filter(Boolean).join(' · '),go:'app:pelan-qc'}));
   if(qxRw.length>6)A.push({s:'bad',t:'+'+(qxRw.length-6)+' lagi fail QC perlu rework',d:'Buka Kualiti Pelan untuk senarai penuh',go:'app:pelan-qc'});
+  ckRet.slice(0,6).forEach(x=>A.push({s:'warn',t:'Checklist dipulangkan: '+x.no,d:[x.proj,x.type,x.drafter,'round '+x.round].filter(Boolean).join(' · '),go:'app:pelan-checklist'}));
+  if(ckRet.length>6)A.push({s:'warn',t:'+'+(ckRet.length-6)+' lagi checklist dipulangkan',d:'Buka Checklist Plan untuk senarai penuh',go:'app:pelan-checklist'});
+  ckMulti.filter(x=>x.st!=='RETURNED').slice(0,4).forEach(x=>A.push({s:'info',t:'Pelan '+x.no+' dah masuk round '+x.round,d:[x.proj,x.type,x.drafter].filter(Boolean).join(' · ')+' · semak punca pembetulan berulang',go:'app:pelan-checklist'}));
   trkOver.forEach(f=>A.push({s:'warn',t:'Fail lewat: '+(f.ref||f.client),d:(f.client||'')+' · tamat '+dmy(parseD(f.end))+' · '+trackProg(f)+'%',go:'tracking'}));
   pendLeave.forEach(l=>A.push({s:'info',t:'Cuti menunggu kelulusan',d:l.name+' · '+l.type+' · '+dmy(parseD(l.date)),go:'ops:hr'}));
   QC.filter(x=>x.result==='qc_fix'||x.result==='qc_reject').forEach(x=>A.push({s:x.result==='qc_reject'?'bad':'warn',t:'QC pelan '+(x.result==='qc_reject'?'ditolak':'perlu pembetulan')+': '+x.plan,d:(x.proj||'')+(x.issue?' · '+x.issue:'')+(x.errors?' · '+x.errors+' kesilapan':''),go:'ops:pelan'}));
@@ -689,7 +723,7 @@ function render(){
   const plSt={draft:0,review:0,correction:0,submitted:0,approved:0};PL.forEach(p=>{if(plSt[p.status]!=null)plSt[p.status]++;});
   const depts={};ST.forEach(s=>{depts[s.dept]=(depts[s.dept]||0)+1;});
   const dash='<span style="color:var(--muted)">–</span>';
-  h+=`<div class="panel"><div class="ph"><h3>HOD Pelan &amp; HR</h3><span class="src">Status Pelan · QC · HR</span></div>
+  h+=`<div class="panel"><div class="ph"><h3>HOD Pelan &amp; HR</h3><span class="src">Status · Checklist · QC · HR</span></div>
     <div class="stats">
       <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan dalam proses</div><div class="v">${DRW?DL.length-drSt['Diluluskan']:dash}</div></div>
       <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan lewat</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
@@ -697,6 +731,8 @@ function render(){
       <div class="stat" data-go="app:pelan-qc"><div class="l">QC perlu rework</div><div class="v" style="${qxRw.length?'color:var(--bad)':''}">${QX.length?qxRw.length:dash}</div></div>
     </div>
     <dl class="kv"><dt>Lukisan (mula / proses / semak / lulus)</dt><dd>${DRW?`${drSt['Belum Mula']} / ${drSt['Penyediaan Plan']} / ${drSt['Dalam Semakan']} / ${drSt['Diluluskan']}`:'Belum ada data'}</dd>
+    <dt>Checklist (draf / semak / pulang / lulus)</dt><dd>${EXT.ck?`<span data-go="app:pelan-checklist" style="cursor:pointer">${ckN.DRAFT} / ${ckN.PENDING_CHECK} / <span style="${ckN.RETURNED?'color:var(--bad);font-weight:700':''}">${ckN.RETURNED}</span> / ${ckN.APPROVED}</span>`:extMsg('ck')}</dd>
+    ${Object.keys(ckByChecker).length?`<dt>Menunggu semakan ikut checker</dt><dd>${Object.entries(ckByChecker).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
     <dt>Fail QC ikut bidang</dt><dd>${Object.entries(qxCat).map(([k,n])=>esc(k)+' '+n).join(' · ')||extMsg('qc')}</dd>
     <dt>Kakitangan · kehadiran</dt><dd>${ST.length} · ${avgAtt}%</dd><dt>Cuti menunggu</dt><dd>${pendLeave.length}</dd></dl></div>`;
   h+=`<div class="panel"><div class="ph"><h3>Sebut harga & ramalan</h3><span class="src">Penjana · Perancangan</span></div>`
@@ -710,7 +746,7 @@ function render(){
   const R=[];
   R.push(`<b>Projek:</b> ${active.length} aktif daripada ${P.length} projek (${delayed.length} lewat, ${dueSoon.length} dengan tarikh akhir dalam 14 hari). ${crewsOn} krew sedang di tapak.`);
   R.push(`<b>Kewangan:</b> ${rm(billed)} telah diinvois, ${rm(paid)} diterima (${billed?Math.round(paid/billed*100):0}%). Baki belum dikutip ${rm(outst)}${clients.length?`, terbesar dari ${esc(clients.slice().sort((a,b)=>b[1].o-a[1].o)[0][0])}`:''}. Perbelanjaan direkod ${rm(expT)}.`);
-  R.push(`<b>Pelan:</b> ${DRW?`${DL.length} lukisan dalam Status Pelan — ${drSt['Diluluskan']} diluluskan, ${drSt['Dalam Semakan']} dalam semakan, ${drSt['Penyediaan Plan']} dalam penyediaan, ${drSt['Belum Mula']} belum mula${drOver.length?`, ${drOver.length} melepasi sasaran`:''}.`:'tiada data Status Pelan dalam browser ini.'}${QX.length?` QC: ${QX.length} fail — ${qxPass} lulus, ${qxProg} dalam proses, ${qxRw.length} perlu rework.`:''}`);
+  R.push(`<b>Pelan:</b> ${DRW?`${DL.length} lukisan dalam Status Pelan — ${drSt['Diluluskan']} diluluskan, ${drSt['Dalam Semakan']} dalam semakan, ${drSt['Penyediaan Plan']} dalam penyediaan, ${drSt['Belum Mula']} belum mula${drOver.length?`, ${drOver.length} melepasi sasaran`:''}.`:'tiada data Status Pelan dalam browser ini.'}${EXT.ck?` Checklist: ${CKS.length} helaian — ${ckN.APPROVED} lulus, ${ckN.PENDING_CHECK} menunggu semakan, ${ckN.RETURNED} dipulangkan, ${ckN.DRAFT} draf${ckMulti.length?`, ${ckMulti.length} dah 3 round ke atas`:''}.`:''}${QX.length?` QC: ${QX.length} fail — ${qxPass} lulus, ${qxProg} dalam proses, ${qxRw.length} perlu rework.`:''}`);
   R.push(`<b>Sumber manusia:</b> ${ST.length} kakitangan, purata kehadiran ${avgAtt}%, ${pendLeave.length} permohonan cuti menunggu kelulusan.`);
   if(EXT.inv)R.push(`<b>Peralatan:</b> ${invTot} item dipegang ${invTeams.length} orang — ${invOk} baik, ${invWarn} perlu perhatian, ${invBad} tidak baik${badItems.length?` (${badItems.slice(0,3).map(x=>esc(x.it.name)+' / '+esc(x.team)).join(', ')}${badItems.length>3?', …':''})`:''}.`);
   R.push(`<b>Fail tracking:</b> ${trk.length?`${trk.length} fail, ${trkActive.length} aktif, ${trkClosed.length} ditutup, purata kemajuan ${trkAvg}%${trkOver.length?`, ${trkOver.length} melepasi tarikh tamat`:''}.`:'belum ada fail direkod.'}`);
