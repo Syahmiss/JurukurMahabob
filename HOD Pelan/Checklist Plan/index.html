@@ -9,7 +9,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
-  <script>if(/^jm-app/.test(window.name))document.documentElement.classList.add('in-hub');</script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
@@ -50,18 +49,12 @@
     body.glass-bg .btn-close-white{filter:none}
     body.glass-bg h4,body.glass-bg h5,body.glass-bg h6{font-stretch:106%}
 
-    /* ---------- bar atas = topbar hub ---------- */
-    .glass-nav{background:var(--surface)!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0;min-height:64px;padding:8px 0;box-shadow:none!important}
-    .glass-nav .container-fluid{gap:12px}
-    .navbar-brand{gap:0;margin-right:0}
-    .navbar-brand>.bi{width:42px;height:42px;border-radius:12px;background:var(--yel);color:var(--ind-950)!important;display:grid;place-items:center;font-size:22px!important;flex:none;margin-right:12px!important}
-    .navbar-brand .fw-bold{color:var(--ind-950)!important;font-size:15px;font-weight:750!important;font-stretch:112%;letter-spacing:.2px}
-    .navbar-brand small{color:var(--muted)!important;font-size:11.5px!important}
-    .glass-input-group{background:var(--bg);border-radius:10px!important;padding:5px 6px 5px 12px!important}
+    /* ---------- toolbar: tab + sumber data + akaun aktif (tiada header sendiri) ---------- */
+    .ck-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .ck-tools{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .glass-input-group{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 12px}
     .glass-input-group label{color:var(--ink2)!important;font-weight:600}
-    /* Dalam hub: topbar hub dah tunjuk tajuk, jadi sembunyi teks jenama */
-    html.in-hub .navbar-brand>div{display:none}
-    html.in-hub .navbar-brand>.bi{width:36px;height:36px;font-size:18px!important;border-radius:10px}
+    .glass-input-group select{border:0!important;background:var(--bg)!important}
 
     /* ---------- tab = segmen ala hub ---------- */
     .glass-tabs{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;display:inline-flex;gap:4px;flex-wrap:wrap}
@@ -176,38 +169,14 @@
 </head>
 <body class="glass-bg">
 
-  <!-- BAR ATAS -->
-  <nav class="navbar navbar-expand-lg glass-nav shadow-sm sticky-top mb-4">
-    <div class="container-fluid px-4">
-      <a class="navbar-brand d-flex align-items-center text-white" href="#" onclick="switchView('sheetsView')">
-        <i class="bi bi-compass me-2 fs-3 text-info"></i>
-        <div>
-          <div class="fw-bold lh-1 text-white shadow-text">MAHABOB DIGITAL PLAN QC</div>
-          <small class="text-white-50 shadow-text" style="font-size: 0.75rem;">Jurukur Mahabob &amp; Co Sdn. Bhd.</small>
-        </div>
-      </a>
 
-      <span id="dataSourceBadge" class="badge glass-badge source-badge ms-3 d-none d-md-inline-flex align-items-center gap-1">
-        <i class="bi bi-hourglass-split"></i> Menyambung...
-      </span>
-
-      <div class="d-flex align-items-center ms-auto glass-input-group rounded px-3 py-1">
-        <label for="activeUserSelect" class="text-white small me-2 mb-0 text-nowrap">
-          <i class="bi bi-person-badge me-1"></i>Akaun Aktif:
-        </label>
-        <select id="activeUserSelect" class="form-select form-select-sm glass-input text-white" style="min-width: 220px;" onchange="onUserChange()">
-          <option value="">-- Pilih Nama Anda --</option>
-        </select>
-      </div>
-    </div>
-  </nav>
-
-  <div class="container-fluid px-4 pb-4">
+  <div class="container-fluid px-4 pt-4 pb-4">
     <!-- Notis mod baca sahaja (Google Sheet terbitan) -->
     <div id="readOnlyNotice" class="alert glass-alert shadow-sm small mb-4" style="display:none;"></div>
 
     <!-- Navigasi Tab -->
-    <ul class="nav nav-pills glass-tabs mb-4" id="mainNavTabs">
+    <div class="ck-toolbar mb-4">
+    <ul class="nav nav-pills glass-tabs" id="mainNavTabs">
       <li class="nav-item me-2">
         <button class="nav-link active fw-semibold" id="tabBtnSheets" onclick="switchView('sheetsView')">
           <i class="bi bi-folder2-open me-1"></i>1. Pendaftaran &amp; Senarai Pelan
@@ -224,6 +193,18 @@
         </button>
       </li>
     </ul>
+      <div class="ck-tools">
+        <span id="dataSourceBadge" class="badge glass-badge source-badge d-inline-flex align-items-center gap-1">
+          <i class="bi bi-hourglass-split"></i> Menyambung...
+        </span>
+        <div class="d-flex align-items-center glass-input-group">
+          <label for="activeUserSelect" class="small me-2 mb-0 text-nowrap"><i class="bi bi-person-badge me-1"></i>Akaun Aktif:</label>
+          <select id="activeUserSelect" class="form-select form-select-sm glass-input" style="min-width: 200px;" onchange="onUserChange()">
+            <option value="">-- Pilih Nama Anda --</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
     <!-- PAPARAN 1: DAFTAR & SENARAI -->
     <div id="sheetsView">
