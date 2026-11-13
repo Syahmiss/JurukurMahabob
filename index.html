@@ -169,6 +169,14 @@ tr:last-child td{border-bottom:0}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:12.5px;margin-top:14px}
 .kv dt{color:var(--muted)}
 .kv dd{font-weight:550;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+/* Panel HOD Pelan: 3 lajur (Status Pelan | Checklist | QC) */
+.pcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.pcol{min-width:0}
+.pcol+.pcol{border-left:1px solid var(--line2);padding-left:18px}
+.psec{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:var(--ind-800);margin-bottom:10px}
+.psec .link{font-size:11.5px;padding:2px 6px}
+.pcol .kv{grid-template-columns:minmax(0,1fr) auto}
+@media (max-width:1320px){.pcols{grid-template-columns:minmax(0,1fr)}.pcol+.pcol{border-left:0;padding-left:0;border-top:1px solid var(--line2);padding-top:14px}}
 
 /* summary report */
 .report{background:var(--ind-950);color:#dfe0fa;border-radius:var(--r-lg);padding:20px 24px}
@@ -925,50 +933,50 @@ function render(){
     +'</div>';
   h+='</div>';
 
-  // --- row 4: tracking pipeline, HOD Pelan, Kualiti Pelan (QC)
-  const maxS=Math.max(1,...Object.values(stageCount));
-  h+='<div class="grid g111">';
-  h+=`<div class="panel"><div class="ph"><h3>Pipeline fail tracking</h3><span class="src">Peringkat semasa fail aktif</span><div class="sp"></div><button class="link" data-go="tracking">Buka</button></div>`
-    +(trk.length?`<div class="pipe">${STAGES.map(([k,l],i)=>`<div class="r${stageCount[k]?' has':''}"><div class="k">${i+1}</div><div class="n">${l}</div><div class="t"><i style="width:${stageCount[k]/maxS*100}%" data-tip="${l}: ${stageCount[k]} fail"></i></div><b>${stageCount[k]}</b></div>`).join('')}</div>`
-      :`<div class="empty">Belum ada fail dijejak.<br><button class="link" data-go="tracking" style="margin-top:8px">Tambah fail pertama</button></div>`)
-    +'</div>';
+  // --- row 4: HOD Pelan (Status Pelan + Checklist + QC) | HR
   const plSt={draft:0,review:0,correction:0,submitted:0,approved:0};PL.forEach(p=>{if(plSt[p.status]!=null)plSt[p.status]++;});
   const depts={};ST.forEach(s=>{depts[s.dept]=(depts[s.dept]||0)+1;});
   const dash='<span style="color:var(--muted)">–</span>';
-  // HOD Pelan — Status Pelan + Checklist Plan
-  h+=`<div class="panel"><div class="ph"><h3>HOD Pelan</h3><span class="src">Status Pelan · Checklist</span><div class="sp"></div><button class="link" data-go="app:pelan-checklist">Checklist</button></div>
-    <div class="stats">
-      <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan dalam proses</div><div class="v">${DRW?DL.length-drSt['Diluluskan']:dash}</div></div>
-      <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan lewat</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
-      <div class="stat" data-go="app:pelan-checklist"><div class="l">Lulus pusingan 1</div><div class="v">${ckFirstRate!=null?ckFirstRate+'%':dash}</div></div>
-      <div class="stat" data-go="app:pelan-checklist"><div class="l">Checklist dipulangkan</div><div class="v" style="${ckRet.length?'color:var(--bad)':''}">${EXT.ck?ckRet.length:dash}</div></div>
-    </div>
-    <dl class="kv"><dt>Lukisan (mula / proses / semak / lulus)</dt><dd>${DRW?`${drSt['Belum Mula']} / ${drSt['Penyediaan Plan']} / ${drSt['Dalam Semakan']} / ${drSt['Diluluskan']}`:'Belum ada data'}</dd>
-    <dt>Checklist (draf / semak / pulang / lulus)</dt><dd>${EXT.ck?`<span data-go="app:pelan-checklist" style="cursor:pointer">${ckN.DRAFT} / ${ckN.PENDING_CHECK} / <span style="${ckN.RETURNED?'color:var(--bad);font-weight:700':''}">${ckN.RETURNED}</span> / ${ckN.APPROVED}</span>`:extMsg('ck')}</dd>
-    ${Object.keys(ckByChecker).length?`<dt>Menunggu semakan ikut checker</dt><dd>${Object.entries(ckByChecker).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
-    ${Object.keys(ckByDrafter).length?`<dt>Helaian ikut drafter</dt><dd>${Object.entries(ckByDrafter).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
-    ${EXT.ck&&EXT.ck.topErr.length?`<dt>Item checklist kerap gagal</dt><dd>${EXT.ck.topErr.slice(0,3).map(e=>esc(e.type+' '+e.no)+' ('+e.n+'×)').join(' · ')}</dd>`:''}
-    </dl></div>`;
-  // Kualiti Pelan (QC) — Google Sheets + QC dalaman (Ringkasan Pelan)
-  const qxRwList=qxRw.slice(0,5);
-  h+=`<div class="panel"><div class="ph"><h3>Kualiti Pelan (QC)</h3><span class="src">${QX.length?QX.length+' fail':'Google Sheets'}</span><div class="sp"></div><button class="link" data-go="app:pelan-qc">Buka QC</button></div>
-    <div class="stats">
-      <div class="stat" data-go="app:pelan-qc"><div class="l">QC lulus</div><div class="v">${QX.length?Math.round(qxPass/QX.length*100)+'%':dash}</div></div>
-      <div class="stat" data-go="app:pelan-qc"><div class="l">Dalam proses QC</div><div class="v">${QX.length?qxProg:dash}</div></div>
-      <div class="stat" data-go="app:pelan-qc"><div class="l">QC perlu rework</div><div class="v" style="${qxRw.length?'color:var(--bad)':''}">${QX.length?qxRw.length:dash}</div></div>
-      <div class="stat" data-go="app:pelan-qc"><div class="l">Kadar rework QC</div><div class="v" style="${qxRwRate?'color:var(--bad)':''}">${QX.length?qxRwRate+'%':dash}</div></div>
-    </div>
-    ${qxRwList.length?`<div class="tw" style="margin-top:12px"><table><thead><tr><th>No. fail</th><th>Bidang</th><th>Surveyor</th></tr></thead><tbody>${qxRwList.map(i=>`<tr data-go="app:pelan-qc" style="cursor:pointer"><td><b style="font-weight:600">${esc(i['NO. FAIL'])}</b>${i.PERKARA?`<div style="font-size:11.5px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.PERKARA)}</div>`:''}</td><td style="font-size:12px">${esc(i.MAKLUMAT)}</td><td style="font-size:12px">${esc(i['NAMA SURVEYOR'])}</td></tr>`).join('')}${qxRw.length>5?`<tr><td colspan="3" style="text-align:center"><button class="link" data-go="app:pelan-qc">+${qxRw.length-5} lagi perlu rework</button></td></tr>`:''}</tbody></table></div>`:''}
-    <dl class="kv"><dt>Fail QC ikut bidang</dt><dd>${Object.entries(qxCat).map(([k,n])=>esc(k)+' '+n).join(' · ')||extMsg('qc')}</dd>
-    ${Object.keys(qxRwBySv).length?`<dt>Kes rework ikut surveyor</dt><dd>${Object.entries(qxRwBySv).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
-    ${QC.length?`<dt>QC dalaman (Ringkasan Pelan)</dt><dd><span data-go="ops:pelan" style="cursor:pointer">${qcOk} / ${QC.length} lulus</span></dd>`:''}
-    </dl></div>`;
-  h+='</div>';
-
-  // --- row 5: HR + sebut harga
-  h+='<div class="grid g11">';
   const lowAtt=ST.filter(s=>num(s.attend)<80);
   const deptRows=Object.entries(depts).sort((a,b)=>b[1]-a[1]),maxD=Math.max(1,...deptRows.map(x=>x[1]));
+  h+='<div class="grid g21">';
+  // HOD Pelan — satu panel: Status Pelan | Checklist Plan | Kualiti Pelan (QC)
+  const qxRwList=qxRw.slice(0,5);
+  h+=`<div class="panel"><div class="ph"><h3>HOD Pelan</h3><span class="src">Status Pelan · Checklist · Kualiti Pelan (QC)</span></div>
+    <div class="pcols">
+    <div class="pcol"><div class="psec"><span>Status Pelan</span><button class="link" data-go="app:pelan-status">Buka</button></div>
+      <div class="stats">
+        <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan dalam proses</div><div class="v">${DRW?DL.length-drSt['Diluluskan']:dash}</div></div>
+        <div class="stat" data-go="app:pelan-status"><div class="l">Lukisan lewat</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
+      </div>
+      <dl class="kv"><dt>Mula / proses / semak / lulus</dt><dd>${DRW?`${drSt['Belum Mula']} / ${drSt['Penyediaan Plan']} / ${drSt['Dalam Semakan']} / ${drSt['Diluluskan']}`:'Belum ada data'}</dd></dl>
+    </div>
+    <div class="pcol"><div class="psec"><span>Checklist Plan</span><button class="link" data-go="app:pelan-checklist">Buka</button></div>
+      <div class="stats">
+        <div class="stat" data-go="app:pelan-checklist"><div class="l">Lulus pusingan 1</div><div class="v">${ckFirstRate!=null?ckFirstRate+'%':dash}</div></div>
+        <div class="stat" data-go="app:pelan-checklist"><div class="l">Dipulangkan</div><div class="v" style="${ckRet.length?'color:var(--bad)':''}">${EXT.ck?ckRet.length:dash}</div></div>
+      </div>
+      <dl class="kv"><dt>Draf / semak / pulang / lulus</dt><dd>${EXT.ck?`<span data-go="app:pelan-checklist" style="cursor:pointer">${ckN.DRAFT} / ${ckN.PENDING_CHECK} / <span style="${ckN.RETURNED?'color:var(--bad);font-weight:700':''}">${ckN.RETURNED}</span> / ${ckN.APPROVED}</span>`:extMsg('ck')}</dd>
+      ${Object.keys(ckByChecker).length?`<dt>Menunggu ikut checker</dt><dd>${Object.entries(ckByChecker).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
+      ${Object.keys(ckByDrafter).length?`<dt>Helaian ikut drafter</dt><dd>${Object.entries(ckByDrafter).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
+      ${EXT.ck&&EXT.ck.topErr.length?`<dt>Item kerap gagal</dt><dd>${EXT.ck.topErr.slice(0,3).map(e=>esc(e.type+' '+e.no)+' ('+e.n+'×)').join(' · ')}</dd>`:''}
+      </dl>
+    </div>
+    <div class="pcol"><div class="psec"><span>Kualiti Pelan (QC)</span><button class="link" data-go="app:pelan-qc">Buka</button></div>
+      <div class="stats">
+        <div class="stat" data-go="app:pelan-qc"><div class="l">QC lulus</div><div class="v">${QX.length?Math.round(qxPass/QX.length*100)+'%':dash}</div></div>
+        <div class="stat" data-go="app:pelan-qc"><div class="l">Dalam proses</div><div class="v">${QX.length?qxProg:dash}</div></div>
+        <div class="stat" data-go="app:pelan-qc"><div class="l">Perlu rework</div><div class="v" style="${qxRw.length?'color:var(--bad)':''}">${QX.length?qxRw.length:dash}</div></div>
+        <div class="stat" data-go="app:pelan-qc"><div class="l">Kadar rework</div><div class="v" style="${qxRwRate?'color:var(--bad)':''}">${QX.length?qxRwRate+'%':dash}</div></div>
+      </div>
+      <dl class="kv"><dt>Fail ikut bidang</dt><dd>${Object.entries(qxCat).map(([k,n])=>esc(k)+' '+n).join(' · ')||extMsg('qc')}</dd>
+      ${Object.keys(qxRwBySv).length?`<dt>Rework ikut surveyor</dt><dd>${Object.entries(qxRwBySv).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
+      ${QC.length?`<dt>QC dalaman</dt><dd><span data-go="ops:pelan" style="cursor:pointer">${qcOk} / ${QC.length} lulus</span></dd>`:''}
+      </dl>
+    </div>
+    </div>
+    ${qxRwList.length?`<div class="tw" style="margin-top:14px"><table><thead><tr><th>QC perlu rework</th><th>Bidang</th><th>Perkara</th><th>Surveyor</th></tr></thead><tbody>${qxRwList.map(i=>`<tr data-go="app:pelan-qc" style="cursor:pointer"><td><b style="font-weight:600">${esc(i['NO. FAIL'])}</b></td><td style="font-size:12px">${esc(i.MAKLUMAT)}</td><td style="font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.PERKARA||'–')}</td><td style="font-size:12px">${esc(i['NAMA SURVEYOR'])}</td></tr>`).join('')}${qxRw.length>5?`<tr><td colspan="4" style="text-align:center"><button class="link" data-go="app:pelan-qc">+${qxRw.length-5} lagi perlu rework</button></td></tr>`:''}</tbody></table></div>`:''}
+  </div>`;
   h+=`<div class="panel"><div class="ph"><h3>HR · Sumber manusia</h3><span class="src">HOD HR</span><div class="sp"></div><button class="link" data-go="ops:hr">Buka HR</button></div>
     <div class="stats">
       <div class="stat" data-go="ops:hr"><div class="l">Kakitangan</div><div class="v">${ST.length}</div></div>
@@ -980,6 +988,15 @@ function render(){
     ${pendLeave.length?`<dl class="kv"><dt>Cuti menunggu</dt><dd>${pendLeave.slice(0,4).map(l=>esc(l.name)+' ('+esc(l.type)+', '+dmy(parseD(l.date))+')').join(' · ')}${pendLeave.length>4?' · +'+(pendLeave.length-4)+' lagi':''}</dd></dl>`:''}
     ${!ST.length&&!LV.length?'<div class="empty">Tiada data HR. Import data di Data &amp; Sync.</div>':''}
     </div>`;
+  h+='</div>';
+
+  // --- row 5: pipeline fail tracking | sebut harga & ramalan
+  const maxS=Math.max(1,...Object.values(stageCount));
+  h+='<div class="grid g11">';
+  h+=`<div class="panel"><div class="ph"><h3>Pipeline fail tracking</h3><span class="src">Peringkat semasa fail aktif</span><div class="sp"></div><button class="link" data-go="tracking">Buka</button></div>`
+    +(trk.length?`<div class="pipe">${STAGES.map(([k,l],i)=>`<div class="r${stageCount[k]?' has':''}"><div class="k">${i+1}</div><div class="n">${l}</div><div class="t"><i style="width:${stageCount[k]/maxS*100}%" data-tip="${l}: ${stageCount[k]} fail"></i></div><b>${stageCount[k]}</b></div>`).join('')}</div>`
+      :`<div class="empty">Belum ada fail dijejak.<br><button class="link" data-go="tracking" style="margin-top:8px">Tambah fail pertama</button></div>`)
+    +'</div>';
   h+=`<div class="panel"><div class="ph"><h3>Sebut harga & ramalan</h3><span class="src">Penjana · Perancangan</span></div>`
     +(q?`<div style="font-size:12px;color:var(--muted)">${esc(q.ref)} · ${esc(q.date)}</div><div style="font-weight:600;font-size:13px;margin:2px 0 4px">${esc(q.client)}</div><div style="font-size:11.5px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(q.title)}</div>
       <dl class="kv"><dt>${q.items} item · SST ${q.taxRate}%</dt><dd>${rm(q.sub)}</dd><dt><b style="color:var(--ink)">Jumlah keseluruhan</b></dt><dd><b>RM ${q.total.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}</b></dd></dl>`:'<div class="empty">Tiada draf sebut harga.</div>')
