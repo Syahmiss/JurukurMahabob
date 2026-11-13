@@ -61,14 +61,14 @@
     <!-- Toolbar: Navigasi Tab Utama & Kemaskini Data -->
     <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 pt-6">
         <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Navigasi Dashboard">
-                <button type="button" onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="main-tab-btn active px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap">
+            <nav class="flex flex-wrap sm:flex-nowrap gap-1.5 sm:gap-2 w-full sm:w-auto" aria-label="Navigasi Dashboard">
+                <button type="button" onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="main-tab-btn active flex-1 sm:flex-none justify-center px-2 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-bold transition-all flex items-center gap-1.5 sm:gap-2 text-center leading-tight">
                     <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
                 </button>
-                <button type="button" onclick="switchTab('form')" id="tab-btn-form" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap">
+                <button type="button" onclick="switchTab('form')" id="tab-btn-form" class="main-tab-btn flex-1 sm:flex-none justify-center px-2 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-semibold transition-all flex items-center gap-1.5 sm:gap-2 text-center leading-tight">
                     <i class="fa-solid fa-file-circle-plus"></i><span>Hantar Laporan</span>
                 </button>
-                <button type="button" onclick="switchTab('surveyor')" id="tab-btn-surveyor" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap">
+                <button type="button" onclick="switchTab('surveyor')" id="tab-btn-surveyor" class="main-tab-btn flex-1 sm:flex-none justify-center px-2 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-semibold transition-all flex items-center gap-1.5 sm:gap-2 text-center leading-tight">
                     <i class="fa-solid fa-users"></i><span>Statistik Surveyor</span>
                 </button>
             </nav>
@@ -428,12 +428,8 @@
 
     </main>
 
-    <footer class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6 text-xs text-slate-400 border-t border-slate-200 mt-8 flex flex-col sm:flex-row justify-between gap-2">
+    <footer class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6 text-xs text-slate-400 border-t border-slate-200 mt-8 text-center sm:text-left">
         <span>&copy; <span id="footerYear"></span> <strong class="text-jm-navy">JURUKUR MAHABOB</strong> &middot; Sistem Statistik Jurukur Tanah</span>
-        <span class="flex flex-wrap gap-4">
-            <a href="../operation/index.html" class="hover:text-jm-blue inline-flex items-center gap-1"><i class="fa-solid fa-diagram-project"></i>Progres Kerja</a>
-            <a href="../index.html" class="hover:text-jm-blue inline-flex items-center gap-1"><i class="fa-solid fa-house"></i>Portal Utama</a>
-        </span>
     </footer>
 
     <!-- Toast Notification -->
