@@ -8,7 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
@@ -18,15 +18,15 @@
        "glass-*" dan utiliti warna Bootstrap ke token hub.
        ============================================================ */
     :root{
-      --ind-950:#17154a; --ind-900:#1f1c63; --ind-800:#272483; --ind-600:#4338ca; --ind-500:#5b51e0; --ind-100:#e2e3fb; --ind-50:#eef0ff;
-      --yel:#f5c518; --yel-600:#d9a400; --yel-50:#fff8d6; --yel-ink:#2a2100;
-      --bg:#f6f7fb; --surface:#ffffff; --line:#e3e5ef; --line2:#eef0f6;
-      --ink:#16182b; --ink2:#484d66; --muted:#757a94;
-      --ok:#0f7a43; --ok-50:#e5f4ec; --warn:#b45309; --warn-50:#fdf1e1; --bad:#c52a2a; --bad-50:#fdeaea;
-      --f:'Archivo','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
-      --r-lg:16px; --r-md:10px;
+      --ind-950:#0A2540; --ind-900:#0F2E55; --ind-800:#1E40AF; --ind-600:#1D4ED8; --ind-500:#3B82F6; --ind-100:#DBEAFE; --ind-50:#EFF6FF;
+      --yel:#FACC15; --yel-600:#EAB308; --yel-50:#FEFCE8; --yel-ink:#0A2540;
+      --bg:#F8FAFC; --surface:#FFFFFF; --line:#E2E8F0; --line2:#F1F5F9;
+      --ink:#1E293B; --ink2:#475569; --muted:#64748B;
+      --ok:#047857; --ok-50:#ECFDF5; --warn:#A16207; --warn-50:#FEF9C3; --bad:#DC2626; --bad-50:#FEE2E2;
+      --f:'Inter','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+      --r-lg:16px; --r-md:12px;
       --bs-body-font-family:var(--f); --bs-body-color:var(--ink); --bs-body-bg:var(--bg);
-      --bs-border-color:var(--line); --bs-primary:var(--ind-600); --bs-primary-rgb:67,56,202;
+      --bs-border-color:var(--line); --bs-primary:var(--ind-600); --bs-primary-rgb:29,78,216;
     }
     body.glass-bg{background:var(--bg);font-family:var(--f);font-size:14px;line-height:1.5;color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
     :focus-visible{outline:2px solid var(--yel);outline-offset:2px}
@@ -165,7 +165,138 @@
 
     @media (max-width:860px){.glass-tabs{display:flex}.glass-input-group select{min-width:0!important}}
     @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-  </style>
+
+    /* ============================================================
+       JM THEME LAYER — ikut template "Dashboard Jualan & Invois"
+       ============================================================ */
+    body.glass-bg{font-family:var(--f);background:var(--bg)}
+    ::selection{background:var(--yel);color:var(--ind-950)}
+
+    /* Toolbar = bar navy rounded-2xl, tab aktif gold */
+    .ck-toolbar{background:var(--ind-950);border-radius:16px;padding:8px 12px;box-shadow:0 4px 10px -4px rgba(10,37,64,.4)}
+    .glass-tabs{background:none;border:0;padding:0;gap:6px}
+    body.glass-bg .glass-tabs .nav-link{color:#DBEAFE!important;padding:10px 16px;border-radius:12px}
+    body.glass-bg .glass-tabs .nav-link:hover{background:rgba(255,255,255,.1);color:#fff!important}
+    body.glass-bg .glass-tabs .nav-link.active{background:var(--yel);color:var(--ind-950)!important;font-weight:700!important;box-shadow:0 4px 10px -2px rgba(0,0,0,.25)}
+    body.glass-bg .ck-tools .glass-badge{background:rgba(255,255,255,.1)!important;border:0!important;color:#BFDBFE!important}
+    .ck-tools .glass-input-group{background:rgba(255,255,255,.1);border:0}
+    body.glass-bg .ck-tools .glass-input-group label{color:#BFDBFE!important}
+    .ck-tools .glass-input-group select{background:#fff!important;border-radius:10px!important}
+
+    /* Kad = bg-white rounded-2xl border-slate-200 shadow-sm */
+    .glass-card{border-radius:16px!important;box-shadow:0 1px 2px rgba(15,23,42,.06)!important}
+    .glass-header,.glass-header h6{color:var(--ind-950)!important}
+    .glass-summary-box{background:var(--line2)!important}
+
+    /* Aksen border-4 → bar atas berwarna (macam kad KPI template) */
+    .glass-card.border-start.border-4{border-top:4px solid #334155!important}
+    .glass-card.border-start.border-4.border-info{border-top-color:var(--ind-600)!important}
+    .glass-card.border-start.border-4.border-success{border-top-color:var(--ok)!important}
+    .glass-card.border-start.border-4.border-danger{border-top-color:var(--bad)!important}
+    .glass-card.border-start.border-4.border-warning{border-top-color:var(--yel)!important}
+    .glass-card.border-top.border-info.border-3{border-top:4px solid var(--ind-600)!important}
+
+    /* KPI */
+    #dashboardView .glass-card.p-3{padding:20px!important}
+    #dashboardView .glass-card .small.fw-bold{text-transform:uppercase;letter-spacing:.06em}
+    #dashboardView .glass-card .fs-1{font-weight:800!important;font-stretch:100%;color:var(--ind-950)}
+    #dashboardView .glass-card .fs-1.text-success{color:var(--ok)!important}
+    #dashboardView .glass-card .fs-1.text-danger{color:var(--bad)!important}
+    #dashboardView .glass-card .fs-1.text-warning{color:#A16207!important}
+    #kpiTotalSheets{background:none}
+    #dashboardView .row>.col-md-3:first-child .glass-card{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--ind-950),var(--ind-800))!important;border:1px solid #1E3A8A!important}
+    #dashboardView .row>.col-md-3:first-child .glass-card::after{content:"";position:absolute;right:-16px;top:-16px;width:96px;height:96px;border-radius:50%;background:rgba(250,204,21,.12);pointer-events:none}
+    #dashboardView .row>.col-md-3:first-child .glass-card .text-white-50{color:#BFDBFE!important}
+    #dashboardView .row>.col-md-3:first-child #kpiTotalSheets{color:#fff!important}
+    #dashboardView h4{color:var(--ind-950)!important;font-weight:800}
+
+    /* Input */
+    .glass-input,.glass-input-dark{border-color:#CBD5E1!important;border-radius:12px!important}
+    .glass-input:focus,.glass-input-dark:focus{border-color:var(--ind-600)!important;box-shadow:0 0 0 2px var(--ind-600)!important}
+
+    /* Butang */
+    body.glass-bg .btn{border-radius:12px}
+    body.glass-bg .btn:active{transform:scale(.97)}
+    body.glass-bg .btn-info,#btnCreateSheet,[data-sheet-id].btn-info{background:var(--ind-950)!important;border-color:var(--ind-950)!important}
+    body.glass-bg .btn-info:hover,#btnCreateSheet:hover,[data-sheet-id].btn-info:hover{background:var(--ind-800)!important;border-color:var(--ind-800)!important}
+    body.glass-bg .btn-secondary,body.glass-bg .btn-outline-light{border-color:#CBD5E1!important}
+    body.glass-bg .btn-secondary:hover,body.glass-bg .btn-outline-light:hover{background:var(--ind-50)!important;color:var(--ind-950)!important;border-color:var(--ind-600)!important}
+
+    /* Jadual = thead navy, teks putih uppercase */
+    .glass-table thead th{background:var(--ind-950)!important;color:#fff!important;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:12px 14px}
+    .glass-table tbody td{padding:12px 14px;border-color:var(--line)!important}
+    .glass-table tbody tr:hover td{background:rgba(239,246,255,.6)!important}
+    .checklist-table{border-radius:16px}
+    .checklist-table thead tr:first-child th:not(.drafter-header):not(.checker-header){background:var(--ind-950)!important;color:#fff!important}
+
+    /* Slicer = pill rounded-full */
+    .slicer-btn.active-project{background:var(--ind-950)!important;border-color:var(--ind-950)!important}
+    .slicer-sheet-btn{border-radius:12px}
+
+    /* Badge status */
+    .badge-pending{background:var(--ind-50)!important;color:var(--ind-600)!important}
+
+    /* Modal */
+    .modal-content.glass-card{border-radius:16px!important}
+    .modal-backdrop.show{background:var(--ind-950);opacity:.55}
+  
+/* ============================================================
+   JM MOBILE — skrin ≤ 640px: tiada scroll ke tepi.
+   Jadual bertukar jadi kad; label lajur diisi oleh skrip jmCards().
+   ============================================================ */
+html,body{max-width:100%;overflow-x:hidden}
+@media (max-width:640px){
+  .tbl,.tw,.table-responsive,.tbl-wrap{overflow:visible!important;border:0!important;background:none!important;margin:0!important;border-radius:0!important;max-height:none!important}
+  table.jm-cards{min-width:0!important;width:100%!important;border:0!important;background:none!important;border-collapse:separate!important}
+  table.jm-cards thead{display:none!important}
+  table.jm-cards,table.jm-cards tbody,table.jm-cards tfoot,table.jm-cards tr,table.jm-cards td{display:block!important;width:100%!important;max-width:none!important}
+  table.jm-cards tr{position:relative;background:#fff;border:1px solid #E2E8F0;border-radius:12px;margin:0 0 10px;padding:4px 14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  table.jm-cards tbody tr:hover td,table.jm-cards tbody tr:hover{background:#fff!important}
+  table.jm-cards td{position:relative;padding:9px 0 9px 40%!important;min-height:36px;border:0!important;border-bottom:1px solid #F1F5F9!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere;background:none!important;box-shadow:none!important}
+  table.jm-cards td:last-child{border-bottom:0!important}
+  table.jm-cards td::before{content:attr(data-label);position:absolute;left:0;top:9px;width:36%;font-size:10.5px;font-weight:600;line-height:1.35;text-transform:uppercase;letter-spacing:.05em;color:#64748B;white-space:normal}
+  /* sel pertama = tajuk kad: label di atas, nilai penuh lebar */
+  table.jm-cards td:first-child:not(.jm-full){padding:10px 0!important;font-size:14px}
+  table.jm-cards td:first-child:not(.jm-full)::before{position:static;display:block;width:auto;margin-bottom:3px}
+  /* sel tanpa label (cth. butang padam) */
+  table.jm-cards td.jm-nolabel{padding-left:0!important;text-align:right!important}
+  table.jm-cards td.jm-nolabel::before{display:none}
+  /* baris colspan (kategori, kosong, memuatkan) */
+  table.jm-cards td.jm-full{padding:12px 0!important;text-align:center!important;border-bottom:0!important}
+  table.jm-cards td.jm-full::before{display:none}
+  table.jm-cards tr:has(> td.jm-full:only-child){padding:0 14px}
+  table.jm-cards td.category-banner,table.jm-cards .category-banner td{text-align:left!important;padding:10px 14px!important;border-radius:10px;margin:0 -14px;width:calc(100% + 28px)!important}
+  table.jm-cards td.category-banner{background:#0A2540!important;color:#fff!important;box-shadow:inset 4px 0 0 #FACC15!important}
+  table.jm-cards tr:has(> td.category-banner){background:none;border:0;box-shadow:none;padding:0}
+  /* kandungan dalam sel */
+  table.jm-cards td .prog,table.jm-cards td .mini{min-width:0;max-width:100%}
+  table.jm-cards td input,table.jm-cards td select,table.jm-cards td textarea{width:100%;max-width:100%}
+  table.jm-cards td .tick-group{flex-wrap:wrap}
+  table.jm-cards td .clip{max-width:100%;white-space:normal}
+  img,video,canvas,svg{max-width:100%}
+}
+
+    @media (max-width:640px){
+      .container-fluid{padding-left:14px!important;padding-right:14px!important}
+      .ck-toolbar{flex-direction:column;align-items:stretch;padding:6px}
+      .glass-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+      .glass-tabs .nav-item{margin:0!important;min-width:0}
+      body.glass-bg .glass-tabs .nav-link{width:100%;height:100%;white-space:normal;text-align:center;line-height:1.25;padding:9px 6px;font-size:12px}
+      .glass-tabs .nav-link .bi{display:none}
+      .ck-tools{margin-left:0;flex-direction:column;align-items:stretch}
+      .ck-tools .glass-input-group{flex-wrap:wrap;gap:6px}
+      .ck-tools .glass-input-group select{min-width:0!important;flex:1}
+      .glass-header{flex-wrap:wrap;gap:8px}
+      .glass-summary-box>[class*="col-"]{flex:0 0 50%;max-width:50%;border:0!important;padding:6px!important}
+      #activeChecklistContainer>.d-flex>.d-flex{flex-wrap:wrap}
+      .sticky-bottom-bar [class*="col-md"]{border:0!important}
+      .sticky-bottom-bar .d-flex{flex-wrap:wrap}
+      #dashboardView>.d-flex:first-child{flex-wrap:wrap;gap:10px}
+      #dashboardView h4{font-size:19px}
+      #dashboardView .glass-card .fs-1{font-size:26px!important}
+      .slicer-sheet-btn{flex:1 1 100%}
+    }
+</style>
 </head>
 <body class="glass-bg">
 
@@ -240,7 +371,7 @@
               </select>
             </div>
             <div class="col-md-2 d-grid">
-              <button class="btn btn-info btn-sm fw-bold py-2 shadow-sm glass-btn-hover" style="background-color: #0ea5e9; color: #fff; border:none;" id="btnCreateSheet" onclick="handleCreateSheet()">
+              <button class="btn btn-info btn-sm fw-bold py-2 shadow-sm glass-btn-hover" id="btnCreateSheet" onclick="handleCreateSheet()">
                 <i class="bi bi-file-earmark-plus me-1"></i>Daftar &amp; Buka
               </button>
             </div>
@@ -1176,7 +1307,7 @@
             <td>${formatStatusBadge(s.current_status)}</td>
             <td class="text-center">
               <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" style="background-color: #0ea5e9; color: #fff !important; border:none;" data-sheet-id="${sid}" onclick="openSheetChecklist(this.dataset.sheetId)">
+                <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" data-sheet-id="${sid}" onclick="openSheetChecklist(this.dataset.sheetId)">
                   <i class="bi bi-check2-square"></i> Buka
                 </button>
                 <button class="btn btn-sm btn-outline-danger shadow-sm border-0" data-sheet-id="${sid}" onclick="handleDeleteSheet(this.dataset.sheetId)" title="Padam Helaian Pelan">
@@ -1788,5 +1919,71 @@
       return d.toLocaleString("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
     }
   </script>
+
+<script>
+/* JM MOBILE — isi data-label setiap sel jadual daripada header (sokong rowspan/colspan).
+   Tak sentuh data atau logic; jalan semula bila jadual dirender semula. */
+(function(){
+  'use strict';
+  function txt(el){ return el.textContent.replace(/[▲▼⇅]/g,'').replace(/\s+/g,' ').trim(); }
+  function headLabels(table){
+    const rows = table.tHead ? Array.from(table.tHead.rows) : [];
+    if (!rows.length) return null;
+    const grid = [];
+    rows.forEach(function(tr, r){
+      grid[r] = grid[r] || [];
+      let c = 0;
+      Array.from(tr.cells).forEach(function(cell){
+        while (grid[r][c]) c++;
+        const cs = cell.colSpan || 1, rs = cell.rowSpan || 1, t = txt(cell);
+        for (let i = 0; i < rs; i++) { grid[r+i] = grid[r+i] || []; for (let j = 0; j < cs; j++) grid[r+i][c+j] = { t: t }; }
+        c += cs;
+      });
+    });
+    const n = Math.max.apply(null, grid.map(function(g){ return g.length; }));
+    const out = [];
+    for (let c = 0; c < n; c++) {
+      const parts = [];
+      grid.forEach(function(g){ const x = g[c]; if (x && x.t && parts[parts.length-1] !== x.t) parts.push(x.t); });
+      out.push(parts.join(' · '));
+    }
+    return out;
+  }
+  function label(table){
+    const labels = headLabels(table);
+    if (!labels) return;
+    table.classList.add('jm-cards');
+    const n = labels.length;
+    Array.from(table.tBodies).forEach(function(tb){
+      const occ = [];
+      Array.from(tb.rows).forEach(function(tr, r){
+        occ[r] = occ[r] || [];
+        let c = 0;
+        Array.from(tr.cells).forEach(function(cell){
+          while (occ[r][c]) c++;
+          const cs = cell.colSpan || 1, rs = cell.rowSpan || 1;
+          for (let i = 0; i < rs; i++) { occ[r+i] = occ[r+i] || []; for (let j = 0; j < cs; j++) occ[r+i][c+j] = 1; }
+          const full = cs > 1 && cs >= Math.ceil(n / 2);
+          cell.classList.toggle('jm-full', full);
+          const lab = full ? '' : (labels[c] || '');
+          if (cell.getAttribute('data-label') !== lab) cell.setAttribute('data-label', lab);
+          cell.classList.toggle('jm-nolabel', !full && !lab);
+          c += cs;
+        });
+      });
+    });
+  }
+  let queued = false;
+  function run(){ queued = false; document.querySelectorAll('table').forEach(label); }
+  function schedule(){ if (!queued) { queued = true; requestAnimationFrame(run); } }
+  function start(){
+    run();
+    new MutationObserver(function(muts){
+      for (const m of muts) { if (m.type === 'childList') { schedule(); return; } }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
 </body>
 </html>
