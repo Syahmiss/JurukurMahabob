@@ -367,7 +367,7 @@
                         <span>Prestasi Setiap Surveyor</span>
                         <span id="surveyorCountBadge" class="text-xs font-bold bg-jm-navy text-jm-gold px-2.5 py-0.5 rounded-full">0 Surveyor</span>
                     </h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Klik "Lihat Laporan" untuk tapis jadual ikut surveyor</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Badrul, Riduwan, Ridhzuan, Helmi &amp; Syahmi sentiasa di atas. Butang susunan untuk surveyor lain.</p>
                 </div>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <div class="inline-flex rounded-xl bg-slate-200/70 p-1 text-xs font-semibold overflow-x-auto">
@@ -2233,6 +2233,26 @@ Tamat : 3.00pm
             </div>`;
         }
 
+        // Susunan tetap: surveyor ini sentiasa di atas, ikut turutan ini.
+        // Padanan ikut perkataan dalam nama, jadi "M.BADRUL" dan "Mohd Badrul" kedua-duanya = BADRUL.
+        const SURVEYOR_ORDER = ['Badrul', 'Riduwan', 'Ridhzuan', 'Helmi', 'Syahmi'];
+        const SURVEYOR_ORDER_KEYS = SURVEYOR_ORDER.map(n => n.toUpperCase());
+
+        function priorityIndex(nama) {
+            const tokens = surveyorKey(nama).split(/[^A-Z]+/).filter(Boolean);
+            return SURVEYOR_ORDER_KEYS.findIndex(k => tokens.includes(k));
+        }
+
+        // Kad kosong untuk surveyor utama yang belum pernah hantar laporan (atau nama dieja lain)
+        function priorityPlaceholders(existing) {
+            const found = new Set(existing.map(s => priorityIndex(s.nama)).filter(i => i >= 0));
+            return SURVEYOR_ORDER.map((nama, i) => found.has(i) ? null : {
+                key: 'PRIORITY:' + i, nama, reports: 0, issues: 0, hours: 0, avgHours: 0,
+                activeDays: 0, fileList: [], fileCount: 0, filesDone: 0, filesDelayed: 0, avgProgress: 0,
+                dayCounts: new Map(), overallLast: null, overallLastRaw: '-', noReport: true, neverReported: true
+            }).filter(Boolean);
+        }
+
         function periodTitle(range) {
             if (!range) return 'Semua Tempoh';
             const [y, m] = statMonth.split('-').map(Number);
@@ -2276,6 +2296,7 @@ Tamat : 3.00pm
                 activeDays: 0, fileList: [], fileCount: 0, filesDone: 0, filesDelayed: 0, avgProgress: 0,
                 dayCounts: new Map(), overallLast: s.lastDate, overallLastRaw: s.lastTarikhRaw, noReport: true
             }));
+            const placeholders = priorityPlaceholders(allTime);
 
             // Ringkasan pasukan (ikut tempoh, tak ikut carian)
             const allFiles = new Map();
@@ -2286,7 +2307,7 @@ Tamat : 3.00pm
             const filesArr = [...allFiles.values()];
             const top = [...inPeriod].sort((a, b) => b.reports - a.reports)[0];
             document.getElementById('teamTotalSurveyor').textContent = inPeriod.length;
-            document.getElementById('teamAllSurveyor').textContent = allTime.length;
+            document.getElementById('teamAllSurveyor').textContent = allTime.length + placeholders.length;
             document.getElementById('teamReportCount').textContent = periodData.length;
             document.getElementById('teamTopSurveyor').textContent = top ? `${top.nama} (${top.reports})` : '-';
             document.getElementById('teamFiles').textContent = filesArr.length;
@@ -2304,13 +2325,22 @@ Tamat : 3.00pm
                 nama: (a, b) => a.nama.localeCompare(b.nama)
             };
             const sorter = sorters[surveyorSort] || sorters.laporan;
+            // 1) Surveyor utama ikut SURVEYOR_ORDER (walaupun tiada laporan dalam tempoh)
+            // 2) Surveyor lain yang melapor, ikut butang susunan
+            // 3) Surveyor lain tanpa laporan dalam tempoh, ikut nama
+            const everyone = [...inPeriod, ...missing, ...placeholders].filter(match);
+            const priority = everyone
+                .filter(s => priorityIndex(s.nama) >= 0)
+                .sort((a, b) => priorityIndex(a.nama) - priorityIndex(b.nama) || b.reports - a.reports);
+            const others = everyone.filter(s => priorityIndex(s.nama) < 0);
             const list = [
-                ...inPeriod.filter(match).sort(sorter),
-                ...missing.filter(match).sort((a, b) => a.nama.localeCompare(b.nama))
+                ...priority,
+                ...others.filter(s => !s.noReport).sort(sorter),
+                ...others.filter(s => s.noReport).sort((a, b) => a.nama.localeCompare(b.nama))
             ];
             lastSurveyorList = list;
 
-            const missingCount = missing.filter(match).length;
+            const missingCount = list.filter(s => s.noReport).length;
             document.getElementById('surveyorCountBadge').textContent =
                 `${list.length - missingCount} Surveyor` + (missingCount ? ` • ${missingCount} tiada laporan` : '');
 
@@ -2321,8 +2351,9 @@ Tamat : 3.00pm
             }
             empty.classList.add('hidden');
 
-            let rank = 0;
             grid.innerHTML = list.map((s, idx) => {
+                // Nombor kedudukan kad (bukan ranking prestasi)
+                const rankHtml = `<span class="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold flex items-center justify-center ring-2 ring-white">${idx + 1}</span>`;
                 const lastLabel = s.overallLast ? formatTarikh(s.overallLast) : escapeHtml(s.overallLastRaw || '-');
                 const header = (rankHtml) => `
                     <div class="p-5 flex items-start gap-3 border-b border-slate-100">
@@ -2336,7 +2367,9 @@ Tamat : 3.00pm
                             <h4 class="font-extrabold ${s.noReport ? 'text-slate-500' : 'text-jm-navy'} text-sm truncate" title="${escapeHtml(s.nama)}">${escapeHtml(s.nama)}</h4>
                             <p class="text-[11px] text-slate-500 mt-0.5">Laporan terakhir: <span class="font-mono font-semibold text-slate-700">${lastLabel}</span></p>
                         </div>
-                        <div class="shrink-0">${activityBadge(s.overallLast)}</div>
+                        <div class="shrink-0">${s.neverReported
+                            ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">Belum melapor</span>'
+                            : activityBadge(s.overallLast)}</div>
                     </div>`;
                 const footer = `
                     <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/70 mt-auto">
@@ -2348,10 +2381,10 @@ Tamat : 3.00pm
                 if (s.noReport) {
                     return `
                     <article class="bg-white rounded-2xl border border-dashed border-slate-300 overflow-hidden flex flex-col opacity-90">
-                        ${header('')}
+                        ${header(rankHtml)}
                         <div class="p-5 space-y-4 flex-1">
                             <div class="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2.5">
-                                <i class="fa-solid fa-circle-exclamation"></i> Tiada laporan dalam tempoh ini
+                                <i class="fa-solid fa-circle-exclamation"></i> ${s.neverReported ? 'Belum ada laporan dengan nama ini' : 'Tiada laporan dalam tempoh ini'}
                             </div>
                             ${activityStrip(s, range)}
                         </div>
@@ -2359,8 +2392,6 @@ Tamat : 3.00pm
                     </article>`;
                 }
 
-                rank++;
-                const rankHtml = `<span class="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full ${rank === 1 ? 'bg-jm-gold text-jm-navy' : 'bg-slate-200 text-slate-600'} text-[10px] font-bold flex items-center justify-center ring-2 ring-white">${rank}</span>`;
                 const filesPreview = s.fileList.slice(0, 4).map(f => `
                     <div>
                         <div class="flex items-center justify-between gap-2 text-[11px]">
