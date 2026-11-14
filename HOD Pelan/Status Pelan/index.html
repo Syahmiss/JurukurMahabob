@@ -352,8 +352,17 @@ html,body{max-width:100%;overflow-x:hidden}
     $('btnRefresh').disabled = true;
     const done = data => { DB = data; COL = detect(data.headers, data.cols || {}); render(); $('btnRefresh').disabled = false; };
     const fail = e => { toast(e.message || e, true); $('btnRefresh').disabled = false; };
-    if (IS_GAS) google.script.run.withSuccessHandler(done).withFailureHandler(fail).getData();
-    else done(demoData());
+    if (!IS_GAS) { noBackend(); $('btnRefresh').disabled = false; return; }
+    google.script.run.withSuccessHandler(done).withFailureHandler(fail).getData();
+  }
+
+  // Dibuka di luar Web App (cth. fail HTML dibuka terus) — tiada data untuk dipaparkan
+  function noBackend(){
+    $('updated').textContent = 'Tiada sambungan ke Apps Script';
+    $('btnNew').disabled = true;
+    const msg = 'Buka halaman ini melalui URL Web App (Deploy → Web app) untuk lihat data sebenar dari Google Sheet.';
+    $('kpis').innerHTML = `<div class="card empty" style="grid-column:1/-1;margin:0">${msg}</div>`;
+    toast(msg, true);
   }
 
   function render(){
@@ -590,6 +599,9 @@ html,body{max-width:100%;overflow-x:hidden}
 
   // opt.blank   = borang kosong sepenuhnya (tak ambil projek dari skop)
   // opt.prefill = { kolum: nilai } untuk rekod baru (cth. dari butang "+ Sheet" dalam kad)
+  // Medan yang tak dipaparkan dalam borang Kemaskini (nilai sedia ada dikekalkan bila simpan)
+  const FORM_HIDE = /^\s*(no\.?\s*lot|mukim)\s*$/i;
+
   function openForm(row, opt){
     opt = opt || {};
     editing = row || null;
@@ -613,7 +625,7 @@ html,body{max-width:100%;overflow-x:hidden}
           <input type="number" id="nSheets" min="1" max="${DB.maxBulk}" step="1" value="1" inputmode="numeric">
           <div class="chips" id="sheetChips"></div></div>`;
     } else {
-      const metas = DB.meta.slice().sort((a,b) => (b.name === COL.project) - (a.name === COL.project));
+      const metas = DB.meta.filter(m => !FORM_HIDE.test(m.name)).sort((a,b) => (b.name === COL.project) - (a.name === COL.project));
       html = metas.map((m, i) => fieldHtml(m, i, row[m.name], false, opt)).join('');
     }
     $('form').innerHTML = html;
@@ -663,6 +675,7 @@ html,body{max-width:100%;overflow-x:hidden}
       if (existing && !confirm(`No. Fail "${data[COL.file]}" · Site "${data[COL.project]}" sudah ada ${existing} sheet.\nSheet baru akan dinomborkan 1/${n} hingga ${n}/${n}. Teruskan?`)) return;
       payload = { row: null, data, sheets: n, checklist: DB.checklistItems.slice() };   // senarai semakan standard, tanpa pilihan dalam borang
     } else {
+      DB.headers.filter(h => FORM_HIDE.test(h)).forEach(h => { if (!(h in data)) data[h] = editing[h] == null ? '' : editing[h]; });
       // Senarai semakan tak lagi diedit dalam borang — hantar semula status sedia ada supaya tak terusik
       const checklist = {};
       if (editing._chk) Object.assign(checklist, editing._chk.items);
@@ -685,8 +698,8 @@ html,body{max-width:100%;overflow-x:hidden}
       load();
     };
     const fail = e => { $('btnSave').disabled = false; toast(e.message || e, true); };
-    if (IS_GAS) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).saveRecord(payload);
-    else demoSave(payload, ok);
+    if (!IS_GAS) { fail(new Error('Tiada sambungan ke Apps Script — rekod tidak disimpan.')); return; }
+    google.script.run.withSuccessHandler(ok).withFailureHandler(fail).saveRecord(payload);
   }
 
   let tt; function toast(msg, err){ const t = $('toast'); t.textContent = msg; t.className = 'toast ' + (err?'err':'ok'); t.style.display='block'; clearTimeout(tt); tt = setTimeout(()=>t.style.display='none', 4000); }
@@ -715,50 +728,6 @@ html,body{max-width:100%;overflow-x:hidden}
   $('thead').addEventListener('click', e => { const k = e.target.closest('th')?.dataset.k; if(!k) return; sort = { key:k, dir: sort.key===k ? -sort.dir : 1 }; renderTable(); });
   $('tbody').addEventListener('click', e => { const tr = e.target.closest('tr[data-row]'); if (tr) openForm(DB.rows.find(r => r._row === Number(tr.dataset.row))); });
   $('projBody').addEventListener('click', e => { const tr = e.target.closest('tr[data-proj]'); if (tr) { setProject(tr.dataset.proj); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
-
-  /* ---------- Mod preview (bila dibuka di luar Apps Script) ---------- */
-  const DEMO_ITEMS = ['Tajuk & No. Pelan','No. Lot / Mukim / Daerah','Skala & Bar Skala','Arah Utara','Bearing & Jarak','Koordinat / Datum','Keluasan','Petunjuk (Legend)','Lot Bersempadan','Ejaan & Format','Tandatangan / Pengesahan JTB'];
-  function demoData(){
-    if (window.__demo) return Object.assign(window.__demo, { fetchedAt: new Date().toISOString() });
-    const H = ['No. Fail','Nama Projek','No. Sheet','Klien','No. Lot','Mukim','Jenis Pelan','Drafter','Status','Kemajuan (%)','Tarikh Sasaran','Catatan','Dikemaskini Oleh','Tarikh Kemaskini','ID Sheet'];
-    const st = ['Terima Data','Dalam Lukisan','Semakan Jurukur','Pindaan','Siap','Hantar JUPEM'];
-    const dr = ['Aiman','Farah','Hakim','Nurul','Syafiq'];
-    const jp = ['Pelan Akui','Pelan Pra-Hitungan','Pelan Topografi','Pelan Ukur Halus'];
-    const projs = [['Taman Seri Kajang Fasa 2',8,'Tetuan Seri Maju'],['Pecah Sempadan Lot 1220',3,'Hj. Ramli'],['Topo Tapak Sekolah Beranang',6,'Majlis Daerah'],['Ukur Halus Bandar Bina Jaya',9,'Syarikat Bina Jaya']];
-    const pad = n => String(n).padStart(2,'0'), d = (m,day) => `2026-${pad(m)}-${pad(day)}`;
-    const rows = []; let k = 0;
-    projs.forEach(([p, n, cl], pi) => { for (let i = 1; i <= n; i++, k++) {
-      const s = st[(k*7)%st.length], items = {};
-      DEMO_ITEMS.forEach((it, j) => items[it] = isDone(s) || /Hantar/.test(s) ? true : ((k + j) % 3 !== 0));
-      const done = Object.values(items).filter(Boolean).length;
-      rows.push({ _row:k+2, 'No. Fail':'MB/26/'+(140+Math.floor(pi/2)), 'Nama Projek':p, 'No. Sheet':`${i}/${n}`, 'Klien':cl, 'No. Lot':'Lot '+(1200+k*13),
-        'Mukim':['Kajang','Semenyih','Beranang'][pi%3], 'Jenis Pelan':jp[pi], 'Drafter':dr[k%5], 'Status':s,
-        'Kemajuan (%)': /Siap|Hantar/.test(s)?100:(10+((k*23)%80)), 'Tarikh Sasaran':d(10+(k%3),2+((k*5)%26)),
-        'Catatan': k%5===0?'Tunggu data dari site':'', 'Dikemaskini Oleh':'demo', 'Tarikh Kemaskini':d(11,10),
-        'ID Sheet':`S261110-DEMO${pi}-${pad(i)}`, _chk:{ items, done, total: DEMO_ITEMS.length } });
-    }});
-    const meta = H.map(h => ({ name:h, type: /Tarikh/.test(h)?'date': h==='Kemajuan (%)'?'number': h==='Catatan'?'textarea':'text',
-      options: h==='Status'?st: h==='Drafter'?dr: h==='Jenis Pelan'?jp: h==='Mukim'?['Beranang','Kajang','Semenyih']:[],
-      auto: h==='Tarikh Kemaskini'?'at': h==='Dikemaskini Oleh'?'by':'', formula:false, system: h==='ID Sheet' }));
-    window.__demo = { headers:H, meta, rows, cols:{ project:'Nama Projek', sheetNo:'No. Sheet', uid:'ID Sheet' }, checklistItems:DEMO_ITEMS, maxBulk:100, fetchedAt:new Date().toISOString() };
-    return window.__demo;
-  }
-  function demoSave(p, ok){
-    const D = window.__demo;
-    if (p.row === null) {
-      for (let i = 1; i <= p.sheets; i++) {
-        const items = {}; p.checklist.forEach(it => items[it] = false);
-        D.rows.push(Object.assign({}, p.data, { _row: D.rows.length + 2, 'No. Sheet': p.sheets > 1 ? `${i}/${p.sheets}` : '1/1', 'ID Sheet': 'DEMO-NEW-' + D.rows.length,
-          _chk: p.checklist.length ? { items, done: 0, total: p.checklist.length } : undefined }));
-      }
-      ok({ mode:'create', sheets:p.sheets, checklist:p.sheets*p.checklist.length });
-    } else {
-      const r = D.rows.find(x => x._row === p.row); Object.assign(r, p.data);
-      const vals = Object.values(p.checklist);
-      r._chk = { items: p.checklist, done: vals.filter(Boolean).length, total: vals.length };
-      ok({ mode:'update' });
-    }
-  }
 
   load();
 })();
