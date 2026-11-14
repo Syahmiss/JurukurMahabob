@@ -196,6 +196,40 @@ html,body{max-width:100%;overflow-x:hidden}
     .toolbar input,.toolbar select{max-width:none}
     .mini{min-width:0}
   }
+
+  /* ============================================================
+     Page Kad No. Fail — satu kad = satu No. Fail, diasingkan ikut projek
+     ============================================================ */
+  .pg-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .pg-hd h2{margin:0;font-size:17px;font-weight:800;color:var(--navy)}
+  .pg-hd input{max-width:320px}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+  .fcard{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:var(--r);box-shadow:0 1px 2px rgba(15,23,42,.06);overflow:hidden;display:flex;flex-direction:column}
+  .fcard .fhd{background:var(--navy);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .fcard .fhd small{display:block;color:var(--gold);font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+  .fcard .fhd h4{margin:2px 0 0;font-size:18px;font-weight:800;letter-spacing:-.2px;word-break:break-word}
+  .fcard .fbadge{background:rgba(255,255,255,.12);color:#BFDBFE;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:8px;white-space:nowrap}
+  .fcard .fsum{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+  .fcard .fsum div{padding:10px 12px;text-align:center;border-right:1px solid var(--panel2)}
+  .fcard .fsum div:last-child{border-right:0}
+  .fcard .fsum span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .fcard .fsum b{font-size:18px;color:var(--navy);font-variant-numeric:tabular-nums}
+  .fcard .fsum b.late{color:var(--red)}
+  .fproj{padding:14px 18px;border-bottom:1px solid var(--panel2);display:grid;gap:9px}
+  .fproj:last-child{border-bottom:0}
+  .fproj .pt{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .fproj .pt b{color:var(--navy);font-size:14px;display:block}
+  .fproj .pt .meta{font-size:12px}
+  .fproj .pt .actions{gap:6px;flex-wrap:nowrap}
+  .sheets{display:flex;flex-wrap:wrap;gap:6px}
+  .sheets button{font:inherit;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;padding:3px 9px;border-radius:999px;border:1px solid var(--c);color:var(--c);background:#fff;cursor:pointer;transition:background .15s}
+  .sheets button:hover{background:var(--light)}
+  .sheets button.late{box-shadow:0 0 0 2px #FECACA}
+  @media (max-width:640px){
+    .fgrid{grid-template-columns:1fr;gap:14px}
+    .pg-hd input{max-width:none}
+    .fproj{padding:12px 14px}
+  }
 </style>
 </head>
 <body>
@@ -208,10 +242,12 @@ html,body{max-width:100%;overflow-x:hidden}
     </div>
     <div class="actions">
       <button class="btn" id="btnRefresh">↻ Refresh</button>
+      <button class="btn" id="btnPage">🗂 Kad No. Fail</button>
       <button class="btn primary" id="btnNew">+ Rekod Baru</button>
     </div>
   </header>
 
+  <div id="pageMain">
   <!-- Skop paparan: keseluruhan / satu projek (KPI, carta & jadual ikut skop ni) -->
   <section class="scope">
     <span class="lbl">Paparan</span>
@@ -243,6 +279,16 @@ html,body{max-width:100%;overflow-x:hidden}
     </div>
     <div class="tbl"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
   </section>
+  </div><!-- /pageMain -->
+
+  <!-- Page Kad: satu kad bagi setiap No. Fail, dalam kad diasingkan ikut Nama Projek -->
+  <div id="pageCards" style="display:none">
+    <div class="pg-hd">
+      <h2 id="cardsTitle">Kad ikut No. Fail</h2>
+      <input id="qCards" placeholder="Cari no. fail, projek, klien…">
+    </div>
+    <div class="fgrid" id="fileGrid"></div>
+  </div>
 </div>
 
 <div class="drawer-bg" id="bg"></div>
@@ -267,12 +313,16 @@ html,body{max-width:100%;overflow-x:hidden}
   let project = ALL;            // skop projek semasa
   let editing = null;           // baris yang sedang diedit (null = rekod baru)
   let sort = { key: null, dir: 1 };
+  let page = 'main';            // 'main' = dashboard, 'cards' = kad ikut No. Fail
+  const NO_FILE = '(Tiada no. fail)';
 
   /* ---------- Kesan kolum ---------- */
   function detect(headers, cols){
     const find = re => headers.find(h => re.test(h)) || null;
+    const id = headers.find(h => h !== cols.uid) || headers[0];
     return {
-      id:       headers.find(h => h !== cols.uid) || headers[0],
+      id,
+      file:     cols.fileNo || find(/no\.?\s*fail|file\s*no|^fail\b|no\.?\s*rujukan/i) || id,
       project:  cols.project,
       sheetNo:  cols.sheetNo,
       uid:      cols.uid,
@@ -315,6 +365,73 @@ html,body{max-width:100%;overflow-x:hidden}
     if (project !== ALL && !projects.includes(project)) project = ALL;
     fillProjects(projects);
     refreshScope();
+    if (page === 'cards') renderFileCards();
+  }
+
+  /* ---------- Page Kad No. Fail ---------- */
+  function showPage(p){
+    page = p;
+    $('pageMain').style.display = p === 'main' ? '' : 'none';
+    $('pageCards').style.display = p === 'cards' ? '' : 'none';
+    $('btnPage').textContent = p === 'main' ? '🗂 Kad No. Fail' : '← Dashboard';
+    if (p === 'cards') renderFileCards();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const fileOf = r => String(r[COL.file] || '').trim() || NO_FILE;
+
+  function renderFileCards(){
+    $('cardsTitle').textContent = 'Kad ikut ' + (COL.file || 'No. Fail');
+    const q = $('qCards').value.trim().toLowerCase();
+    const groups = new Map();
+    DB.rows.forEach(r => { const f = fileOf(r); if (!groups.has(f)) groups.set(f, []); groups.get(f).push(r); });
+    let list = [...groups.entries()].sort((a,b) =>
+      (a[0] === NO_FILE) - (b[0] === NO_FILE) || a[0].localeCompare(b[0], 'ms', { numeric:true }));
+    if (q) list = list.filter(([f, rs]) => f.toLowerCase().includes(q) ||
+      rs.some(r => DB.headers.some(h => String(r[h] == null ? '' : r[h]).toLowerCase().includes(q))));
+
+    if (!list.length){ $('fileGrid').innerHTML = `<div class="card empty" style="grid-column:1/-1">${DB.rows.length ? 'Tiada no. fail sepadan.' : 'Tiada rekod lagi. Tekan "+ Rekod Baru".'}</div>`; return; }
+
+    $('fileGrid').innerHTML = list.map(([f, rows]) => {
+      const s = stats(rows);
+      const projs = countBy(rows, projOf).map(([p]) => p).sort((a,b) => a.localeCompare(b, 'ms', { numeric:true }));
+      const body = projs.map(p => {
+        const rs = rows.filter(r => projOf(r) === p)
+          .sort((a,b) => String(a[COL.sheetNo]||'').localeCompare(String(b[COL.sheetNo]||''), 'ms', { numeric:true }));
+        const ps = stats(rs);
+        const prog = ps.avg !== null ? ps.avg : (ps.total ? Math.round(ps.done/ps.total*100) : 0);
+        const client = COL.client ? [...new Set(rs.map(r => String(r[COL.client]||'').trim()).filter(Boolean))].join(', ') : '';
+        const st = COL.status ? countBy(rs, COL.status) : [];
+        const chips = rs.map(r => {
+          const c = COL.status ? statusColor(r[COL.status]) : 'var(--royal)';
+          const lbl = r[COL.sheetNo] ? 'Sheet ' + r[COL.sheetNo] : 'Rekod';
+          const tip = [lbl, COL.status && r[COL.status], COL.person && r[COL.person], isLate(r) && 'LEWAT'].filter(Boolean).join(' · ');
+          return `<button type="button" data-row="${r._row}" class="${isLate(r)?'late':''}" style="--c:${c}" title="${esc(tip)}">${esc(r[COL.sheetNo] || '#' + r._row)}</button>`;
+        }).join('');
+        return `<div class="fproj">
+          <div class="pt">
+            <div><b>${esc(p)}</b><span class="meta">${ps.total} sheet · ${ps.done} siap${ps.late ? ` · <span class="late">${ps.late} lewat</span>` : ''}${client ? ' · ' + esc(client) : ''}</span></div>
+            <div class="actions">
+              <button type="button" class="btn sm" data-add="${esc(p)}" data-file="${esc(f === NO_FILE ? '' : f)}" title="Tambah sheet dalam projek ini">+ Sheet</button>
+              <button type="button" class="btn sm" data-proj="${esc(p)}" title="Buka dashboard projek">↗</button>
+            </div>
+          </div>
+          ${st.length ? `<div class="mini">${st.map(([k,n]) => `<span title="${esc(k)}: ${n}" style="width:${n/ps.total*100}%;background:${statusColor(k)}"></span>`).join('')}</div>` : ''}
+          <div class="prog"><div class="t"><i style="width:${prog}%"></i></div>${prog}%</div>
+          <div class="sheets">${chips}</div>
+        </div>`;
+      }).join('');
+      return `<article class="fcard">
+        <div class="fhd"><div><small>${esc(COL.file || 'No. Fail')}</small><h4>${esc(f)}</h4></div>
+          <span class="fbadge">${projs.length} projek</span></div>
+        <div class="fsum">
+          <div><span>Sheet</span><b>${s.total}</b></div>
+          <div><span>Siap</span><b>${s.done}</b></div>
+          <div><span>Lewat</span><b class="${s.late?'late':''}">${s.late}</b></div>
+        </div>
+        ${body}
+      </article>`;
+    }).join('');
   }
 
   function refreshScope(){
@@ -456,7 +573,8 @@ html,body{max-width:100%;overflow-x:hidden}
   }
 
   /* ---------- Borang ---------- */
-  function fieldHtml(m, i, v, isNew){
+  function fieldHtml(m, i, v, isNew, opt){
+    opt = opt || {};
     const id = 'f' + i;
     if (m.auto || m.formula || m.system) {
       const tag = m.auto ? 'auto' : m.formula ? 'formula' : 'sistem';
@@ -466,7 +584,7 @@ html,body{max-width:100%;overflow-x:hidden}
     const req = m.name === COL.project ? ' *' : '';
     let input;
     if (m.name === COL.project) {
-      input = `<input id="${id}" data-k="${esc(m.name)}" value="${esc(v || (isNew && project !== ALL ? project : ''))}" list="projList" maxlength="200" placeholder="Pilih atau taip nama projek baru">`;
+      input = `<input id="${id}" data-k="${esc(m.name)}" value="${esc(v || (isNew && !opt.blank && project !== ALL ? project : ''))}" list="projList" maxlength="200" placeholder="Pilih atau taip nama projek baru">`;
     } else if (m.options && m.options.length) {
       const opts = m.options.includes(String(v)) || !v ? m.options : [String(v), ...m.options];
       input = `<select id="${id}" data-k="${esc(m.name)}"><option value="">— Pilih —</option>${opts.map(o => `<option ${String(v)===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
@@ -481,13 +599,17 @@ html,body{max-width:100%;overflow-x:hidden}
   const checkItemHtml = (name, checked) =>
     `<label class="ci"><input type="checkbox" data-item="${esc(name)}" ${checked?'checked':''}><span>${esc(name)}</span></label>`;
 
-  function openForm(row){
+  // opt.blank   = borang kosong sepenuhnya (tak ambil projek dari skop)
+  // opt.prefill = { kolum: nilai } untuk rekod baru (cth. dari butang "+ Sheet" dalam kad)
+  function openForm(row, opt){
+    opt = opt || {};
     editing = row || null;
     const isNew = !row;
+    const pre = opt.prefill || {};
     $('formTitle').textContent = isNew ? 'Rekod Baru' : 'Kemaskini: ' + [row[COL.project], row[COL.sheetNo] && 'Sheet ' + row[COL.sheetNo]].filter(Boolean).join(' · ');
     const metas = DB.meta.slice().sort((a,b) => (b.name === COL.project) - (a.name === COL.project));
     let html = (isNew ? '<div class="sec">Maklumat Projek</div>' : '') +
-      metas.map((m, i) => fieldHtml(m, i, row ? row[m.name] : '', isNew)).join('');
+      metas.map((m, i) => fieldHtml(m, i, row ? row[m.name] : (pre[m.name] != null ? pre[m.name] : ''), isNew, opt)).join('');
 
     if (isNew) {
       html += `<div class="sec">Sheet & Senarai Semakan</div>
@@ -575,9 +697,15 @@ html,body{max-width:100%;overflow-x:hidden}
 
     $('btnSave').disabled = true;
     const ok = res => {
-      $('btnSave').disabled = false; closeForm();
-      toast(res && res.mode === 'create' ? `${res.sheets} sheet disimpan${res.checklist ? ' · ' + res.checklist + ' item semakan' : ''}.` : 'Rekod dikemaskini.');
-      if (wasNew && COL.project) project = data[COL.project];
+      $('btnSave').disabled = false;
+      toast(res && res.mode === 'create' ? `${res.sheets} sheet disimpan${res.checklist ? ' · ' + res.checklist + ' item semakan' : ''}. Borang dikosongkan untuk rekod seterusnya.` : 'Rekod dikemaskini.');
+      if (wasNew) {
+        if (COL.project) project = data[COL.project];
+        openForm(null, { blank: true });   // terus buka borang kosong untuk rekod seterusnya
+        $('form').scrollTop = 0;
+      } else {
+        closeForm();
+      }
       load();
     };
     const fail = e => { $('btnSave').disabled = false; toast(e.message || e, true); };
@@ -590,6 +718,17 @@ html,body{max-width:100%;overflow-x:hidden}
   /* ---------- Events ---------- */
   $('btnRefresh').onclick = load;
   $('btnNew').onclick = () => openForm(null);
+  $('btnPage').onclick = () => showPage(page === 'main' ? 'cards' : 'main');
+  $('qCards').addEventListener('input', renderFileCards);
+  $('fileGrid').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.row) { openForm(DB.rows.find(r => r._row === Number(b.dataset.row))); return; }
+    if (b.dataset.add != null) {
+      const prefill = {}; if (COL.project && b.dataset.add !== '(Tiada projek)') prefill[COL.project] = b.dataset.add; if (COL.file && b.dataset.file) prefill[COL.file] = b.dataset.file;
+      openForm(null, { prefill }); return;
+    }
+    if (b.dataset.proj != null) { setProject(b.dataset.proj); showPage('main'); }
+  });
   $('btnClose').onclick = $('btnCancel').onclick = $('bg').onclick = closeForm;
   $('btnSave').onclick = save;
   $('btnAll').onclick = () => setProject(ALL);
@@ -616,7 +755,7 @@ html,body{max-width:100%;overflow-x:hidden}
       const s = st[(k*7)%st.length], items = {};
       DEMO_ITEMS.forEach((it, j) => items[it] = isDone(s) || /Hantar/.test(s) ? true : ((k + j) % 3 !== 0));
       const done = Object.values(items).filter(Boolean).length;
-      rows.push({ _row:k+2, 'No. Fail':'MB/26/'+(140+pi), 'Nama Projek':p, 'No. Sheet':`${i}/${n}`, 'Klien':cl, 'No. Lot':'Lot '+(1200+k*13),
+      rows.push({ _row:k+2, 'No. Fail':'MB/26/'+(140+Math.floor(pi/2)), 'Nama Projek':p, 'No. Sheet':`${i}/${n}`, 'Klien':cl, 'No. Lot':'Lot '+(1200+k*13),
         'Mukim':['Kajang','Semenyih','Beranang'][pi%3], 'Jenis Pelan':jp[pi], 'Drafter':dr[k%5], 'Status':s,
         'Kemajuan (%)': /Siap|Hantar/.test(s)?100:(10+((k*23)%80)), 'Tarikh Sasaran':d(10+(k%3),2+((k*5)%26)),
         'Catatan': k%5===0?'Tunggu data dari site':'', 'Dikemaskini Oleh':'demo', 'Tarikh Kemaskini':d(11,10),
