@@ -53,7 +53,7 @@
                 <div>
                     <h1 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                         Laporan Harian Kerja Lapangan
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v2.7</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v2.8</span>
                     </h1>
                     <p class="text-xs text-blue-200">Copy-paste laporan WhatsApp/Telegram &amp; pantau kemajuan kerja ukur tapak</p>
                 </div>
@@ -209,6 +209,8 @@
                         <input type="file" id="imageFileInput" accept="image/*" onchange="handleImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
 
                         <input type="text" id="imageUrlInput" placeholder="Atau tampal URL gambar terus (https://...)" oninput="handleImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
+
+                        <p class="text-[11px] text-slate-500"><i class="fa-brands fa-google-drive text-jm-blue mr-1"></i>Gambar disimpan dalam Google Drive (folder Gambar_Laporan_Lapangan). Sheet simpan link sahaja.</p>
 
                         <div id="imagePreviewContainer" class="hidden">
                             <div class="rounded-lg overflow-hidden border border-slate-200 bg-white max-h-44 flex items-center justify-center">
@@ -403,13 +405,23 @@
     <div id="imageModal" onclick="closeImageModal()" class="fixed inset-0 z-50 hidden bg-jm-navy/70 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative max-w-4xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between px-5 py-3.5 bg-jm-navy">
-                <h3 id="modalTitle" class="text-sm font-bold text-white">Lampiran Gambar Kerja Lapangan</h3>
-                <button onclick="closeImageModal()" class="w-8 h-8 rounded-lg text-blue-100 hover:bg-white/10 hover:text-white transition">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <h3 id="modalTitle" class="text-sm font-bold text-white truncate">Lampiran Gambar Kerja Lapangan</h3>
+                <div class="flex items-center gap-2 shrink-0">
+                    <a id="modalDriveLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden px-3 py-1.5 rounded-lg bg-jm-gold hover:bg-jm-amber text-jm-navy text-xs font-bold transition items-center gap-1.5">
+                        <i class="fa-brands fa-google-drive"></i> Buka di Drive
+                    </a>
+                    <button onclick="closeImageModal()" class="w-8 h-8 rounded-lg text-blue-100 hover:bg-white/10 hover:text-white transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
             <div class="flex justify-center bg-slate-100 p-3 max-h-[75vh] overflow-auto">
-                <img id="modalImage" src="" alt="Lampiran Penuh" class="max-h-[70vh] w-auto object-contain rounded-lg" />
+                <img id="modalImage" src="" alt="Lampiran Penuh" onerror="onModalImageError()" class="max-h-[70vh] w-auto object-contain rounded-lg" />
+                <div id="modalImageError" class="hidden py-12 text-center text-slate-500 text-sm">
+                    <i class="fa-solid fa-image text-3xl text-slate-300 mb-2"></i>
+                    <p class="font-semibold text-slate-600">Gambar tak dapat dipapar</p>
+                    <p class="text-xs mt-1">Fail mungkin private atau dipadam. Cuba "Buka di Drive".</p>
+                </div>
             </div>
         </div>
     </div>
@@ -493,7 +505,7 @@
                         <i class="fa-solid fa-file-code"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v2.7 (Auto-Tab, Auto-Header &amp; Edit)</h3>
+                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v2.8 (Auto-Tab, Edit &amp; Google Drive)</h3>
                         <p class="text-[11px] text-blue-200">Guna Active Spreadsheet • Tetapkan MACRO_URL dalam index.html sebelum push ke GitHub</p>
                     </div>
                 </div>
@@ -513,6 +525,8 @@
                         <li>Klik <b>Deploy &gt; New deployment</b> &rarr; pilih jenis <b>Web app</b>.</li>
                         <li>Set <i>Execute as:</i> <b>Me</b> dan <i>Who has access:</i> <b>Anyone</b> &rarr; klik <b>Deploy</b> dan salin <b>Web App URL</b>.</li>
                         <li>Buka fail <code>index.html</code> dan gantikan nilai <code>const MACRO_URL = "...";</code> sebelum push ke GitHub.</li>
+                        <li>Kali pertama deploy v2.8, Google akan minta kebenaran <b>Google Drive</b>. Klik <b>Allow</b> (untuk simpan gambar dalam folder <code>Gambar_Laporan_Lapangan</code>).</li>
+                        <li>Ada gambar lama dalam Sheet? Dalam editor Apps Script, pilih fungsi <b>migrateImagesToDrive</b> &rarr; <b>Run</b> sekali. Boleh run semula jika belum habis.</li>
                         <li><b>Bila update kod sedia ada:</b> klik <b>Deploy &gt; Manage deployments</b> &rarr; ikon pensel &rarr; <b>Version: New version</b> &rarr; <b>Deploy</b>. URL kekal sama. Kalau skip langkah ni, URL masih jalankan kod lama.</li>
                     </ol>
                 </div>
@@ -528,11 +542,22 @@
                     <pre id="appsScriptCodeBlock" class="p-4 text-[11px] font-mono text-slate-100 bg-jm-navy overflow-auto flex-1 leading-relaxed select-all">/**
  * SISTEM LAPORAN HARIAN KERJA LAPANGAN &amp; ADUAN TAPAK (JURUKUR TANAH)
  * Menggunakan Active Spreadsheet serta membina Tab &amp; Header secara automatik jika tiada.
- * v2.7: Tambah fungsi EDIT laporan (ikut ID + semakan versi) dan Log_Edit untuk jejak audit.
+ * v2.7: Fungsi EDIT laporan (ikut ID + semakan versi) dan Log_Edit untuk jejak audit.
+ * v2.8: Gambar disimpan sebagai fail dalam Google Drive. Sheet hanya simpan link.
+ *       Jalankan migrateImagesToDrive() sekali untuk pindah gambar lama (Base64) ke Drive.
  */
 
 const SHEET_NAME = 'Laporan_Lapangan';
 const LOG_SHEET_NAME = 'Log_Edit';
+
+// Folder Drive untuk gambar. Biarkan DRIVE_FOLDER_ID kosong untuk bina folder automatik
+// bernama DRIVE_FOLDER_NAME. Jika mahu guna folder sedia ada, tampal ID folder di sini.
+const DRIVE_FOLDER_ID = '';
+const DRIVE_FOLDER_NAME = 'Gambar_Laporan_Lapangan';
+
+// true = fail dikongsi "Anyone with the link (Viewer)" supaya gambar boleh dipapar di dashboard
+const SHARE_IMAGES_PUBLIC = true;
+
 const HEADERS = [
   'Timestamp',
   'Tarikh',
@@ -569,6 +594,9 @@ const FIELD_DEFAULTS = { totalSiap: '0%', status: 'DALAM PROSES' };
 const COL = {
   TIMESTAMP: 1,
   FIRST_FIELD: 2,
+  TARIKH: 2,
+  NAMA: 3,
+  NO_FILE: 4,
   GAMBAR: HEADERS.indexOf('Gambar') + 1,
   TEKS_ASAL: HEADERS.indexOf('Teks Asal') + 1,
   ID: HEADERS.indexOf('ID') + 1,
@@ -597,6 +625,137 @@ function styleHeader(range) {
   range.setBackground('#0f172a');
   range.setFontColor('#38bdf8');
 }
+
+// ============================================================================
+// GOOGLE DRIVE: SIMPAN GAMBAR
+// ============================================================================
+
+/**
+ * Folder utama gambar. ID disimpan dalam Script Properties supaya tidak
+ * terbina folder berganda dengan nama sama.
+ */
+function getImageRootFolder() {
+  if (DRIVE_FOLDER_ID) return DriveApp.getFolderById(DRIVE_FOLDER_ID);
+
+  const props = PropertiesService.getScriptProperties();
+  const savedId = props.getProperty('IMG_FOLDER_ID');
+  if (savedId) {
+    try {
+      const folder = DriveApp.getFolderById(savedId);
+      if (!folder.isTrashed()) return folder;
+    } catch (e) {
+      // Folder dipadam atau tiada akses, bina semula di bawah
+    }
+  }
+
+  const folder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
+  props.setProperty('IMG_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+// Subfolder ikut bulan (contoh: 2026-11) supaya Drive tersusun
+function getMonthFolder(date) {
+  const root = getImageRootFolder();
+  const name = Utilities.formatDate(date || new Date(), 'Asia/Kuala_Lumpur', 'yyyy-MM');
+  const it = root.getFoldersByName(name);
+  return it.hasNext() ? it.next() : root.createFolder(name);
+}
+
+function safeFileName(text) {
+  return String(text || '')
+    .replace(/[^A-Za-z0-9\-_.]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 60) || 'laporan';
+}
+
+function isDataImage(value) {
+  return /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(String(value || ''));
+}
+
+/**
+ * Tukar gambar Base64 kepada fail dalam Drive.
+ * Pulangkan { url, fileId } dengan url = link "view" Drive untuk disimpan dalam Sheet.
+ */
+function saveImageToDrive(dataUrl, info) {
+  const match = String(dataUrl).match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
+  if (!match) throw new Error('Format gambar tidak sah.');
+
+  const mime = match[1].toLowerCase();
+  const ext = mime.split('/')[1].replace('jpeg', 'jpg');
+  const bytes = Utilities.base64Decode(match[2]);
+
+  const name = [
+    safeFileName(info.tarikh),
+    safeFileName(info.noFile),
+    safeFileName(info.nama),
+    String(info.id || '').slice(0, 8)
+  ].filter(Boolean).join('_') + '.' + ext;
+
+  const blob = Utilities.newBlob(bytes, mime, name);
+  const file = getMonthFolder(new Date()).createFile(blob);
+  file.setDescription('Laporan ' + (info.nama || '-') + ' | ' + (info.noFile || '-') + ' | ID ' + (info.id || '-'));
+
+  if (SHARE_IMAGES_PUBLIC) {
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) {
+      // Sesetengah akaun Google Workspace sekat perkongsian luar. Fail kekal private.
+      console.warn('Gagal kongsi fail ' + file.getId() + ': ' + e);
+    }
+  }
+
+  return { fileId: file.getId(), url: 'https://drive.google.com/file/d/' + file.getId() + '/view' };
+}
+
+function trashDriveFile(fileId) {
+  if (!fileId) return;
+  try { DriveApp.getFileById(fileId).setTrashed(true); } catch (e) { /* abaikan */ }
+}
+
+function driveIdFromUrl(url) {
+  const s = String(url || '');
+  const m = s.match(/\/d\/([A-Za-z0-9_-]{20,})/) || s.match(/[?&amp;]id=([A-Za-z0-9_-]{20,})/);
+  return m ? m[1] : '';
+}
+
+/**
+ * Sediakan gambar sebelum ditulis ke Sheet:
+ * - Base64 -&gt; simpan ke Drive, guna link Drive
+ * - URL https -&gt; simpan URL sahaja
+ * - Lain-lain -&gt; kosong
+ */
+function prepareImage(value, info) {
+  const v = String(value || '').trim();
+  if (!v) return { cell: '', newFileId: '' };
+  if (isDataImage(v)) {
+    const saved = saveImageToDrive(v, info);
+    return { cell: saved.url, newFileId: saved.fileId };
+  }
+  if (/^https:\/\//i.test(v)) return { cell: v, newFileId: '' };
+  return { cell: '', newFileId: '' };
+}
+
+/**
+ * Untuk dashboard: link Drive ditukar kepada URL thumbnail yang boleh dipapar dalam &lt;img&gt;.
+ */
+function imageUrlsForClient(cell) {
+  const v = String(cell || '').trim();
+  if (!v) return { image: '', imageThumb: '', imageLink: '' };
+  const id = driveIdFromUrl(v);
+  if (id &amp;&amp; /drive\.google\.com/i.test(v)) {
+    return {
+      image: 'https://drive.google.com/thumbnail?id=' + id + '&amp;sz=w1600',
+      imageThumb: 'https://drive.google.com/thumbnail?id=' + id + '&amp;sz=w200',
+      imageLink: 'https://drive.google.com/file/d/' + id + '/view'
+    };
+  }
+  return { image: v, imageThumb: v, imageLink: /^https:\/\//i.test(v) ? v : '' };
+}
+
+// ============================================================================
+// SHEET
+// ============================================================================
 
 /**
  * Dapatkan Sheet utama. Bina Tab &amp; Header jika tiada.
@@ -674,16 +833,16 @@ function findRowById(sheet, id) {
  * Tambah laporan baharu. Jika ID sama sudah wujud (contoh: tekan hantar 2 kali),
  * rekod tidak ditambah semula.
  */
-function createReport(sheet, payload) {
-  const id = String(payload.id || '').trim() || Utilities.getUuid();
+function createReport(sheet, payload, imageCell) {
+  const id = payload.id;
 
   if (findRowById(sheet, id) !== -1) {
-    return { status: 'success', message: 'Rekod sudah wujud', id: id };
+    return { status: 'success', message: 'Rekod sudah wujud', id: id, duplicate: true };
   }
 
   const row = [new Date()];
   FIELD_KEYS.forEach(k =&gt; row.push(asText(payload[k] || FIELD_DEFAULTS[k] || '-')));
-  row.push(asText(payload.image || ''));
+  row.push(asText(imageCell || ''));
   row.push(asText(payload.rawText || ''));
   row.push(id);
   row.push(1);
@@ -697,8 +856,9 @@ function createReport(sheet, payload) {
  * Kemaskini laporan sedia ada ikut ID.
  * baseVersi mesti sama dengan Versi semasa dalam Sheet. Jika tidak, bermakna
  * orang lain telah edit dahulu, jadi kemaskini ditolak supaya data mereka tidak ditindih.
+ * Gambar lama dalam Drive TIDAK dipadam (kekal sebagai rekod), cuma link dalam Sheet ditukar.
  */
-function updateReport(sheet, payload) {
+function updateReport(sheet, payload, imageCell) {
   const id = String(payload.id || '').trim();
   if (!id) throw new Error('ID laporan tiada.');
 
@@ -713,9 +873,11 @@ function updateReport(sheet, payload) {
     throw new Error('Konflik versi: laporan ini telah dikemaskini oleh orang lain. Sync semula dan cuba lagi.');
   }
 
-  // Jejak audit: simpan salinan data lama (tanpa gambar supaya tidak melebihi had sel)
+  // Jejak audit: simpan salinan data lama (gambar disimpan sebagai link sahaja)
   const oldData = {};
-  HEADERS.forEach((h, i) =&gt; { if (h !== 'Gambar') oldData[h] = row[i]; });
+  HEADERS.forEach((h, i) =&gt; {
+    oldData[h] = (h === 'Gambar' &amp;&amp; isDataImage(row[i])) ? '[Base64]' : row[i];
+  });
   getOrCreateLogSheet().appendRow([
     new Date(),
     id,
@@ -727,7 +889,7 @@ function updateReport(sheet, payload) {
     row[COL.FIRST_FIELD - 1 + i] = asText(payload[k] || FIELD_DEFAULTS[k] || '-');
   });
   if (payload.imageChanged) {
-    row[COL.GAMBAR - 1] = asText(payload.image || '');
+    row[COL.GAMBAR - 1] = asText(imageCell || '');
   }
   if (payload.rawText !== undefined) {
     row[COL.TEKS_ASAL - 1] = asText(payload.rawText || '');
@@ -741,30 +903,51 @@ function updateReport(sheet, payload) {
 
 /**
  * POST: action = 'create' (default) atau 'update'
+ * Gambar disimpan ke Drive DAHULU (di luar lock) supaya pengguna lain tidak tersekat
+ * menunggu upload. Jika simpan ke Sheet gagal, fail Drive yang baru dibuang ke Trash.
  */
 function doPost(e) {
-  const lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) {
-    return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
-  }
-
+  let payload = {};
   try {
-    const sheet = getOrCreateSheet();
-    let payload = {};
-
     if (e &amp;&amp; e.postData &amp;&amp; e.postData.contents) {
       payload = JSON.parse(e.postData.contents);
     } else if (e &amp;&amp; e.parameter) {
       payload = e.parameter;
     }
+  } catch (err) {
+    return jsonOutput({ status: 'error', message: 'Payload tidak sah: ' + err });
+  }
 
-    const result = payload.action === 'update'
-      ? updateReport(sheet, payload)
-      : createReport(sheet, payload);
+  const isUpdate = payload.action === 'update';
+  if (!isUpdate) payload.id = String(payload.id || '').trim() || Utilities.getUuid();
 
+  let image = { cell: '', newFileId: '' };
+  const needImage = isUpdate ? !!payload.imageChanged : true;
+  if (needImage) {
+    try {
+      image = prepareImage(payload.image, payload);
+    } catch (err) {
+      return jsonOutput({ status: 'error', message: 'Gagal simpan gambar ke Drive: ' + err });
+    }
+  }
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) {
+    trashDriveFile(image.newFileId);
+    return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
+  }
+
+  try {
+    const sheet = getOrCreateSheet();
+    const result = isUpdate
+      ? updateReport(sheet, payload, image.cell)
+      : createReport(sheet, payload, image.cell);
+
+    if (result.duplicate) trashDriveFile(image.newFileId);
     return jsonOutput(result);
 
   } catch (error) {
+    trashDriveFile(image.newFileId);
     return jsonOutput({ status: 'error', message: error.toString() });
   } finally {
     lock.releaseLock();
@@ -776,7 +959,7 @@ function doPost(e) {
  */
 function doGet(e) {
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) {
+  if (!lock.tryLock(15000)) {
     return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
   }
 
@@ -789,28 +972,33 @@ function doGet(e) {
       return jsonOutput({ status: 'success', data: [] });
     }
 
-    const data = rows.slice(1).reverse().map(r =&gt; ({
-      timestamp: r[0] || '',
-      tarikh: r[1] || '-',
-      nama: r[2] || '-',
-      noFile: r[3] || '-',
-      tugasan: r[4] || '-',
-      progressHariIni: r[5] || '-',
-      totalSiap: r[6] || '0%',
-      jangkaAsal: r[7] || '-',
-      jangkaSemasa: r[8] || '-',
-      status: r[9] || 'DALAM PROSES',
-      waktuMula: r[10] || '-',
-      waktuTamat: r[11] || '-',
-      isu: r[12] || '-',
-      maklumat: r[13] || '-',
-      perancangan: r[14] || '-',
-      image: r[15] || '',
-      rawText: r[16] || '',
-      id: r[17] || '',
-      versi: Number(r[18]) || 1,
-      updatedAt: r[19] || ''
-    }));
+    const data = rows.slice(1).reverse().map(r =&gt; {
+      const img = imageUrlsForClient(r[15]);
+      return {
+        timestamp: r[0] || '',
+        tarikh: r[1] || '-',
+        nama: r[2] || '-',
+        noFile: r[3] || '-',
+        tugasan: r[4] || '-',
+        progressHariIni: r[5] || '-',
+        totalSiap: r[6] || '0%',
+        jangkaAsal: r[7] || '-',
+        jangkaSemasa: r[8] || '-',
+        status: r[9] || 'DALAM PROSES',
+        waktuMula: r[10] || '-',
+        waktuTamat: r[11] || '-',
+        isu: r[12] || '-',
+        maklumat: r[13] || '-',
+        perancangan: r[14] || '-',
+        image: img.image,
+        imageThumb: img.imageThumb,
+        imageLink: img.imageLink,
+        rawText: r[16] || '',
+        id: r[17] || '',
+        versi: Number(r[18]) || 1,
+        updatedAt: r[19] || ''
+      };
+    });
 
     return jsonOutput({ status: 'success', data: data });
 
@@ -819,6 +1007,54 @@ function doGet(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ============================================================================
+// MIGRASI SEKALI: GAMBAR BASE64 LAMA -&gt; GOOGLE DRIVE
+// ============================================================================
+
+/**
+ * Jalankan fungsi ini SEKALI dari editor Apps Script (pilih migrateImagesToDrive &gt; Run).
+ * Setiap sel Gambar yang masih Base64 akan disimpan ke Drive dan digantikan dengan link.
+ * Selamat dijalankan berulang kali: sel yang sudah jadi link akan dilangkau.
+ * Jika rekod terlalu banyak dan masa tamat (had 6 minit), jalankan semula untuk sambung.
+ */
+function migrateImagesToDrive() {
+  const sheet = getOrCreateSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow &lt; 2) { console.log('Tiada rekod.'); return; }
+
+  ensureIds(sheet);
+  const startTime = Date.now();
+  const values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
+  let moved = 0, failed = 0, pending = 0;
+
+  for (let i = 0; i &lt; values.length; i++) {
+    const r = values[i];
+    const cell = r[COL.GAMBAR - 1];
+    if (!isDataImage(cell)) continue;
+
+    if (Date.now() - startTime &gt; 5 * 60 * 1000) { pending++; continue; }
+
+    try {
+      const saved = saveImageToDrive(cell, {
+        tarikh: r[COL.TARIKH - 1],
+        nama: r[COL.NAMA - 1],
+        noFile: r[COL.NO_FILE - 1],
+        id: r[COL.ID - 1]
+      });
+      sheet.getRange(i + 2, COL.GAMBAR).setValue(asText(saved.url));
+      moved++;
+    } catch (err) {
+      failed++;
+      console.warn('Baris ' + (i + 2) + ' gagal: ' + err);
+    }
+  }
+
+  const msg = 'Migrasi selesai: ' + moved + ' dipindah, ' + failed + ' gagal' +
+    (pending ? ', ' + pending + ' belum diproses (jalankan semula fungsi ini)' : '') + '.';
+  console.log(msg);
+  return msg;
 }</pre>
                 </div>
             </div>
@@ -834,8 +1070,11 @@ function doGet(e) {
         // URL CSV Fallback (bacaan sandaran)
         const currentSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRF-BgmNrwBZVwf0ZWrePsiV2pCBo22Ud7_-m6KDIjSYVkOlvoKvzSeq0AzDUj5Hyx19FEVwyMtKIk8/pub?gid=0&single=true&output=csv";
 
-        // Had selamat saiz gambar Base64 (sel Google Sheets maksimum 50,000 aksara)
-        const MAX_IMAGE_CHARS = 45000;
+        // Gambar disimpan dalam Google Drive (bukan dalam sel Sheet), jadi boleh resolusi lebih tinggi.
+        // Had ~3MB selepas mampatan supaya upload laju di tapak (data mobile).
+        const IMAGE_MAX_WIDTH = 1600;
+        const IMAGE_QUALITY = 0.82;
+        const MAX_IMAGE_CHARS = 4000000;
         const STORAGE_KEY = 'drafter_reports_v2';
 
         let reportsData = [];
@@ -930,7 +1169,7 @@ function doGet(e) {
             const item = renderedData[Number(btn.dataset.imgIdx)];
             if (!item) return;
             const src = safeImageSrc(item.image);
-            if (src) openImageModal(src, item.noFile || 'Lampiran');
+            if (src) openImageModal(src, item.noFile || 'Lampiran', item.imageLink);
         });
 
         document.addEventListener('keydown', (e) => {
@@ -1033,12 +1272,12 @@ Tamat : 3.00pm
             document.getElementById('rawReportInput').value = sample;
         }
 
-        // Kecilkan gambar berperingkat sampai muat dalam had sel Google Sheets
+        // Kecilkan gambar (maks 1600px) dan mampatkan berperingkat jika masih terlalu besar
         function compressImage(img) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            let width = Math.min(600, img.width);
-            let quality = 0.65;
+            let width = Math.min(IMAGE_MAX_WIDTH, img.width);
+            let quality = IMAGE_QUALITY;
 
             for (let i = 0; i < 8; i++) {
                 const scale = width / img.width;
@@ -1047,8 +1286,8 @@ Tamat : 3.00pm
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 const out = canvas.toDataURL('image/jpeg', quality);
                 if (out.length <= MAX_IMAGE_CHARS) return out;
-                width = Math.round(width * 0.8);
-                quality = Math.max(0.4, quality - 0.05);
+                width = Math.round(width * 0.85);
+                quality = Math.max(0.5, quality - 0.05);
             }
             return '';
         }
@@ -1068,7 +1307,7 @@ Tamat : 3.00pm
                     const data = compressImage(img);
                     if (!data) {
                         clearAttachedImage();
-                        showToast('warning', 'Gambar Terlalu Besar', 'Tak muat dalam sel Google Sheet. Guna URL gambar sebagai ganti.');
+                        showToast('warning', 'Gambar Terlalu Besar', 'Gambar tak dapat dimampatkan bawah 3MB. Cuba gambar lain atau guna URL.');
                         return;
                     }
                     attachedImageData = data;
@@ -1108,10 +1347,31 @@ Tamat : 3.00pm
             document.getElementById('removeImgBtn').classList.add('hidden');
         }
 
-        function openImageModal(src, title) {
-            document.getElementById('modalImage').src = src;
+        function openImageModal(src, title, link) {
+            const img = document.getElementById('modalImage');
+            img.classList.remove('hidden');
+            document.getElementById('modalImageError').classList.add('hidden');
+            img.src = src;
             document.getElementById('modalTitle').textContent = title || 'Lampiran Gambar Kerja Lapangan';
+
+            const a = document.getElementById('modalDriveLink');
+            const safeLink = /^https:\/\//i.test(link || '') ? link : '';
+            if (safeLink) {
+                a.href = safeLink;
+                a.classList.remove('hidden');
+                a.classList.add('inline-flex');
+            } else {
+                a.classList.add('hidden');
+                a.classList.remove('inline-flex');
+            }
             document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        function onModalImageError() {
+            const img = document.getElementById('modalImage');
+            if (!img.getAttribute('src')) return;
+            img.classList.add('hidden');
+            document.getElementById('modalImageError').classList.remove('hidden');
         }
 
         function closeImageModal() {
@@ -1379,7 +1639,7 @@ Tamat : 3.00pm
                 img.onload = function() {
                     const data = compressImage(img);
                     if (!data) {
-                        showToast('warning', 'Gambar Terlalu Besar', 'Tak muat dalam sel Google Sheet. Guna URL gambar sebagai ganti.');
+                        showToast('warning', 'Gambar Terlalu Besar', 'Gambar tak dapat dimampatkan bawah 3MB. Cuba gambar lain atau guna URL.');
                         return;
                     }
                     editImageData = data;
@@ -1537,9 +1797,10 @@ Tamat : 3.00pm
                     : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-jm-gold/30 text-jm-navy"><i class="fa-solid fa-clock"></i> ${escapeHtml(item.status || 'PROSES')}</span>`;
 
                 const img = safeImageSrc(item.image);
+                const thumb = safeImageSrc(item.imageThumb) || img;
                 const imgCell = img
                     ? `<button type="button" data-img-idx="${idx}" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 text-[11px] font-semibold transition-colors">
-                           <img src="${escapeHtml(img)}" alt="" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'" />
+                           <img src="${escapeHtml(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'" />
                            Lihat
                        </button>`
                     : `<span class="text-slate-400">-</span>`;
@@ -2194,7 +2455,10 @@ Tamat : 3.00pm
 
         function saveStoredData() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(reportsData));
+                // Gambar Base64 tak dicache (boleh cecah MB). Link Drive kekal.
+                const slim = reportsData.map(r => (/^data:/i.test(String(r.image || ''))
+                    ? { ...r, image: '', imageThumb: '' } : r));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
             } catch (e) {
                 console.warn('LocalStorage penuh atau tidak tersedia:', e);
             }
