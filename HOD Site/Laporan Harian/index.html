@@ -59,6 +59,17 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 justify-end">
+                <!-- Navigasi Paparan -->
+                <nav class="flex bg-white/10 rounded-xl p-1" aria-label="Paparan">
+                    <button type="button" onclick="switchView('laporan')" id="view-tab-laporan" class="view-tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-jm-gold text-jm-navy shadow-md transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        <span>Laporan Harian</span>
+                    </button>
+                    <button type="button" onclick="switchView('statistik')" id="view-tab-statistik" class="view-tab-btn px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-users-viewfinder"></i>
+                        <span>Statistik Surveyor</span>
+                    </button>
+                </nav>
                 <div class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span id="syncStatus">Ready</span>
@@ -80,7 +91,10 @@
     </div>
 
     <!-- Main Container -->
-    <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <main class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+      <!-- ===================== PAPARAN: LAPORAN HARIAN ===================== -->
+      <div id="viewLaporan" class="space-y-6">
 
         <!-- KPI Cards -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -259,6 +273,125 @@
                 </div>
             </div>
         </section>
+      </div>
+
+      <!-- ===================== PAPARAN: STATISTIK SURVEYOR ===================== -->
+      <div id="viewStatistik" class="hidden space-y-6">
+
+        <!-- Penapis Tempoh: Bulan & Minggu -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-4 space-y-3">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-jm-blue ring-4 ring-blue-100"></span>
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tempoh Statistik:</span>
+                        <h2 id="statPeriodTitle" class="text-base sm:text-lg font-extrabold text-jm-navy">Semua Tempoh</h2>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="statMonthSelect" class="text-xs font-semibold text-slate-500 whitespace-nowrap"><i class="fa-regular fa-calendar text-jm-blue mr-1"></i> Bulan</label>
+                    <select id="statMonthSelect" onchange="setStatMonth(this.value)" class="pl-3 pr-8 py-2 text-xs sm:text-sm font-semibold text-jm-navy bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                        <option value="ALL">Semua Bulan</option>
+                    </select>
+                </div>
+            </div>
+            <div id="statWeekBar" class="hidden flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+                <span class="text-xs font-semibold text-slate-500 mr-1">Minggu:</span>
+                <div id="statWeekPills" class="inline-flex flex-wrap rounded-xl bg-slate-200/70 p-1 text-xs font-semibold gap-1"></div>
+                <span class="text-[11px] text-slate-400 ml-1">Minggu bermula Isnin</span>
+            </div>
+            <p id="statInvalidNote" class="hidden text-[11px] text-amber-700 bg-yellow-50 rounded-lg px-3 py-1.5"></p>
+        </section>
+
+        <!-- Ringkasan Pasukan -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-gradient-to-br from-jm-navy to-jm-blue text-white rounded-2xl p-5 shadow-md border border-blue-900 relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-jm-gold/10 group-hover:scale-110 transition-transform"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Surveyor Melapor</p>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2 tracking-tight"><span id="teamTotalSurveyor">0</span> <span class="text-base text-blue-200">/ <span id="teamAllSurveyor">0</span></span></h2>
+                        <p class="text-[11px] text-blue-200 mt-0.5"><span id="teamReportCount">0</span> laporan dalam tempoh</p>
+                    </div>
+                    <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow">
+                        <i class="fa-solid fa-users text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-blue-100">
+                    <span>Paling aktif</span>
+                    <span id="teamTopSurveyor" class="font-bold bg-white/15 px-2.5 py-0.5 rounded-full text-jm-gold truncate max-w-[60%]">-</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-royal">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Fail Aktif / Siap</p>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight"><span id="teamFiles">0</span> <span class="text-base text-slate-400">/</span> <span id="teamFilesDone" class="text-jm-royal">0</span></h2>
+                    </div>
+                    <div class="p-3 bg-blue-50 text-jm-royal rounded-xl"><i class="fa-solid fa-folder-tree text-lg"></i></div>
+                </div>
+                <p class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">Kiraan ikut No File unik (laporan terkini setiap fail)</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-gold">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Jumlah Jam Lapangan</p>
+                        <h2 id="teamHours" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0 j</h2>
+                    </div>
+                    <div class="p-3 bg-yellow-50 text-jm-goldDark rounded-xl"><i class="fa-solid fa-business-time text-lg"></i></div>
+                </div>
+                <p class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">Dari Waktu Mula &amp; Tamat yang sah</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-slate-700">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Fail Lewat Jadual</p>
+                        <h2 id="teamDelayed" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-slate-100 text-slate-700 rounded-xl"><i class="fa-solid fa-hourglass-half text-lg"></i></div>
+                </div>
+                <p class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">Jangka siap semasa melepasi jangka asal</p>
+            </div>
+        </section>
+
+        <!-- Toolbar Kad Surveyor -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-bold text-jm-navy text-lg flex items-center gap-2">
+                        <span>Prestasi Setiap Surveyor</span>
+                        <span id="surveyorCountBadge" class="text-xs font-bold bg-jm-navy text-jm-gold px-2.5 py-0.5 rounded-full">0 Surveyor</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Klik "Lihat Laporan" untuk tapis jadual ikut surveyor</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div class="inline-flex rounded-xl bg-slate-200/70 p-1 text-xs font-semibold overflow-x-auto">
+                        <button type="button" onclick="setSurveyorSort('laporan')" id="sort-laporan" class="sort-btn px-3 py-1.5 rounded-lg bg-jm-navy text-white shadow-sm transition-all whitespace-nowrap">Laporan</button>
+                        <button type="button" onclick="setSurveyorSort('kemajuan')" id="sort-kemajuan" class="sort-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Kemajuan</button>
+                        <button type="button" onclick="setSurveyorSort('isu')" id="sort-isu" class="sort-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Isu</button>
+                        <button type="button" onclick="setSurveyorSort('nama')" id="sort-nama" class="sort-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Nama</button>
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="surveyorSearch" oninput="renderSurveyorStats()" placeholder="Cari surveyor..."
+                            class="w-full sm:w-56 pl-9 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5">
+                <div id="surveyorCardsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                <div id="surveyorEmpty" class="hidden py-12 text-center text-slate-500">
+                    <i class="fa-solid fa-user-slash text-3xl text-slate-300 mb-2"></i>
+                    <p class="font-semibold text-slate-600">Tiada Data Surveyor</p>
+                    <p class="text-xs mt-1">Hantar laporan atau klik Sync Data Sheet dahulu.</p>
+                </div>
+            </div>
+        </section>
+      </div>
     </main>
 
     <!-- Footer -->
@@ -775,6 +908,7 @@ function doGet(e) {
 
         window.addEventListener('DOMContentLoaded', () => {
             loadStoredData();
+            if (location.hash === '#statistik') switchView('statistik');
             if (reportsData.length === 0) {
                 fetchGoogleSheetData();
             } else {
@@ -1395,7 +1529,7 @@ Tamat : 3.00pm
 
             tbody.innerHTML = renderedData.map((item, idx) => {
                 const totalNum = parseFloat(String(item.totalSiap).replace('%', '')) || 0;
-                const isDone = totalNum >= 100 || String(item.status).toUpperCase().includes('SIAP');
+                const isDone = isRecordDone(item);
                 const barWidth = Math.max(0, Math.min(100, totalNum));
 
                 const statusPill = isDone
@@ -1410,7 +1544,7 @@ Tamat : 3.00pm
                        </button>`
                     : `<span class="text-slate-400">-</span>`;
 
-                const hasIssue = item.isu && item.isu !== '-' && item.isu.toLowerCase() !== 'tiada';
+                const rowHasIssue = hasIssue(item);
 
                 const editCell = canEdit(item)
                     ? `<button type="button" data-edit-id="${escapeHtml(item.id)}" title="Edit laporan" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-jm-gold hover:bg-jm-amber text-jm-navy text-[11px] font-bold transition-colors">
@@ -1442,7 +1576,7 @@ Tamat : 3.00pm
                         </td>
                         <td class="py-3.5 px-3 text-center whitespace-nowrap">${statusPill}</td>
                         <td class="py-3.5 px-3 font-mono text-[11px] whitespace-nowrap text-slate-600">${escapeHtml(item.waktuMula || '-')} - ${escapeHtml(item.waktuTamat || '-')}</td>
-                        <td class="py-3.5 px-3 min-w-[140px] ${hasIssue ? 'text-red-700 font-medium' : 'text-slate-400'}">${escapeHtml(item.isu || '-')}</td>
+                        <td class="py-3.5 px-3 min-w-[140px] ${rowHasIssue ? 'text-red-700 font-medium' : 'text-slate-400'}">${escapeHtml(item.isu || '-')}</td>
                         <td class="py-3.5 px-3 min-w-[160px] text-slate-600">${escapeHtml(item.maklumat || '-')}</td>
                         <td class="py-3.5 px-3 min-w-[140px] text-slate-600">${escapeHtml(item.perancangan || '-')}</td>
                         <td class="py-3.5 px-3 text-center whitespace-nowrap">${imgCell}</td>
@@ -1460,8 +1594,8 @@ Tamat : 3.00pm
             data.forEach(d => {
                 const prog = parseFloat(String(d.totalSiap).replace('%', '')) || 0;
                 sumProgress += prog;
-                if (prog >= 100 || String(d.status).toUpperCase().includes('SIAP')) completed++;
-                if (d.isu && d.isu !== '-' && String(d.isu).toLowerCase() !== 'tiada') issues++;
+                if (isRecordDone(d)) completed++;
+                if (hasIssue(d)) issues++;
             });
 
             const avg = total > 0 ? Math.round(sumProgress / total) : 0;
@@ -1471,14 +1605,589 @@ Tamat : 3.00pm
             document.getElementById('kpiAvgProgress').textContent = `${avg}%`;
             document.getElementById('kpiAvgBar').style.width = `${Math.min(100, avg)}%`;
             document.getElementById('kpiIssues').textContent = issues;
+
+            renderSurveyorStats();
         }
+
+        // ============================================================================
+        // HELPER STATUS / TARIKH / WAKTU
+        // ============================================================================
+        function progressNum(val) {
+            return parseFloat(String(val || '').replace('%', '')) || 0;
+        }
+
+        // "BELUM SIAP" tak dikira siap walaupun ada perkataan SIAP
+        function isRecordDone(item) {
+            if (progressNum(item.totalSiap) >= 100) return true;
+            const s = String(item.status || '').toUpperCase();
+            if (/BELUM|TAK|TIDAK|X SIAP/.test(s)) return false;
+            return /\b(SIAP|SELESAI|COMPLETE|DONE)\b/.test(s);
+        }
+
+        function hasIssue(item) {
+            const s = String(item.isu || '').trim().toLowerCase();
+            return !!s && !['-', 'tiada', 'tiada isu', 'nil', 'none', 'tak ada', 'takde', 'x'].includes(s);
+        }
+
+        // dd/mm/yyyy atau dd/mm/yy (juga - atau .) -> Date (tempatan), atau null
+        function parseTarikh(str) {
+            const m = String(str || '').match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+            if (!m) return null;
+            const d = Number(m[1]), mo = Number(m[2]);
+            let y = Number(m[3]);
+            if (y < 100) y += 2000;
+            if (d < 1 || d > 31 || mo < 1 || mo > 12) return null;
+            const dt = new Date(y, mo - 1, d);
+            return dt.getMonth() === mo - 1 ? dt : null;
+        }
+
+        function formatTarikh(dt) {
+            if (!dt) return '-';
+            const p = n => String(n).padStart(2, '0');
+            return `${p(dt.getDate())}/${p(dt.getMonth() + 1)}/${dt.getFullYear()}`;
+        }
+
+        // "7.30am", "3.00pm", "07:30", "1530", "3 petang" -> { min, hasSuffix } atau null
+        function parseTime(str) {
+            const s = String(str || '').toLowerCase().replace(/\s+/g, '');
+            let m = s.match(/^(\d{1,2})(?:[.:](\d{2}))?(am|pm|pagi|ptg|petang|tengahari|malam)?$/);
+            let h, mi, suf;
+            if (m) {
+                h = Number(m[1]); mi = Number(m[2] || 0); suf = m[3] || '';
+            } else {
+                m = s.match(/^(\d{2})(\d{2})(am|pm)?$/);
+                if (!m) return null;
+                h = Number(m[1]); mi = Number(m[2]); suf = m[3] || '';
+            }
+            if (h > 23 || mi > 59) return null;
+            if (['pm', 'ptg', 'petang', 'malam'].includes(suf) && h < 12) h += 12;
+            if (suf === 'tengahari' && h < 11) h += 12;
+            if ((suf === 'am' || suf === 'pagi') && h === 12) h = 0;
+            return { min: h * 60 + mi, hasSuffix: !!suf };
+        }
+
+        // Tempoh kerja dalam jam. Pulangkan null jika tak munasabah (0 atau > 16 jam).
+        function workHours(mula, tamat) {
+            const a = parseTime(mula), b = parseTime(tamat);
+            if (!a || !b) return null;
+            let diff = b.min - a.min;
+            // "7.30" - "3.00" tanpa am/pm: anggap tamat waktu petang
+            if (diff <= 0 && !b.hasSuffix) diff += 12 * 60;
+            if (diff <= 0 || diff > 16 * 60) return null;
+            return diff / 60;
+        }
+
+        // "M. BADRUL" dan "m.badrul" dikira orang yang sama
+        function surveyorKey(nama) {
+            return String(nama || '').toUpperCase().replace(/\s+/g, ' ').replace(/\.\s*/g, '.').trim();
+        }
+
+        function initials(nama) {
+            const parts = String(nama || '').replace(/[^A-Za-z\s.]/g, ' ').split(/[\s.]+/).filter(Boolean);
+            if (parts.length === 0) return '?';
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        // ============================================================================
+        // STATISTIK SURVEYOR
+        // ============================================================================
+        let currentView = 'laporan';
+        let surveyorSort = 'laporan';
+        let lastSurveyorList = [];
+
+        function switchView(view) {
+            currentView = view === 'statistik' ? 'statistik' : 'laporan';
+            document.getElementById('viewLaporan').classList.toggle('hidden', currentView !== 'laporan');
+            document.getElementById('viewStatistik').classList.toggle('hidden', currentView !== 'statistik');
+
+            document.querySelectorAll('.view-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-jm-gold', 'text-jm-navy', 'font-bold', 'shadow-md');
+                btn.classList.add('text-blue-100', 'font-semibold', 'hover:bg-white/10', 'hover:text-white');
+            });
+            const active = document.getElementById(`view-tab-${currentView}`);
+            active.classList.remove('text-blue-100', 'font-semibold', 'hover:bg-white/10', 'hover:text-white');
+            active.classList.add('bg-jm-gold', 'text-jm-navy', 'font-bold', 'shadow-md');
+
+            try { history.replaceState(null, '', currentView === 'statistik' ? '#statistik' : '#'); } catch (e) {}
+            if (currentView === 'statistik') renderSurveyorStats();
+        }
+
+        function setSurveyorSort(key) {
+            surveyorSort = key;
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.classList.remove('bg-jm-navy', 'text-white', 'shadow-sm');
+                btn.classList.add('text-slate-600');
+            });
+            const b = document.getElementById(`sort-${key}`);
+            b.classList.remove('text-slate-600');
+            b.classList.add('bg-jm-navy', 'text-white', 'shadow-sm');
+            renderSurveyorStats();
+        }
+
+        // ============================================================================
+        // PENAPIS TEMPOH (BULAN & MINGGU)
+        // ============================================================================
+        const BULAN = ['Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun', 'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'];
+        const BULAN_PENDEK = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
+        const HARI_PENDEK = ['Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'];
+
+        let statMonth = null;   // null = belum dipilih (auto pilih bulan terkini), 'ALL' atau 'YYYY-MM'
+        let statWeek = 'ALL';   // 'ALL' atau indeks minggu (0, 1, 2...)
+
+        function monthKey(dt) {
+            return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        // Minggu Isnin–Ahad, dipotong ikut sempadan bulan.
+        // Contoh Nov 2026: M1 = 1 Nov (Ahd), M2 = 2–8, M3 = 9–15, M4 = 16–22, M5 = 23–29, M6 = 30.
+        function getMonthWeeks(key) {
+            const [y, m] = key.split('-').map(Number);
+            const monthEnd = new Date(y, m, 0);
+            const weeks = [];
+            let start = new Date(y, m - 1, 1);
+            while (start <= monthEnd) {
+                const daysToSunday = (7 - start.getDay()) % 7;
+                let end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + daysToSunday);
+                if (end > monthEnd) end = new Date(monthEnd);
+                weeks.push({ start: new Date(start), end });
+                start = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1);
+            }
+            return weeks;
+        }
+
+        function weekRangeLabel(w) {
+            const a = w.start.getDate(), b = w.end.getDate(), mo = BULAN_PENDEK[w.end.getMonth()];
+            return a === b ? `${a} ${mo}` : `${a}–${b} ${mo}`;
+        }
+
+        // Julat tarikh aktif ikut penapis. null = tiada had (Semua Bulan)
+        function getActiveRange() {
+            if (!statMonth || statMonth === 'ALL') return null;
+            const weeks = getMonthWeeks(statMonth);
+            if (statWeek !== 'ALL' && weeks[statWeek]) {
+                return { start: weeks[statWeek].start, end: weeks[statWeek].end, weeks, week: weeks[statWeek] };
+            }
+            return { start: weeks[0].start, end: weeks[weeks.length - 1].end, weeks, week: null };
+        }
+
+        function filterByPeriod(data, range) {
+            if (!range) return { list: data, invalid: 0 };
+            let invalid = 0;
+            const startT = range.start.getTime(), endT = range.end.getTime();
+            const list = data.filter(item => {
+                const dt = parseTarikh(item.tarikh);
+                if (!dt) { invalid++; return false; }
+                const t = dt.getTime();
+                return t >= startT && t <= endT;
+            });
+            return { list, invalid };
+        }
+
+        // Bina pilihan bulan dari data (terbaru dahulu). Kekalkan pilihan pengguna jika masih wujud.
+        function refreshMonthOptions() {
+            const select = document.getElementById('statMonthSelect');
+            const keys = new Set();
+            reportsData.forEach(r => { const dt = parseTarikh(r.tarikh); if (dt) keys.add(monthKey(dt)); });
+            const months = [...keys].sort().reverse();
+
+            if (statMonth === null) {
+                const nowKey = monthKey(new Date());
+                statMonth = months.includes(nowKey) ? nowKey : (months[0] || 'ALL');
+            } else if (statMonth !== 'ALL' && !months.includes(statMonth)) {
+                statMonth = months[0] || 'ALL';
+                statWeek = 'ALL';
+            }
+
+            select.innerHTML = `<option value="ALL">Semua Bulan</option>` + months.map(k => {
+                const [y, m] = k.split('-').map(Number);
+                return `<option value="${k}">${BULAN[m - 1]} ${y}</option>`;
+            }).join('');
+            select.value = statMonth;
+        }
+
+        function setStatMonth(value) {
+            statMonth = value || 'ALL';
+            statWeek = 'ALL';
+            renderSurveyorStats();
+        }
+
+        function setStatWeek(value) {
+            statWeek = value === 'ALL' ? 'ALL' : Number(value);
+            renderSurveyorStats();
+        }
+
+        function renderWeekPills(range) {
+            const bar = document.getElementById('statWeekBar');
+            const pills = document.getElementById('statWeekPills');
+            if (!range) {
+                bar.classList.add('hidden');
+                bar.classList.remove('flex');
+                pills.innerHTML = '';
+                return;
+            }
+            bar.classList.remove('hidden');
+            bar.classList.add('flex');
+
+            const pill = (val, label, sub) => {
+                const active = String(statWeek) === String(val);
+                return `<button type="button" data-week="${val}" class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap text-left ${active ? 'bg-jm-navy text-white shadow-sm' : 'text-slate-600 hover:text-jm-navy hover:bg-white/60'}">
+                    <span class="font-bold">${label}</span>${sub ? `<span class="block text-[10px] font-medium ${active ? 'text-jm-gold' : 'text-slate-400'}">${sub}</span>` : ''}
+                </button>`;
+            };
+            pills.innerHTML = pill('ALL', 'Semua', 'Sebulan') +
+                range.weeks.map((w, i) => pill(i, `Minggu ${i + 1}`, weekRangeLabel(w))).join('');
+        }
+
+        document.getElementById('statWeekPills').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-week]');
+            if (b) setStatWeek(b.dataset.week);
+        });
+
+        // ============================================================================
+        // KIRA STATISTIK
+        // ============================================================================
+        // Data disusun terbaru dahulu, jadi rekod pertama bagi setiap No File = laporan terkini fail itu
+        function buildSurveyorStats(data) {
+            const map = new Map();
+
+            data.forEach(item => {
+                const key = surveyorKey(item.nama);
+                if (!key || key === '-') return;
+
+                if (!map.has(key)) {
+                    map.set(key, {
+                        key, nama: String(item.nama).trim(),
+                        reports: 0, issues: 0, hours: 0, hoursCount: 0,
+                        days: new Set(), dayCounts: new Map(), files: new Map(),
+                        lastDate: null, lastTarikhRaw: item.tarikh
+                    });
+                }
+                const s = map.get(key);
+                s.reports++;
+                if (hasIssue(item)) s.issues++;
+
+                const dt = parseTarikh(item.tarikh);
+                if (dt) {
+                    const t = dt.getTime();
+                    s.days.add(t);
+                    s.dayCounts.set(t, (s.dayCounts.get(t) || 0) + 1);
+                    if (!s.lastDate || dt > s.lastDate) s.lastDate = dt;
+                } else if (item.tarikh && item.tarikh !== '-') {
+                    s.days.add('raw:' + item.tarikh);
+                }
+
+                const h = workHours(item.waktuMula, item.waktuTamat);
+                if (h !== null) { s.hours += h; s.hoursCount++; }
+
+                // Laporan terkini setiap fail ikut TARIKH. Jika tarikh sama/tak sah, rekod lebih awal
+                // dalam senarai (lebih baru dihantar) diutamakan.
+                const fileKey = String(item.noFile || '-').trim().toUpperCase();
+                if (fileKey !== '-') {
+                    const existing = s.files.get(fileKey);
+                    const isNewer = !existing || (dt && (!existing.date || dt > existing.date));
+                    if (isNewer) {
+                        const asal = parseTarikh(item.jangkaAsal);
+                        const semasa = parseTarikh(item.jangkaSemasa);
+                        s.files.set(fileKey, {
+                            noFile: item.noFile,
+                            date: dt,
+                            progress: Math.min(100, progressNum(item.totalSiap)),
+                            done: isRecordDone(item),
+                            delayed: !!(asal && semasa && semasa > asal),
+                            tugasan: item.tugasan
+                        });
+                    }
+                }
+            });
+
+            return [...map.values()].map(s => {
+                const files = [...s.files.values()].sort((a, b) => (b.date ? b.date.getTime() : 0) - (a.date ? a.date.getTime() : 0));
+                const avgProgress = files.length ? Math.round(files.reduce((a, f) => a + f.progress, 0) / files.length) : 0;
+                return {
+                    ...s,
+                    fileList: files,
+                    fileCount: files.length,
+                    filesDone: files.filter(f => f.done).length,
+                    filesDelayed: files.filter(f => f.delayed && !f.done).length,
+                    avgProgress,
+                    activeDays: s.days.size,
+                    avgHours: s.hoursCount ? s.hours / s.hoursCount : 0
+                };
+            });
+        }
+
+        function activityBadge(lastDate) {
+            if (!lastDate) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">Tarikh tak sah</span>`;
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const diff = Math.round((today - lastDate) / 86400000);
+            if (diff <= 1) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-jm-blue"><i class="fa-solid fa-circle text-[6px] align-middle mr-1"></i>Aktif</span>`;
+            if (diff <= 7) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-jm-gold/30 text-jm-navy">${diff} hari lalu</span>`;
+            return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">${diff} hari lalu</span>`;
+        }
+
+        // Jalur aktiviti: harian (jika minggu dipilih) atau mingguan (jika sebulan)
+        function activityStrip(s, range) {
+            if (!range) return '';
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+
+            if (range.week) {
+                const cells = [];
+                for (let d = new Date(range.week.start); d <= range.week.end; d.setDate(d.getDate() + 1)) {
+                    const t = d.getTime();
+                    const n = s.dayCounts ? (s.dayCounts.get(t) || 0) : 0;
+                    const future = d > today;
+                    const cls = n > 0 ? 'bg-jm-navy text-jm-gold' : (future ? 'bg-white text-slate-300 border border-dashed border-slate-200' : 'bg-slate-100 text-slate-400');
+                    cells.push(`<div class="flex-1 min-w-0 rounded-lg py-1.5 text-center ${cls}" title="${formatTarikh(d)}: ${n} laporan">
+                        <div class="text-[9px] font-semibold uppercase">${HARI_PENDEK[d.getDay()]}</div>
+                        <div class="text-xs font-extrabold">${d.getDate()}</div>
+                    </div>`);
+                }
+                return `<div class="space-y-1.5">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Kehadiran Laporan Minggu Ini</p>
+                    <div class="flex gap-1">${cells.join('')}</div>
+                </div>`;
+            }
+
+            const counts = range.weeks.map(w => {
+                let n = 0;
+                if (s.dayCounts) s.dayCounts.forEach((c, t) => { if (t >= w.start.getTime() && t <= w.end.getTime()) n += c; });
+                return n;
+            });
+            const max = Math.max(1, ...counts);
+            const cells = range.weeks.map((w, i) => {
+                const n = counts[i];
+                const pct = Math.round((n / max) * 100);
+                return `<div class="flex-1 min-w-0 text-center" title="Minggu ${i + 1} (${weekRangeLabel(w)}): ${n} laporan">
+                    <div class="h-12 bg-slate-100 rounded-lg flex items-end overflow-hidden">
+                        <div class="w-full ${n > 0 ? 'bg-gradient-to-t from-jm-navy to-jm-royal' : ''} rounded-lg" style="height:${n > 0 ? Math.max(12, pct) : 0}%"></div>
+                    </div>
+                    <div class="text-[10px] font-bold text-slate-600 mt-1">M${i + 1}</div>
+                    <div class="text-[10px] text-slate-400">${n}</div>
+                </div>`;
+            }).join('');
+            return `<div class="space-y-1.5">
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Laporan Setiap Minggu</p>
+                <div class="flex gap-1.5">${cells}</div>
+            </div>`;
+        }
+
+        function periodTitle(range) {
+            if (!range) return 'Semua Tempoh';
+            const [y, m] = statMonth.split('-').map(Number);
+            if (range.week) return `Minggu ${statWeek + 1} • ${formatTarikh(range.week.start)} – ${formatTarikh(range.week.end)}`;
+            return `${BULAN[m - 1]} ${y} (Sebulan)`;
+        }
+
+        function renderSurveyorStats() {
+            const grid = document.getElementById('surveyorCardsGrid');
+            if (!grid) return;
+            const empty = document.getElementById('surveyorEmpty');
+
+            refreshMonthOptions();
+            const range = getActiveRange();
+            renderWeekPills(range);
+            document.getElementById('statPeriodTitle').textContent = periodTitle(range);
+
+            const { list: periodData, invalid } = filterByPeriod(reportsData, range);
+            const note = document.getElementById('statInvalidNote');
+            if (range && invalid > 0) {
+                note.textContent = `${invalid} laporan tidak dikira sebab format TARIKH tak dapat dibaca (perlu dd/mm/yyyy). Edit laporan tersebut untuk betulkan.`;
+                note.classList.remove('hidden');
+            } else {
+                note.classList.add('hidden');
+            }
+
+            // Semua surveyor yang pernah melapor (untuk tunjuk siapa tiada laporan dalam tempoh)
+            const allTime = buildSurveyorStats(reportsData);
+            const lastDateByKey = new Map(allTime.map(s => [s.key, s]));
+            const inPeriod = buildSurveyorStats(periodData);
+            const inPeriodKeys = new Set(inPeriod.map(s => s.key));
+
+            // Badge aktiviti sentiasa ikut laporan terakhir keseluruhan, bukan tempoh
+            inPeriod.forEach(s => {
+                const a = lastDateByKey.get(s.key);
+                s.overallLast = a ? a.lastDate : s.lastDate;
+                s.overallLastRaw = a ? a.lastTarikhRaw : s.lastTarikhRaw;
+            });
+            const missing = allTime.filter(s => !inPeriodKeys.has(s.key)).map(s => ({
+                key: s.key, nama: s.nama, reports: 0, issues: 0, hours: 0, avgHours: 0,
+                activeDays: 0, fileList: [], fileCount: 0, filesDone: 0, filesDelayed: 0, avgProgress: 0,
+                dayCounts: new Map(), overallLast: s.lastDate, overallLastRaw: s.lastTarikhRaw, noReport: true
+            }));
+
+            // Ringkasan pasukan (ikut tempoh, tak ikut carian)
+            const allFiles = new Map();
+            inPeriod.forEach(s => s.fileList.forEach(f => {
+                const k = String(f.noFile).toUpperCase();
+                if (!allFiles.has(k)) allFiles.set(k, f);
+            }));
+            const filesArr = [...allFiles.values()];
+            const top = [...inPeriod].sort((a, b) => b.reports - a.reports)[0];
+            document.getElementById('teamTotalSurveyor').textContent = inPeriod.length;
+            document.getElementById('teamAllSurveyor').textContent = allTime.length;
+            document.getElementById('teamReportCount').textContent = periodData.length;
+            document.getElementById('teamTopSurveyor').textContent = top ? `${top.nama} (${top.reports})` : '-';
+            document.getElementById('teamFiles').textContent = filesArr.length;
+            document.getElementById('teamFilesDone').textContent = filesArr.filter(f => f.done).length;
+            document.getElementById('teamHours').textContent = `${Math.round(inPeriod.reduce((a, s) => a + s.hours, 0))} j`;
+            document.getElementById('teamDelayed').textContent = filesArr.filter(f => f.delayed && !f.done).length;
+
+            // Carian & susunan (surveyor tanpa laporan sentiasa di bawah)
+            const q = (document.getElementById('surveyorSearch').value || '').toLowerCase().trim();
+            const match = s => !q || s.nama.toLowerCase().includes(q);
+            const sorters = {
+                laporan: (a, b) => b.reports - a.reports || a.nama.localeCompare(b.nama),
+                kemajuan: (a, b) => b.avgProgress - a.avgProgress || b.reports - a.reports,
+                isu: (a, b) => b.issues - a.issues || b.reports - a.reports,
+                nama: (a, b) => a.nama.localeCompare(b.nama)
+            };
+            const sorter = sorters[surveyorSort] || sorters.laporan;
+            const list = [
+                ...inPeriod.filter(match).sort(sorter),
+                ...missing.filter(match).sort((a, b) => a.nama.localeCompare(b.nama))
+            ];
+            lastSurveyorList = list;
+
+            const missingCount = missing.filter(match).length;
+            document.getElementById('surveyorCountBadge').textContent =
+                `${list.length - missingCount} Surveyor` + (missingCount ? ` • ${missingCount} tiada laporan` : '');
+
+            if (list.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            let rank = 0;
+            grid.innerHTML = list.map((s, idx) => {
+                const lastLabel = s.overallLast ? formatTarikh(s.overallLast) : escapeHtml(s.overallLastRaw || '-');
+                const header = (rankHtml) => `
+                    <div class="p-5 flex items-start gap-3 border-b border-slate-100">
+                        <div class="relative shrink-0">
+                            <div class="w-12 h-12 rounded-xl ${s.noReport ? 'bg-slate-200 text-slate-500' : 'bg-gradient-to-br from-jm-navy to-jm-blue text-jm-gold'} font-extrabold flex items-center justify-center text-sm shadow">
+                                ${escapeHtml(initials(s.nama))}
+                            </div>
+                            ${rankHtml}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="font-extrabold ${s.noReport ? 'text-slate-500' : 'text-jm-navy'} text-sm truncate" title="${escapeHtml(s.nama)}">${escapeHtml(s.nama)}</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Laporan terakhir: <span class="font-mono font-semibold text-slate-700">${lastLabel}</span></p>
+                        </div>
+                        <div class="shrink-0">${activityBadge(s.overallLast)}</div>
+                    </div>`;
+                const footer = `
+                    <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/70 mt-auto">
+                        <button type="button" data-surveyor-idx="${idx}" class="w-full py-2 rounded-xl ${s.noReport ? 'bg-white text-jm-navy border border-slate-300 hover:bg-blue-50' : 'bg-jm-navy hover:bg-jm-blue text-white'} text-xs font-bold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-list-check ${s.noReport ? 'text-jm-blue' : 'text-jm-gold'}"></i> Lihat Semua Laporan
+                        </button>
+                    </div>`;
+
+                if (s.noReport) {
+                    return `
+                    <article class="bg-white rounded-2xl border border-dashed border-slate-300 overflow-hidden flex flex-col opacity-90">
+                        ${header('')}
+                        <div class="p-5 space-y-4 flex-1">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2.5">
+                                <i class="fa-solid fa-circle-exclamation"></i> Tiada laporan dalam tempoh ini
+                            </div>
+                            ${activityStrip(s, range)}
+                        </div>
+                        ${footer}
+                    </article>`;
+                }
+
+                rank++;
+                const rankHtml = `<span class="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full ${rank === 1 ? 'bg-jm-gold text-jm-navy' : 'bg-slate-200 text-slate-600'} text-[10px] font-bold flex items-center justify-center ring-2 ring-white">${rank}</span>`;
+                const filesPreview = s.fileList.slice(0, 4).map(f => `
+                    <div>
+                        <div class="flex items-center justify-between gap-2 text-[11px]">
+                            <span class="font-mono font-semibold text-jm-royal truncate" title="${escapeHtml(f.tugasan || '')}">${escapeHtml(f.noFile)}</span>
+                            <span class="flex items-center gap-1.5 shrink-0">
+                                ${f.delayed && !f.done ? '<span class="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[9px] font-bold">LEWAT</span>' : ''}
+                                <span class="font-bold ${f.done ? 'text-jm-royal' : 'text-amber-700'}">${f.progress}%</span>
+                            </span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                            <div class="h-full ${f.done ? 'bg-jm-royal' : 'bg-jm-gold'}" style="width:${f.progress}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+                const moreFiles = s.fileCount > 4 ? `<p class="text-[11px] text-slate-400">+${s.fileCount - 4} fail lagi</p>` : '';
+
+                return `
+                <article class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                    ${header(rankHtml)}
+                    <div class="p-5 space-y-4 flex-1">
+                        <div class="grid grid-cols-4 gap-2 text-center">
+                            <div class="p-2 rounded-xl bg-blue-50">
+                                <div class="text-lg font-extrabold text-jm-navy">${s.reports}</div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Laporan</div>
+                            </div>
+                            <div class="p-2 rounded-xl bg-slate-50">
+                                <div class="text-lg font-extrabold text-jm-navy">${s.activeDays}</div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Hari</div>
+                            </div>
+                            <div class="p-2 rounded-xl bg-slate-50">
+                                <div class="text-lg font-extrabold text-jm-navy">${s.filesDone}<span class="text-xs text-slate-400">/${s.fileCount}</span></div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Fail Siap</div>
+                            </div>
+                            <div class="p-2 rounded-xl ${s.issues > 0 ? 'bg-red-50' : 'bg-slate-50'}">
+                                <div class="text-lg font-extrabold ${s.issues > 0 ? 'text-red-700' : 'text-jm-navy'}">${s.issues}</div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Isu</div>
+                            </div>
+                        </div>
+
+                        ${activityStrip(s, range)}
+
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1">
+                                <span class="font-semibold text-slate-600">Purata kemajuan fail</span>
+                                <span class="font-extrabold text-jm-navy">${s.avgProgress}%</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-jm-royal to-jm-gold rounded-full" style="width:${s.avgProgress}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs bg-yellow-50 rounded-xl px-3 py-2">
+                            <span class="text-slate-600 font-medium"><i class="fa-solid fa-business-time text-jm-goldDark mr-1"></i> Jam lapangan</span>
+                            <span class="font-bold text-jm-navy">${s.hours.toFixed(1)} j <span class="font-medium text-slate-500">(${s.avgHours.toFixed(1)} j/hari)</span></span>
+                        </div>
+                        ${s.filesDelayed > 0 ? `<div class="text-[11px] font-semibold text-red-700 bg-red-50 rounded-xl px-3 py-2"><i class="fa-solid fa-hourglass-half mr-1"></i> ${s.filesDelayed} fail lewat dari jangka asal</div>` : ''}
+
+                        <div class="space-y-2.5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fail Dalam Tempoh</p>
+                            ${filesPreview || '<p class="text-[11px] text-slate-400">Tiada No File</p>'}
+                            ${moreFiles}
+                        </div>
+                    </div>
+                    ${footer}
+                </article>`;
+            }).join('');
+        }
+
+        // Klik "Lihat Laporan" pada kad -> tapis jadual ikut nama surveyor
+        document.getElementById('surveyorCardsGrid').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-surveyor-idx]');
+            if (!btn) return;
+            const s = lastSurveyorList[Number(btn.dataset.surveyorIdx)];
+            if (!s) return;
+            switchView('laporan');
+            const input = document.getElementById('searchInput');
+            input.value = s.nama;
+            filterReports();
+            document.getElementById('reportTableBody').closest('.lg\\:col-span-8').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
 
         function filterReports() {
             const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
             if (!q) { renderTable(reportsData); return; }
             const filtered = reportsData.filter(item =>
                 ['tarikh', 'nama', 'noFile', 'tugasan', 'status', 'isu', 'maklumat', 'perancangan']
-                    .some(k => String(item[k] || '').toLowerCase().includes(q))
+                    .some(k => String(item[k] || '').toLowerCase().includes(q)) ||
+                surveyorKey(item.nama) === surveyorKey(q)
             );
             renderTable(filtered);
         }
