@@ -609,6 +609,7 @@
     return rs.sort((a, b) => by(a, b) || cmp(a.dwg, b.dwg));
   }
   const canEdit = r => !READONLY && USER && (USER.role === 'admin' || (r.assigned && key(r.drafter) === key(USER.name)));
+  const canAssign = () => !READONLY && !!USER;   // tukar pelukis: semua pengguna bernama, mana-mana baris
   function selectHtml(r, f, list, cur, color){
     const vals = list.includes(cur) || !cur ? list : [cur, ...list];
     return `<select class="ed" data-row="${r.row}" data-f="${f}" style="color:${color || 'var(--text)'};border-color:${color || 'var(--line3)'};background:#fff">
@@ -618,7 +619,7 @@
     const isAdmin = USER && USER.role === 'admin';
     switch (f) {
       case 'drafter':
-        if (ed && isAdmin) return selectHtml(r, 'drafter', OPT.drafter, r.drafter, r.assigned ? 'var(--navy)' : 'var(--bad)');
+        if (canAssign()) return selectHtml(r, 'drafter', OPT.drafter, r.drafter, r.assigned ? 'var(--navy)' : 'var(--bad)');
         return r.assigned ? `<b style="color:var(--navy)">${esc(r.drafter)}</b>` : '<span class="late">Belum Assign</span>';
       case 'status':
         return ed ? selectHtml(r, 'status', OPT.status, r.status, ST[r.sk].c) : `<span class="pill" style="color:${ST[r.sk].c}">${esc(r.status)}</span>`;
@@ -798,7 +799,9 @@
   /* ===================== SIMPAN ===================== */
   function saveField(rowNo, f, value){
     const r = REC.find(x => x.row === rowNo);
-    if (!r || !canEdit(r)) { toast('Anda tidak dibenarkan ubah lukisan ini.', true); renderList(); return; }
+    if (!r) return;
+    if (!USER) { renderList(); return askName(); }
+    if (!(canEdit(r) || (f === 'drafter' && canAssign()))) { toast('Anda tidak dibenarkan ubah lukisan ini.', true); renderList(); return; }
     const box = document.querySelector(`[data-rowbox="${rowNo}"]`); if (box) box.classList.add('saving');
     run('updateDrawing', { row: r.row, dwg: r.dwg, as: ME, changes: { [f]: value } })
       .then(res => {
