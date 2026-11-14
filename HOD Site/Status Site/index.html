@@ -394,7 +394,7 @@ html,body{max-width:100%;overflow-x:hidden}
       <div>
         <div class="eyebrow">HOD Site · Google Sheets &amp; Apps Script</div>
         <h1>Progres kerja ukur mengikut fail</h1>
-        <p>Kad progres dijana daripada rekod kerja lapangan. Peratus siap diselaraskan terus daripada laporan statistik surveyor.</p>
+        <p>Kad progres dijana daripada rekod kerja lapangan. Peratus siap dikira daripada "Progress Hari Ini" dalam laporan harian, dipadankan ikut No File dan Tugasan.</p>
       </div>
       <div class="sp"></div>
       <div class="actions">
@@ -404,7 +404,7 @@ html,body{max-width:100%;overflow-x:hidden}
     </div>
     <div class="kpis">
       <div class="kpi"><div class="l">Fail kerja</div><div class="v" id="statTotalFiles">0</div><div class="s">Kad progres aktif</div></div>
-      <div class="kpi hl"><div class="l">Purata progres</div><div class="v" id="statAvgProgress">0%</div><div class="s">Sumber: sheet statistik</div></div>
+      <div class="kpi hl"><div class="l">Purata progres</div><div class="v" id="statAvgProgress">0%</div><div class="s">Sumber: laporan harian</div></div>
       <div class="kpi"><div class="l">Kategori aktif</div><div class="v" id="statTotalCategories">0</div><div class="s" id="statTotalTasksText">0 rekod kerja aktif</div></div>
       <div class="kpi"><div class="l">Surveyor terlibat</div><div class="v" id="statTotalSurveyors">0</div><div class="s">Mengikut kategori &amp; fail</div></div>
     </div>
@@ -420,10 +420,10 @@ html,body{max-width:100%;overflow-x:hidden}
     <section class="panel">
       <div class="ph">
         <h3>Kad progres mengikut fail</h3>
-        <span class="src">Rekod kerja + statistik surveyor</span>
+        <span class="src">Rekod kerja + laporan harian</span>
         <div class="sp"></div>
         <div class="tools">
-          <label class="search"><i data-lucide="search" class="i16"></i><input type="text" id="searchInput" class="inp" oninput="renderDashboardCards()" placeholder="Cari no. fail, kawasan, surveyor…" aria-label="Cari kad progres"></label>
+          <label class="search"><i data-lucide="search" class="i16"></i><input type="text" id="searchInput" class="inp" oninput="renderDashboardCards()" placeholder="Cari no. fail, kawasan, surveyor, tugasan…" aria-label="Cari kad progres"></label>
           <select id="filterKategoriSelect" class="inp" onchange="renderDashboardCards()" aria-label="Tapis kategori"><option value="ALL">Semua Kategori</option></select>
         </div>
       </div>
@@ -522,8 +522,8 @@ html,body{max-width:100%;overflow-x:hidden}
   <!-- TAB 3: DATA SHEET -->
   <div id="view-statistik" class="view-section hidden">
     <section class="panel">
-      <div class="ph"><h3>Jadual statistik &amp; peratusan progres</h3><span class="src ok">Sumber URL 2 · Peratus kerja</span></div>
-      <div id="statsTableContainer" class="tw"><div class="empty">Memuatkan jadual statistik…</div></div>
+      <div class="ph"><h3>Jadual laporan harian (sumber progres)</h3><span class="src ok">Sumber URL 2 · Tarikh, Nama, No File, Tugasan / Output, Progress Hari Ini</span><span class="src" id="laporanInfo"></span></div>
+      <div id="statsTableContainer" class="tw"><div class="empty">Memuatkan jadual laporan harian…</div></div>
     </section>
     <section class="panel">
       <div class="ph"><h3>Jadual rekod kerja</h3><span class="src info">Sumber URL 1 · Rekod kerja lapangan</span></div>
@@ -546,8 +546,15 @@ html,body{max-width:100%;overflow-x:hidden}
         // 2. URL CSV 1: Rekod Kerja Lapangan (Sumber Penjanaan Kad Progres & Sasaran Kuantiti)
         const CSV_REKOD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW5BxrFQw07_bCiTfbARTgXh8qYvbMnLo4Uur7iM6ROw42DMmluHxrxXd3bKxVADyj_dLu_pCoEob8/pub?gid=1800236702&single=true&output=csv";
 
-        // 3. URL CSV 2: Laporan Statistik Surveyor (Sumber Kuantiti Siap & Peratus Progres Bar)
-        const CSV_STAT_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR9K9IiWtk4r4MouH9wGT5DeKJWGXyaKcKgj43dnC48KG_87QE7jO7wOJF6jzKQn2XwsJipuQRRj9MZ/pub?gid=1353013862&single=true&output=csv";
+        // 3. URL CSV 2: Laporan Harian (sumber progres)
+        //    Header: Tarikh | Nama | No File | Tugasan / Output | Progress Hari Ini
+        const CSV_LAPORAN_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRF-BgmNrwBZVwf0ZWrePsiV2pCBo22Ud7_-m6KDIjSYVkOlvoKvzSeq0AzDUj5Hyx19FEVwyMtKIk8/pub?gid=720357072&single=true&output=csv";
+
+        // Cara baca nilai "Progress Hari Ini" bila ditulis dalam peratus (cth. "20%"):
+        //   false = progres HARI ITU sahaja, semua hari dijumlahkan (10% + 15% = 25%)
+        //   true  = progres terkumpul setakat hari itu, ambil laporan terkini (10% → 25% = 25%)
+        // Nilai nombor tanpa % (cth. "5" atau "5 lot") sentiasa dikira kuantiti siap hari itu & dijumlahkan.
+        const PERATUS_KUMULATIF = false;
 
         // Senarai sama dengan Dashboard Laporan Harian supaya kategori Engineering/Strata dari sheet statistik tak tercicir
         const DEFAULT_KATEGORI = ["Kadaster", "Kalibrasi", "Lidar", "Pemetaan Utiliti", "Strata", "TLS", "Topografi"];
@@ -566,7 +573,7 @@ html,body{max-width:100%;overflow-x:hidden}
         const NAV_INACTIVE = "tab";
 
         let rawRekodRows = [];
-        let rawStatRows = [];
+        let rawLaporanRows = [];
         let localAddedRecords = [];
         let selectedKategoriList = [];
         let selectedSurveyorList = [];
@@ -618,10 +625,9 @@ html,body{max-width:100%;overflow-x:hidden}
             return raw || '-';
         }
 
-        // "MCP 001/26 Mangkuk" -> { file: "MCP 001/26", kawasan: "Mangkuk" } (sama dengan Apps Script)
-        // Prefix No File. Data lama dengan prefix LEGACY_PREFIXES dibaca sebagai MCP.
+        // "MCP 001/26 Bangi" -> { file: "MCP 001/26", kawasan: "Bangi" } (sama dengan Apps Script)
+        // Prefix No File.
         const FILE_PREFIX = 'MCP';
-        const LEGACY_PREFIXES = ['MGK'];
 
         // Tahun No File diseragamkan 2 digit: "2026" -> "26" (format MCP 001/26)
         function shortYear(y) {
@@ -632,7 +638,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
         function canonicalPrefix(prefix) {
             const p = String(prefix || '').toUpperCase();
-            return LEGACY_PREFIXES.includes(p) ? FILE_PREFIX : p;
+            return p;
         }
 
         function splitFileAndKawasan(value) {
@@ -661,10 +667,10 @@ html,body{max-width:100%;overflow-x:hidden}
             return DEFAULT_KATEGORI.some(k => k.toLowerCase() === c);
         }
 
-        // Surveyor dalam senarai rasmi. "Mangkuk1..5" (nama lama) masih diterima untuk data lama.
+        // Surveyor dalam senarai rasmi.
         function isKnownSurveyor(value) {
             const s = String(value || '').trim().toLowerCase();
-            return DEFAULT_SURVEYORS.some(n => n.toLowerCase() === s) || /^mangkuk\s*\d+$/.test(s);
+            return DEFAULT_SURVEYORS.some(n => n.toLowerCase() === s);
         }
 
         // Nama surveyor/kategori bukan No File walaupun corak "huruf+nombor"
@@ -793,15 +799,15 @@ html,body{max-width:100%;overflow-x:hidden}
             try {
                 const cacheBuster = `&_t=${Date.now()}`;
                 // allSettled: satu sumber gagal tak padam data sumber yang lain
-                const [resRekod, resStat] = await Promise.allSettled([
+                const [resRekod, resLaporan] = await Promise.allSettled([
                     fetchCsvText(CSV_REKOD_URL + cacheBuster),
-                    fetchCsvText(CSV_STAT_URL + cacheBuster)
+                    fetchCsvText(CSV_LAPORAN_URL + cacheBuster)
                 ]);
                 const failed = [];
                 if (resRekod.status === 'fulfilled') rawRekodRows = parseCSV(resRekod.value);
                 else failed.push('Rekod Kerja');
-                if (resStat.status === 'fulfilled') rawStatRows = parseCSV(resStat.value);
-                else failed.push('Statistik');
+                if (resLaporan.status === 'fulfilled') rawLaporanRows = parseCSV(resLaporan.value);
+                else failed.push('Laporan Harian');
 
                 syncDynamicOptionsAndRender();
                 if (failed.length) {
@@ -921,7 +927,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 .map(canonicalKategori);
         }
 
-        // "MCP 001/26 Mangkuk", "MGK 001/26" (lama) dan "MCP 1/26" dianggap fail yang sama
+        // "MCP 001/26 Bangi" dan "MCP 1/26" dianggap fail yang sama
         function normalizeFileId(idStr) {
             if (!idStr) return '';
             const s = String(idStr).toUpperCase().replace(/^["']+|["']+$/g, '').trim();
@@ -941,7 +947,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
         function syncDynamicOptionsAndRender() {
             const parsedRekod = extractNormalizedRows(rawRekodRows, 'rekod');
-            const parsedStat = extractNormalizedRows(rawStatRows, 'stat');
+            const parsedLaporan = extractLaporanRows(rawLaporanRows);
 
             // Buang rekod tempatan yang dah masuk dalam sheet, supaya tugas tak dikira dua kali
             const rekodKey = r => [normalizeFileId(r.idFile), kawasanKey(r.kawasan), tarikhToIso(r.tarikh), String(r.tugas || '').trim().toLowerCase()].join('|');
@@ -968,9 +974,6 @@ html,body{max-width:100%;overflow-x:hidden}
             const allKategoriSet = new Set(DEFAULT_KATEGORI);
             const existingFilesSet = new Set();
             const fileSurveyorBackupMap = {};
-            const fileCategoriesFromStatMap = {};
-            const categoryPercentMap = {};
-            const categorySurveyorBackupMap = {};
 
             combinedRecords.forEach(r => {
                 if (r.idFile) existingFilesSet.add(r.idFile);
@@ -987,31 +990,17 @@ html,body{max-width:100%;overflow-x:hidden}
                 }
             });
 
-            parsedStat.forEach(r => {
-                if (r.idFile) {
-                    const fNorm = normalizeFileId(r.idFile);
-                    if (r.surveyor) {
-                        if (!fileSurveyorBackupMap[fNorm]) fileSurveyorBackupMap[fNorm] = new Set();
-                        splitMultiValues(r.surveyor).forEach(s => {
-                            if (isKnownSurveyor(s)) {
-                                addUniqueCaseInsensitive(fileSurveyorBackupMap[fNorm], s);
-                            }
-                        });
-                    }
-                    if (r.kategori) {
-                        if (!fileCategoriesFromStatMap[fNorm]) fileCategoriesFromStatMap[fNorm] = new Set();
-                        splitMultiValues(r.kategori).forEach(k => {
-                            if (isOfficialKategori(k)) {
-                                addUniqueCaseInsensitive(fileCategoriesFromStatMap[fNorm], k);
-                            }
-                        });
-                    }
-                }
+            // Nama dalam laporan harian = surveyor yang betul-betul turun padang untuk fail itu
+            parsedLaporan.forEach(r => {
+                if (!r.idFile || !r.nama) return;
+                const fNorm = normalizeFileId(r.idFile);
+                if (!fileSurveyorBackupMap[fNorm]) fileSurveyorBackupMap[fNorm] = new Set();
+                splitNames(r.nama).forEach(n => addUniqueCaseInsensitive(fileSurveyorBackupMap[fNorm], canonicalSurveyorName(n)));
             });
 
             // Senarai kawasan bagi setiap fail (untuk cadangan dalam borang)
             const kawasanByFile = {};
-            [...combinedRecords, ...parsedStat].forEach(r => {
+            combinedRecords.forEach(r => {
                 const k = kawasanKey(r.kawasan);
                 if (!r.idFile || !k) return;
                 const fNorm = normalizeFileId(r.idFile);
@@ -1023,11 +1012,8 @@ html,body{max-width:100%;overflow-x:hidden}
                 kawasanByFile,
                 combinedRecords,
                 parsedRekod: [...localAddedRecords, ...editedRekod],
-                parsedStat,
-                fileSurveyorBackupMap,
-                fileCategoriesFromStatMap,
-                categoryPercentMap,
-                categorySurveyorBackupMap
+                parsedLaporan,
+                fileSurveyorBackupMap
             };
 
             const datalist = document.getElementById('existingFilesList');
@@ -1124,7 +1110,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     }
                 }
 
-                // Kawasan: lajur Kawasan, atau teks selepas nombor fail (data lama "MCP 001/26 Mangkuk")
+                // Kawasan: lajur Kawasan, atau teks selepas nombor fail (data lama "MCP 001/26 Bangi")
                 const kawasanColIdx = findIndexByHeaderKeywords(['kawasan', 'lokasi', 'tapak']);
                 let kawasan = kawasanColIdx !== -1 ? kawasanLabel(vals[kawasanColIdx]) : '';
                 if (idFile) {
@@ -1276,133 +1262,166 @@ html,body{max-width:100%;overflow-x:hidden}
             return normalizedList;
         }
 
-        // Laporan dikira untuk kategori jika kategori laporan SAMA (selepas tukar nama lama ke BM).
-        // Teks Tugas hanya digunakan jika laporan langsung tiada kategori (data lama).
-        function statMatchesCategory(st, catName) {
-            const target = canonicalKategori(catName).toLowerCase().trim();
-            const stCats = splitMultiValues(st.kategori).map(c => c.toLowerCase().trim());
-            if (stCats.length) return stCats.includes(target);
-            return canonicalKategori(st.tugas).toLowerCase().trim() === target;
+        // =====================================================================
+        // ENJIN PROGRES: LAPORAN HARIAN
+        // Header CSV: Tarikh | Nama | No File | Tugasan / Output | Progress Hari Ini
+        // Aliran: setiap baris laporan → dipadankan ke SATU tugas dalam Rekod Kerja
+        //         (No File sama + Tugasan paling serupa) → progres tugas
+        //         → purata tugas = progres kawasan → purata kawasan = progres fail.
+        // =====================================================================
+
+        // Teks untuk perbandingan: huruf kecil, tanpa tanda baca, ruang tunggal
+        function normText(s) {
+            return String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+                .replace(/[^a-z0-9]+/g, ' ').trim();
         }
 
-        // statFilter (pilihan): hadkan laporan statistik kepada satu kawasan
-        function resolveProgressDetailsForFile(fileKey, kategoriList, rekodTasksForFile, statFilter) {
-            const { parsedStat } = window.__processedData || {};
-            const fNorm = normalizeFileId(fileKey);
-
-            const statRecsForFile = (parsedStat || []).filter(r => {
-                if (!r.idFile) return false;
-                if (normalizeFileId(r.idFile) !== fNorm) return false;
-                return !statFilter || statFilter(r);
-            });
-
-            let fileLevelTargetQty = 0;
-            let fileLevelUnit = '';
-            (rekodTasksForFile || []).forEach(t => {
-                const q = parseFloat(t.kuantiti);
-                if (!isNaN(q) && q > 0 && fileLevelTargetQty === 0) fileLevelTargetQty = q;
-                if (!fileLevelUnit && t.unit) fileLevelUnit = t.unit;
-            });
-
-            let totalFileStatDoneQty = 0;
-            let uncategorizedStatDoneQty = 0;
-            const totalFileExplicitPcts = [];
-            const effectiveCategories = (kategoriList && kategoriList.length > 0) ? kategoriList : ['Umum'];
-
-            statRecsForFile.forEach(st => {
-                const q = parseFloat(st.kuantiti);
-                const validQty = (!isNaN(q) && q > 0) ? q : 0;
-                totalFileStatDoneQty += validQty;
-
-                if (st.peratus !== null && !isNaN(st.peratus) && st.peratus >= 0) {
-                    totalFileExplicitPcts.push(st.peratus);
+        // "Progress Hari Ini" → { qty, pct, done }
+        //   "5" / "5 lot" / "1,250 m" → qty   ·   "20%" → pct   ·   "Siap" / "Selesai" → done
+        function parseProgressValue(raw) {
+            const s = String(raw || '').trim();
+            const out = { qty: null, pct: null, done: false };
+            if (!s || s === '-') return out;
+            const cleaned = s.replace(/(\d),(\d{3})(?!\d)/g, '$1$2'); // 1,250 → 1250 (pemisah ribu)
+            const m = cleaned.match(/-?\d+(?:[.,]\d+)?/);
+            if (m) {
+                const n = parseFloat(m[0].replace(',', '.'));
+                if (!isNaN(n) && n > 0) {
+                    if (cleaned.includes('%')) out.pct = n; else out.qty = n;
                 }
+            } else if (/\b(siap|selesai|complete|completed|done)\b/i.test(s) && !/\b(belum|tak|tidak|x)\b/i.test(s)) {
+                out.done = true;
+            }
+            return out;
+        }
 
-                const matchesAnyCardCat = effectiveCategories.some(ec => statMatchesCategory(st, ec));
+        function splitNames(raw) {
+            return String(raw || '').split(/[,;\/\n&]+|\s+dan\s+/i).map(s => s.trim()).filter(Boolean);
+        }
 
-                if (!matchesAnyCardCat) uncategorizedStatDoneQty += validQty;
+        // "Muhammad Syahmi" → "Syahmi" jika nama rasmi ada dalam teks; jika tidak, kekalkan nama asal
+        function canonicalSurveyorName(name) {
+            const n = normText(name);
+            const hit = DEFAULT_SURVEYORS.find(s => new RegExp('\\b' + normText(s) + '\\b').test(n));
+            return hit || kawasanLabel(name);
+        }
+
+        function extractLaporanRows(rows) {
+            if (!rows || !rows.length) return [];
+            const first = rows[0];
+            const hasHeaders = first.__hasExplicitHeaders !== false;
+            const hl = (first.__headers || []).map(normText);
+            const find = (cands, exclude = []) => hasHeaders
+                ? hl.findIndex(h => !exclude.some(e => h.includes(e)) && cands.some(c => h === c || h.includes(c)))
+                : -1;
+            // Kedudukan lalai ikut susunan header asal jika nama header tak dijumpai
+            const pick = (idx, fallback) => idx !== -1 ? idx : fallback;
+            const iTarikh = pick(find(['tarikh', 'date'], ['siap', 'jangka', 'timestamp']), 0);
+            const iNama = pick(find(['nama', 'surveyor', 'juruukur']), 1);
+            const iFile = pick(find(['no file', 'no fail', 'file', 'fail']), 2);
+            const iTugas = pick(find(['tugasan', 'tugas', 'output', 'task']), 3);
+            const iProg = pick(find(['progress hari ini', 'progres hari ini', 'progress', 'progres']), 4);
+
+            let lastFile = '';
+            const out = [];
+            rows.forEach(row => {
+                const v = row.__rawValues || [];
+                const get = i => String(v[i] ?? '').trim();
+                let fileRaw = get(iFile);
+                const tugasan = get(iTugas);
+                const progressRaw = get(iProg);
+                if (!fileRaw && !tugasan && !progressRaw) return;
+                // Sel No File bergabung: warisi No File baris atas
+                if (!fileRaw && lastFile) fileRaw = lastFile;
+                if (fileRaw) lastFile = fileRaw;
+                const parts = splitFileAndKawasan(fileRaw);
+                out.push({
+                    idFile: parts.file,
+                    kawasanHint: parts.kawasan, // cth. "MCP 001/26 Bangi" → "Bangi"
+                    tarikh: get(iTarikh),
+                    tarikhIso: tarikhToIso(get(iTarikh)),
+                    nama: get(iNama),
+                    tugasan,
+                    progressRaw,
+                    ...parseProgressValue(progressRaw)
+                });
             });
+            return out;
+        }
 
-            // Sasaran fail hanya dipinjam oleh kategori jika rekod kerja langsung tiada kategori.
-            // Jika tidak, kategori yang cuma ada dalam laporan (tak dirancang) tak dapat sasaran palsu.
-            const rekodHasCategories = (rekodTasksForFile || []).some(t => splitMultiValues(t.kategori).length > 0);
-
-            const categoryProgressList = effectiveCategories.map(catName => {
-                const catLower = catName.toLowerCase().trim();
-                let catTargetQty = 0;
-                let catUnit = '';
-
-                (rekodTasksForFile || []).forEach(t => {
-                    const rowCats = splitMultiValues(t.kategori).map(c => c.toLowerCase().trim());
-                    const isMatch = (catLower === 'umum' && rowCats.length === 0) || rowCats.includes(catLower);
-                    if (isMatch) {
-                        const q = parseFloat(t.kuantiti);
-                        if (!isNaN(q) && q > 0 && catTargetQty === 0) catTargetQty = q;
-                        if (!catUnit && t.unit) catUnit = t.unit;
-                    }
-                });
-
-                if (catTargetQty === 0 && fileLevelTargetQty > 0 && !rekodHasCategories) catTargetQty = fileLevelTargetQty;
-                if (!catUnit && fileLevelUnit) catUnit = fileLevelUnit;
-
-                let catDoneQty = 0;
-                const catExplicitPcts = [];
-
-                statRecsForFile.forEach(st => {
-                    const isDirectCatMatch = statMatchesCategory(st, catName);
-
-                    if (isDirectCatMatch) {
-                        const q = parseFloat(st.kuantiti);
-                        if (!isNaN(q) && q > 0) catDoneQty += q;
-                        if (st.peratus !== null && !isNaN(st.peratus) && st.peratus >= 0) catExplicitPcts.push(st.peratus);
-                        if (!catUnit && st.unit) catUnit = st.unit;
-                    }
-                });
-
-                // Laporan tanpa kategori hanya boleh diberi kepada kategori jika fail ada SATU kategori sahaja
-                if (catDoneQty === 0 && uncategorizedStatDoneQty > 0 && effectiveCategories.length === 1) catDoneQty = uncategorizedStatDoneQty;
-
-                let catPct = 0;
-                if (catTargetQty > 0 && catDoneQty > 0) {
-                    catPct = (catDoneQty / catTargetQty) * 100;
-                } else if (catExplicitPcts.length > 0) {
-                    catPct = catExplicitPcts.reduce((a, b) => a + b, 0) / catExplicitPcts.length;
-                } else if (catDoneQty === 0 && totalFileExplicitPcts.length > 0 && effectiveCategories.length === 1) {
-                    catPct = totalFileExplicitPcts.reduce((a, b) => a + b, 0) / totalFileExplicitPcts.length;
+        // Skor keserupaan laporan ↔ tugas rekod (0 = tak padan)
+        function matchScore(lap, task) {
+            const a = normText(lap.tugasan);
+            const b = normText(task.tugas);
+            if (!a) return 0;
+            let score = 0;
+            if (b && a === b) score = 100;
+            else if (b && b.length >= 4 && (a.includes(b) || b.includes(a))) score = 60 + Math.min(b.length, 30);
+            else {
+                const ta = new Set(a.split(' ').filter(w => w.length > 2));
+                const tb = b.split(' ').filter(w => w.length > 2);
+                const hit = tb.filter(w => ta.has(w)).length;
+                if (tb.length && hit / tb.length >= 0.6) score = 30 + hit;
+                else {
+                    const cats = splitMultiValues(task.kategori).map(normText).filter(Boolean);
+                    if (cats.some(c => a === c || a.includes(c))) score = 20;
                 }
+            }
+            if (!score) return 0;
+            const kw = kawasanKey(task.kawasan);
+            const hint = kawasanKey(lap.kawasanHint);
+            if (hint && kw && hint !== kw) return 0;           // No File sebut kawasan lain
+            if (hint && kw && hint === kw) score += 5;
+            if (kw && normText(lap.tugasan).includes(normText(kw))) score += 5; // kawasan disebut dalam Tugasan
+            return score;
+        }
 
-                catPct = Math.min(100, Math.max(0, catPct));
-
-                return {
-                    kategori: catName,
-                    percentage: Math.round(catPct * 10) / 10,
-                    doneQty: Math.round(catDoneQty * 100) / 100,
-                    targetQty: Math.round(catTargetQty * 100) / 100,
-                    unit: catUnit || 'Unit',
-                    hasTarget: catTargetQty > 0 || catExplicitPcts.length > 0 || catPct > 0
-                };
+        // Padankan setiap laporan fail ini ke satu tugas. Laporan kabur/tak padan dikumpul berasingan.
+        function assignLaporanToTasks(tasks, laporanForFile) {
+            const byTask = tasks.map(() => []);
+            const unmatched = [];
+            laporanForFile.forEach(lap => {
+                let best = 0, top = [];
+                tasks.forEach((t, i) => {
+                    const s = matchScore(lap, t);
+                    if (s > best) { best = s; top = [i]; }
+                    else if (s && s === best) top.push(i);
+                });
+                if (!top.length) { unmatched.push({ ...lap, reason: 'tiada tugas sepadan' }); return; }
+                // Seri antara kawasan berbeza: jangan teka, minta pengguna nyatakan kawasan
+                const kws = new Set(top.map(i => kawasanKey(tasks[i].kawasan)));
+                if (kws.size > 1) { unmatched.push({ ...lap, reason: 'tugas sama di beberapa kawasan' }); return; }
+                byTask[top[0]].push(lap);
             });
+            return { byTask, unmatched };
+        }
 
-            // Purata hanya kategori yang ada sasaran (kategori yang cuma dilaporkan tak cairkan peratus)
-            const countedCats = categoryProgressList.filter(c => c.hasTarget);
-            const overallPct = countedCats.length > 0
-                ? countedCats.reduce((sum, item) => sum + item.percentage, 0) / countedCats.length
-                : 0;
-
-            const totalDone = totalFileStatDoneQty > 0
-                ? totalFileStatDoneQty
-                : categoryProgressList.reduce((sum, item) => sum + item.doneQty, 0);
-            const totalTarget = fileLevelTargetQty > 0
-                ? fileLevelTargetQty
-                : categoryProgressList.reduce((sum, item) => sum + item.targetQty, 0);
-            const primaryUnit = fileLevelUnit || categoryProgressList[0]?.unit || 'Unit';
-
+        function computeTaskProgress(task, reps) {
+            const target = task.kuantiti > 0 ? task.kuantiti : 0;
+            const sorted = reps.slice().sort((x, y) => (x.tarikhIso || '').localeCompare(y.tarikhIso || ''));
+            const doneQty = sorted.reduce((t, r) => t + (r.qty || 0), 0);
+            const pctReps = sorted.filter(r => r.pct !== null);
+            const pctVal = pctReps.length
+                ? (PERATUS_KUMULATIF ? pctReps[pctReps.length - 1].pct : pctReps.reduce((t, r) => t + r.pct, 0))
+                : null;
+            const isDone = sorted.some(r => r.done);
+            const parts = [];
+            if (target > 0 && doneQty > 0) parts.push(doneQty / target * 100);
+            if (pctVal !== null) parts.push(pctVal);
+            let pct = isDone ? 100 : (PERATUS_KUMULATIF ? Math.max(0, ...parts) : parts.reduce((a, b) => a + b, 0));
+            pct = Math.min(100, Math.max(0, pct));
+            const datesWithValue = sorted.map(r => r.tarikhIso).filter(Boolean);
             return {
-                percentage: Math.round(overallPct * 10) / 10,
-                doneQty: Math.round(totalDone * 100) / 100,
-                targetQty: Math.round(totalTarget * 100) / 100,
-                unit: primaryUnit,
-                categoryProgressList: categoryProgressList
+                tugas: task.tugas || 'Tanpa tugas',
+                kategori: [...new Set(splitMultiValues(task.kategori))].join(', '),
+                percentage: Math.round(pct * 10) / 10,
+                // "Siap" = kuantiti penuh; laporan % sahaja tiada kuantiti siap (jangan papar 0 / sasaran)
+                doneQty: Math.round((isDone && target > 0 ? Math.max(doneQty, target) : doneQty) * 100) / 100,
+                targetQty: Math.round(target * 100) / 100,
+                unit: task.unit || 'Unit',
+                hasTarget: target > 0 || pctVal !== null || isDone,
+                reportCount: sorted.length,
+                lastDate: datesWithValue.length ? datesWithValue[datesWithValue.length - 1] : ''
             };
         }
 
@@ -1410,7 +1429,7 @@ html,body{max-width:100%;overflow-x:hidden}
         // jadi kiraan progres hanya ada di SATU tempat (app ini). Hub bergantung pada medan di bawah: tukar dengan berhati-hati.
         function publishSummary(groups, totalRecords, surveyorCount, avgProgress) {
             // Jangan tulis ganti ringkasan lama dengan "0 fail" bila CSV belum/gagal dimuat
-            if (!rawRekodRows.length && !rawStatRows.length && !localAddedRecords.length) return;
+            if (!rawRekodRows.length && !rawLaporanRows.length && !localAddedRecords.length) return;
             const summary = {
                 v: 1,
                 at: new Date().toISOString(),
@@ -1440,7 +1459,8 @@ html,body{max-width:100%;overflow-x:hidden}
             const container = document.getElementById('fileCardsContainer');
             if (!container || !window.__processedData) return;
 
-            const { combinedRecords, parsedStat, fileSurveyorBackupMap, fileCategoriesFromStatMap } = window.__processedData;
+            const { combinedRecords, parsedLaporan, fileSurveyorBackupMap } = window.__processedData;
+            let matchedLaporanCount = 0, unmatchedLaporanCount = 0;
             const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
             const filterKat = document.getElementById('filterKategoriSelect')?.value || 'ALL';
 
@@ -1500,96 +1520,97 @@ html,body{max-width:100%;overflow-x:hidden}
             let fileGroups = Array.from(fileGroupsMap.values()).map(grp => {
                 const fNorm = grp.normKey;
 
-                if (fileCategoriesFromStatMap && fileCategoriesFromStatMap[fNorm]) {
-                    fileCategoriesFromStatMap[fNorm].forEach(k => {
-                        if (isOfficialKategori(k)) addUniqueCaseInsensitive(grp.categories, canonicalKategori(k));
-                    });
-                }
-
                 if (fileSurveyorBackupMap && fileSurveyorBackupMap[fNorm]) {
-                    fileSurveyorBackupMap[fNorm].forEach(s => {
-                        if (isKnownSurveyor(s)) addUniqueCaseInsensitive(grp.surveyors, s);
-                    });
+                    fileSurveyorBackupMap[fNorm].forEach(s => addUniqueCaseInsensitive(grp.surveyors, s));
                 }
 
                 const categoriesArr = Array.from(grp.categories);
                 const surveyorsArr = Array.from(grp.surveyors);
 
-                // ---- Pecahan ikut kawasan ----
-                const statRowsForFile = (parsedStat || []).filter(r => r.idFile && normalizeFileId(r.idFile) === fNorm);
-                const allRows = [...grp.rekodEntries, ...statRowsForFile];
+                // ---- Padan laporan harian → tugas rekod ----
+                const laporanForFile = (parsedLaporan || []).filter(r => r.idFile && normalizeFileId(r.idFile) === fNorm);
+                const tasks = grp.rekodEntries;
+                const { byTask, unmatched } = assignLaporanToTasks(tasks, laporanForFile);
+                const taskProgress = tasks.map((t, i) => ({ ...computeTaskProgress(t, byTask[i]), kawasanKey: kawasanKey(t.kawasan), jangkaSiap: tarikhToIso(t.jangkaSiap) }));
+                matchedLaporanCount += laporanForFile.length - unmatched.length;
+                unmatchedLaporanCount += unmatched.length;
+
+                // ---- Pecahan ikut kawasan (kawasan datang dari Rekod Kerja) ----
                 const labels = new Map();
-                allRows.forEach(r => {
+                tasks.forEach(r => {
                     const k = kawasanKey(r.kawasan);
                     if (k && !labels.has(k)) labels.set(k, kawasanLabel(r.kawasan));
                 });
-                // Rekod tanpa kawasan TIDAK dicampur ke mana-mana kawasan; ia dikumpul
-                // dalam "Kawasan tidak dinyatakan" supaya progres setiap kawasan tepat.
-                const keyOf = r => kawasanKey(r.kawasan);
                 const keys = Array.from(labels.keys());
-                if (allRows.some(r => keyOf(r) === '')) keys.push('');
+                if (tasks.some(r => kawasanKey(r.kawasan) === '')) keys.push('');
 
                 const kawasanProgress = keys.map(key => {
-                    const rekodK = grp.rekodEntries.filter(r => keyOf(r) === key);
-                    const statK = statRowsForFile.filter(r => keyOf(r) === key);
-                    const catSet = new Set();
-                    [...rekodK, ...statK].forEach(r => splitMultiValues(r.kategori).forEach(k => {
-                        if (isOfficialKategori(k)) addUniqueCaseInsensitive(catSet, canonicalKategori(k));
-                    }));
-                    const cats = catSet.size ? Array.from(catSet) : categoriesArr;
-                    const prog = resolveProgressDetailsForFile(grp.idFile, cats, rekodK, st => keyOf(st) === key);
-                    const jangkaList = rekodK.map(r => tarikhToIso(r.jangkaSiap)).filter(Boolean).sort();
-
-                    // Jumlah kawasan = jumlah semua kategori, supaya "Siap x / y" sepadan dengan peratus
-                    const catList = prog.categoryProgressList || [];
-                    const units = new Set(catList.filter(c => c.targetQty > 0 || c.doneQty > 0).map(c => c.unit));
-                    const mixedUnits = units.size > 1;
-                    // "Siap x / y" ikut kategori yang ada sasaran sahaja, supaya sepadan dengan peratus
-                    const targeted = catList.filter(c => c.hasTarget);
-                    const basis = targeted.length ? targeted : catList;
-                    const sum = f => Math.round(basis.reduce((t, c) => t + (c[f] || 0), 0) * 100) / 100;
+                    const list = taskProgress.filter(t => t.kawasanKey === key);
+                    const counted = list.filter(t => t.hasTarget);
+                    const pct = counted.length ? counted.reduce((s, t) => s + t.percentage, 0) / counted.length : 0;
+                    const targeted = list.filter(t => t.targetQty > 0);
+                    const units = new Set(targeted.map(t => t.unit));
+                    const sum = f => Math.round(targeted.reduce((s, t) => s + t[f], 0) * 100) / 100;
+                    const jangkaList = list.map(t => t.jangkaSiap).filter(Boolean).sort();
+                    const lastList = list.map(t => t.lastDate).filter(Boolean).sort();
                     return {
                         key,
                         label: key ? labels.get(key) : 'Kawasan tidak dinyatakan',
-                        percentage: prog.percentage,
-                        doneQty: catList.length ? sum('doneQty') : prog.doneQty,
-                        targetQty: catList.length ? sum('targetQty') : prog.targetQty,
-                        unit: units.size === 1 ? Array.from(units)[0] : prog.unit,
-                        mixedUnits,
-                        // Kawasan tanpa sasaran kuantiti (dan tiada peratus dari sheet) tak boleh dikira peratusnya
-                        hasTarget: catList.some(c => c.targetQty > 0) || prog.percentage > 0,
-                        categoryProgressList: prog.categoryProgressList || [],
+                        percentage: Math.round(pct * 10) / 10,
+                        doneQty: sum('doneQty'),
+                        targetQty: sum('targetQty'),
+                        unit: units.size === 1 ? Array.from(units)[0] : 'Unit',
+                        mixedUnits: units.size > 1,
+                        hasTarget: counted.length > 0,
+                        taskProgressList: list,
+                        reportCount: list.reduce((s, t) => s + t.reportCount, 0),
                         jangkaSiap: jangkaList.length ? jangkaList[jangkaList.length - 1] : '',
-                        tugasCount: rekodK.length
+                        lastDate: lastList.length ? lastList[lastList.length - 1] : ''
                     };
                 }).sort((a, b) => (a.key === '') - (b.key === '') || a.label.localeCompare(b.label));
 
-                // Progres fail = purata progres semua kawasan
                 // Progres fail = purata kawasan yang ADA sasaran sahaja
-                const counted = kawasanProgress.filter(k => k.hasTarget);
-                const fileProgress = counted.length
-                    ? counted.reduce((sum, k) => sum + k.percentage, 0) / counted.length
+                const countedK = kawasanProgress.filter(k => k.hasTarget);
+                const fileProgress = countedK.length
+                    ? countedK.reduce((sum, k) => sum + k.percentage, 0) / countedK.length
                     : 0;
 
-                // Sasaran kuantiti = jumlah sasaran setiap kawasan, ikut unit
+                // Sasaran kuantiti = jumlah sasaran setiap tugas, ikut unit
                 const aggregatedQuantities = {};
-                kawasanProgress.forEach(k => k.categoryProgressList.forEach(c => {
-                    if (c.targetQty > 0) aggregatedQuantities[c.unit] = Math.round(((aggregatedQuantities[c.unit] || 0) + c.targetQty) * 100) / 100;
-                }));
+                taskProgress.forEach(t => {
+                    if (t.targetQty > 0) aggregatedQuantities[t.unit] = Math.round(((aggregatedQuantities[t.unit] || 0) + t.targetQty) * 100) / 100;
+                });
 
                 const jangkaAll = kawasanProgress.map(k => k.jangkaSiap).filter(Boolean).sort();
+                const lastAll = laporanForFile.map(r => r.tarikhIso).filter(Boolean).sort();
 
                 return {
                     ...grp,
                     categoriesArr,
                     surveyorsArr,
                     kawasanProgress,
+                    unmatchedLaporan: unmatched,
+                    laporanCount: laporanForFile.length,
+                    lastReport: lastAll.length ? lastAll[lastAll.length - 1] : '',
+                    laporanText: laporanForFile.map(r => r.tugasan.toLowerCase()).join(' '),
                     kawasanLabels: kawasanProgress.filter(k => k.key).map(k => k.label),
                     progress: Math.round(fileProgress * 10) / 10,
                     quantitiesByUnit: aggregatedQuantities,
                     jangkaSiap: jangkaAll.length ? jangkaAll[jangkaAll.length - 1] : grp.jangkaSiap
                 };
             });
+
+            // Laporan yang No File-nya tiada langsung dalam Rekod Kerja
+            const rekodFileKeys = new Set(Array.from(fileGroupsMap.keys()));
+            const orphanFiles = new Set((parsedLaporan || []).filter(r => r.idFile && !rekodFileKeys.has(normalizeFileId(r.idFile))).map(r => r.idFile));
+            const orphanCount = (parsedLaporan || []).filter(r => r.idFile && !rekodFileKeys.has(normalizeFileId(r.idFile))).length;
+            const info = document.getElementById('laporanInfo');
+            if (info) {
+                const bits = [`${(parsedLaporan || []).length} laporan`, `${matchedLaporanCount} dipadankan`];
+                if (unmatchedLaporanCount) bits.push(`${unmatchedLaporanCount} tak padan tugas`);
+                if (orphanCount) bits.push(`${orphanCount} No File tiada dalam rekod (${Array.from(orphanFiles).slice(0, 4).join(', ')}${orphanFiles.size > 4 ? '…' : ''})`);
+                info.textContent = bits.join(' · ');
+            }
 
             const allSurveyorsGlobal = new Set();
             const allCategoriesGlobal = new Set();
@@ -1619,7 +1640,8 @@ html,body{max-width:100%;overflow-x:hidden}
                     g.kawasanLabels.some(k => k.toLowerCase().includes(searchQuery)) ||
                     g.surveyorsArr.some(s => s.toLowerCase().includes(searchQuery)) ||
                     g.categoriesArr.some(c => c.toLowerCase().includes(searchQuery)) ||
-                    g.tasks.some(t => t.tugas.toLowerCase().includes(searchQuery))
+                    g.tasks.some(t => t.tugas.toLowerCase().includes(searchQuery)) ||
+                    g.laporanText.includes(searchQuery)
                 );
             }
 
@@ -1693,18 +1715,21 @@ html,body{max-width:100%;overflow-x:hidden}
                 }).join('');
                 const highlightClass = grp.isNewlyAdded ? 'new-card-highlight' : '';
 
-                const categoryBars = list => (list || []).map(catProg => {
-                    const cPct = Math.min(100, Math.max(0, Math.round(catProg.percentage || 0)));
-                    const cBarWidth = catProg.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0;
-                    const cBarColor = cPct >= 80 ? 'var(--ok)' : cPct >= 40 ? 'var(--ind-600)' : 'var(--ind-500)';
-                    const cFractionText = catProg.targetQty > 0
-                        ? `<span>Siap <b class="g">${catProg.doneQty}</b> / ${catProg.targetQty} ${escapeHtml(catProg.unit)}</span>`
-                        : (catProg.doneQty > 0 ? `<span>Siap <b class="g">${catProg.doneQty}</b></span>` : '');
+                // Bar setiap tugas dalam kawasan (laporan harian dipadankan ke tugas)
+                const taskBars = list => (list || []).map(tp => {
+                    const cPct = Math.min(100, Math.max(0, Math.round(tp.percentage || 0)));
+                    const cBarWidth = tp.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0;
+                    const cBarColor = cPct >= 100 ? 'var(--ok)' : cPct >= 40 ? 'var(--ind-600)' : 'var(--ind-500)';
+                    const frac = tp.doneQty <= 0 ? `<span>${tp.reportCount} laporan</span>`
+                        : tp.targetQty > 0 ? `<span>Siap <b class="g">${tp.doneQty}</b> / ${tp.targetQty} ${escapeHtml(tp.unit)}</span>`
+                        : `<span>Siap <b class="g">${tp.doneQty}</b></span>`;
+                    const right = !tp.reportCount ? `<span>Belum ada laporan</span>${tp.hasTarget ? `<b>0%</b>` : ''}`
+                        : tp.hasTarget ? `${frac}<b>${cPct}%</b>` : `${frac}<span class="warn-t">Tiada sasaran</span>`;
                     return `
                         <div class="cr">
                             <div class="row">
-                                <span class="cr-n"><span>${escapeHtml(catProg.kategori)}</span></span>
-                                <span class="cr-v">${cFractionText}${catProg.hasTarget ? `<b>${cPct}%</b>` : `<span>Tiada sasaran</span>`}</span>
+                                <span class="cr-n"><span title="${escapeHtml(tp.kategori)}">${escapeHtml(tp.tugas)}</span></span>
+                                <span class="cr-v">${right}</span>
                             </div>
                             <div class="bar sm"><i style="width:${cBarWidth}%;background:${cBarColor}"></i></div>
                         </div>
@@ -1713,14 +1738,12 @@ html,body{max-width:100%;overflow-x:hidden}
 
                 const kawasanHtml = grp.kawasanProgress.map(kw => {
                     const kPct = Math.min(100, Math.max(0, Math.round(kw.percentage || 0)));
-                    const kBarColor = kPct >= 80 ? 'var(--ok)' : 'var(--ind-600)';
-                    const kQty = kw.mixedUnits
-                        ? `${kw.categoryProgressList.length} kategori, unit berbeza: lihat pecahan di bawah`
-                        : kw.targetQty > 0
-                        ? `Siap <b class="g">${kw.doneQty}</b> / <b>${kw.targetQty} ${escapeHtml(kw.unit)}</b>`
-                        : (kw.doneQty > 0
-                            ? `Siap <b class="g">${kw.doneQty}${kw.unit && kw.unit !== 'Unit' ? ' ' + escapeHtml(kw.unit) : ''}</b> · ${kw.key && kw.tugasCount === 0 ? '<span class="warn-t">kawasan ini tiada dalam Tambah Kerja, semak ejaan</span>' : 'tiada sasaran dalam rekod kerja'}`
-                            : 'Belum ada laporan');
+                    const kBarColor = kPct >= 100 ? 'var(--ok)' : 'var(--ind-600)';
+                    const kQty = !kw.reportCount ? 'Belum ada laporan harian'
+                        : kw.mixedUnits ? `${kw.taskProgressList.length} tugas, unit berbeza: lihat pecahan di bawah`
+                        : kw.targetQty > 0 && kw.doneQty > 0 ? `Siap <b class="g">${kw.doneQty}</b> / <b>${kw.targetQty} ${escapeHtml(kw.unit)}</b>`
+                        : `${kw.reportCount} laporan`;
+                    const kLast = kw.lastDate ? ` · Laporan terakhir <b>${escapeHtml(formatTarikh(kw.lastDate))}</b>` : '';
                     const kJangka = kw.jangkaSiap ? ` · Jangka siap <b>${escapeHtml(formatTarikh(kw.jangkaSiap))}</b>` : '';
                     return `
                         <div class="kw${kw.key ? '' : ' nokey'}">
@@ -1729,11 +1752,22 @@ html,body{max-width:100%;overflow-x:hidden}
                                 ${kw.hasTarget ? `<span class="pct">${kPct}%</span>` : `<span class="muted sm">Tiada sasaran</span>`}
                             </div>
                             <div class="bar"><i style="width:${kw.hasTarget && kPct > 0 ? Math.max(kPct, 3) : 0}%;background:${kBarColor}"></i></div>
-                            <p class="meta">${kQty}${kJangka}</p>
-                            ${kw.categoryProgressList.length > 1 ? `<div class="cats">${categoryBars(kw.categoryProgressList)}</div>` : ''}
+                            <p class="meta">${kQty}${kLast}${kJangka}</p>
+                            ${kw.taskProgressList.length > 1 ? `<div class="cats">${taskBars(kw.taskProgressList)}</div>` : ''}
                         </div>
                     `;
                 }).join('');
+
+                // Laporan yang tak dapat dipadankan: tunjuk supaya ejaan Tugasan / kawasan boleh dibetulkan
+                const um = grp.unmatchedLaporan || [];
+                const unmatchedHtml = um.length ? `
+                        <div class="kw nokey">
+                            <div class="row">
+                                <span class="kw-n"><i data-lucide="alert-triangle" class="i14"></i><span>Laporan tak dikira (${um.length})</span></span>
+                            </div>
+                            <p class="meta">${um.slice(0, 5).map(r => `"${escapeHtml(r.tugasan || '-')}" ${escapeHtml(formatTarikh(r.tarikh))}: ${escapeHtml(r.reason)}`).join('<br>')}${um.length > 5 ? `<br>+${um.length - 5} lagi` : ''}</p>
+                            <p class="meta">Pastikan Tugasan / Output sama dengan Tugas dalam Tambah Kerja. Jika tugas sama wujud di beberapa kawasan, tulis No File sebagai "MCP 001/26 Kawasan".</p>
+                        </div>` : '';
 
                 const subtitle = 'No. fail projek' + (grp.kawasanLabels.length > 1
                     ? ` · ${grp.kawasanLabels.length} kawasan`
@@ -1777,12 +1811,13 @@ html,body{max-width:100%;overflow-x:hidden}
 
                         <div>
                             <div class="lbl">Progres kawasan (${grp.kawasanProgress.length})</div>
-                            <div class="kws">${kawasanHtml}</div>
+                            <div class="kws">${kawasanHtml}${unmatchedHtml}</div>
                         </div>
 
                         <div class="fc-f">
                             <span><i data-lucide="calendar" class="i14"></i>Mula <b>${escapeHtml(formatTarikh(grp.tarikhMula))}</b></span>
                             <span><i data-lucide="flag" class="i14"></i>Siap <b>${escapeHtml(formatTarikh(grp.jangkaSiap))}</b>${dueTxt}</span>
+                            <span><i data-lucide="clipboard-check" class="i14"></i>${grp.laporanCount ? `${grp.laporanCount} laporan · terakhir <b>${escapeHtml(formatTarikh(grp.lastReport))}</b>` : 'Belum ada laporan harian'}</span>
                         </div>
                     </article>
                 `;
@@ -1816,7 +1851,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 container.innerHTML = html;
             };
 
-            renderTable(rawStatRows, 'statsTableContainer');
+            renderTable(rawLaporanRows, 'statsTableContainer');
             renderTable(rawRekodRows, 'recordsTableContainer');
         }
 
@@ -1944,7 +1979,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 return;
             }
 
-            // Jika kawasan ditaip dalam No File ("MCP 001/26 Mangkuk"), pindahkan ke medan Kawasan
+            // Jika kawasan ditaip dalam No File ("MCP 001/26 Bangi"), pindahkan ke medan Kawasan
             const fileParts = splitFileAndKawasan(document.getElementById('idFile').value);
             let kawasan = kawasanLabel(document.getElementById('kawasan').value);
             if (fileParts.kawasan) {
