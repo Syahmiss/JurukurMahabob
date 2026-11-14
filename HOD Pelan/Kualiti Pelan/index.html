@@ -1,1988 +1,660 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-  <base target="_top">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MAHABOB DIGITAL PLAN QC — Jurukur Mahabob & Co Sdn. Bhd.</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
-  <style>
-    /* ============================================================
-       Checklist Plan — tema JMC Operations Hub (light, indigo + kuning)
-       Markup & JS asal tak berubah: CSS ni petakan semula kelas
-       "glass-*" dan utiliti warna Bootstrap ke token hub.
-       ============================================================ */
-    :root{
-      --ind-950:#0A2540; --ind-900:#0F2E55; --ind-800:#1E40AF; --ind-600:#1D4ED8; --ind-500:#3B82F6; --ind-100:#DBEAFE; --ind-50:#EFF6FF;
-      --yel:#FACC15; --yel-600:#EAB308; --yel-50:#FEFCE8; --yel-ink:#0A2540;
-      --bg:#F8FAFC; --surface:#FFFFFF; --line:#E2E8F0; --line2:#F1F5F9;
-      --ink:#1E293B; --ink2:#475569; --muted:#64748B;
-      --ok:#047857; --ok-50:#ECFDF5; --warn:#A16207; --warn-50:#FEF9C3; --bad:#DC2626; --bad-50:#FEE2E2;
-      --f:'Inter','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
-      --r-lg:16px; --r-md:12px;
-      --bs-body-font-family:var(--f); --bs-body-color:var(--ink); --bs-body-bg:var(--bg);
-      --bs-border-color:var(--line); --bs-primary:var(--ind-600); --bs-primary-rgb:29,78,216;
-    }
-    body.glass-bg{background:var(--bg);font-family:var(--f);font-size:14px;line-height:1.5;color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
-    :focus-visible{outline:2px solid var(--yel);outline-offset:2px}
-
-    /* ---------- utiliti Bootstrap gelap → token hub ---------- */
-    body.glass-bg .text-white:not(.btn):not(.badge),
-    body.glass-bg .text-light:not(.btn):not(.badge){color:var(--ink)!important}
-    body.glass-bg .text-white-50,body.glass-bg .text-muted,body.glass-bg .text-secondary{color:var(--muted)!important}
-    body.glass-bg .text-info:not(.btn){color:var(--ind-600)!important}
-    body.glass-bg .text-primary{color:var(--ind-500)!important}
-    body.glass-bg .text-warning:not(.btn){color:var(--warn)!important}
-    body.glass-bg .text-success:not(.btn){color:var(--ok)!important}
-    body.glass-bg .text-danger:not(.btn){color:var(--bad)!important}
-    body.glass-bg .shadow-text{text-shadow:none}
-    body.glass-bg .opacity-75{opacity:1!important}
-    body.glass-bg .border-secondary,body.glass-bg .border-light{border-color:var(--line)!important;--bs-border-opacity:1!important}
-    body.glass-bg .bg-dark.bg-opacity-25{background:var(--bg)!important}
-    body.glass-bg .badge.bg-dark{background:var(--ind-950)!important;color:#fff!important;font-weight:650;font-size:12px!important;border-radius:20px;padding:5px 11px}
-    body.glass-bg .shadow-sm{box-shadow:none!important}
-    body.glass-bg .btn-close-white{filter:none}
-    body.glass-bg h4,body.glass-bg h5,body.glass-bg h6{font-stretch:106%}
-
-    /* ---------- toolbar: tab + sumber data + akaun aktif (tiada header sendiri) ---------- */
-    .ck-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .ck-tools{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .glass-input-group{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 12px}
-    .glass-input-group label{color:var(--ink2)!important;font-weight:600}
-    .glass-input-group select{border:0!important;background:var(--bg)!important}
-
-    /* ---------- tab = segmen ala hub ---------- */
-    .glass-tabs{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;display:inline-flex;gap:4px;flex-wrap:wrap}
-    .glass-tabs .nav-item{margin:0!important}
-    body.glass-bg .glass-tabs .nav-link{background:transparent;color:var(--ink2)!important;border:0;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;position:relative;transition:background .15s,color .15s}
-    body.glass-bg .glass-tabs .nav-link:hover{background:var(--ind-50);color:var(--ind-600)!important}
-    body.glass-bg .glass-tabs .nav-link.active{background:var(--ind-600);color:#fff!important;box-shadow:0 8px 20px -12px rgba(23,21,74,.6)}
-
-    /* ---------- kad = panel hub ---------- */
-    .glass-card,.glass-summary-box,.glass-alert{background:var(--surface)!important;border:1px solid var(--line)!important;border-radius:var(--r-lg)!important;box-shadow:none!important;color:var(--ink)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-    .glass-card.border-start{border-left:1px solid var(--line)!important}
-    .glass-card.border-top.border-3{border-top:1px solid var(--line)!important}
-    .glass-header{background:transparent!important;border-bottom:1px solid var(--line2)!important;color:var(--ink)!important;border-radius:var(--r-lg) var(--r-lg) 0 0!important;font-size:14.5px;font-weight:700!important;font-stretch:106%;position:relative;padding-left:30px!important}
-    .glass-header::before{content:"";position:absolute;left:18px;top:50%;width:4px;height:16px;margin-top:-8px;border-radius:2px;background:var(--yel)}
-    .glass-header h6{font-size:14.5px;font-weight:700}
-    .glass-header>.bi,.glass-header>div:first-child>.bi:first-child,.glass-header>h6>.bi:first-child{display:none}
-    .glass-summary-box{background:var(--bg)!important;border:0!important;border-radius:var(--r-md)!important}
-    .glass-summary-box .small{font-size:11.5px;color:var(--muted);font-weight:600}
-    .glass-alert{background:var(--ind-50)!important;border-color:var(--ind-100)!important;color:var(--ink2)!important;border-radius:var(--r-md)!important}
-    .glass-alert code{color:var(--ind-800)}
-    #dashboardView .glass-card.p-3{padding:15px 18px!important}
-    #dashboardView .glass-card .fs-1{font-size:30px!important;font-weight:720!important;font-stretch:112%;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
-    #dashboardView .glass-card .small.fw-bold{font-weight:600!important;font-size:11.5px}
-    #kpiTotalSheets{display:inline-block;background:linear-gradient(transparent 66%,var(--yel) 66%,var(--yel) 92%,transparent 92%)}
-
-    /* ---------- input ---------- */
-    .glass-input,.glass-input-dark{background:var(--surface)!important;border:1px solid var(--line)!important;color:var(--ink)!important;border-radius:9px!important;backdrop-filter:none}
-    .glass-input-dark::placeholder,.glass-input::placeholder{color:#a3a6c2}
-    .glass-input-dark option,.glass-input option{background:#fff;color:var(--ink)}
-    .glass-input:focus,.glass-input-dark:focus{border-color:var(--ind-600)!important;box-shadow:0 0 0 3px var(--ind-100)!important;background:#fff!important;color:var(--ink)!important}
-    .form-label{color:var(--ink2)!important;font-weight:600!important;font-size:12px!important}
-
-    /* ---------- butang = .btn hub ---------- */
-    body.glass-bg .btn{font-family:var(--f);font-weight:600;border-radius:9px;transition:border-color .15s,color .15s,background .15s}
-    body.glass-bg .btn-info,#btnCreateSheet,[data-sheet-id].btn-info{background:var(--ind-600)!important;border:1px solid var(--ind-600)!important;color:#fff!important}
-    body.glass-bg .btn-info:hover,#btnCreateSheet:hover,[data-sheet-id].btn-info:hover{background:var(--ind-800)!important;border-color:var(--ind-800)!important}
-    body.glass-bg .btn-warning{background:var(--yel)!important;border-color:var(--yel)!important;color:var(--yel-ink)!important}
-    body.glass-bg .btn-warning:hover{background:var(--yel-600)!important;border-color:var(--yel-600)!important}
-    body.glass-bg .btn-secondary,body.glass-bg .btn-outline-light{background:var(--surface)!important;border:1px solid var(--line)!important;color:var(--ink)!important}
-    body.glass-bg .btn-secondary:hover,body.glass-bg .btn-outline-light:hover{border-color:var(--ind-600)!important;color:var(--ind-600)!important}
-    body.glass-bg .btn-outline-info{background:var(--surface);border-color:var(--line);color:var(--ind-600)}
-    body.glass-bg .btn-outline-info:hover{background:var(--ind-50);border-color:var(--ind-600);color:var(--ind-600)}
-    body.glass-bg .btn-outline-warning{background:var(--yel-50);border-color:#f1dc84;color:var(--yel-ink)}
-    body.glass-bg .btn-outline-warning:hover{background:var(--yel);border-color:var(--yel);color:var(--yel-ink)}
-    body.glass-bg .btn-success{background:var(--ok)!important;border-color:var(--ok)!important;color:#fff!important}
-    body.glass-bg .btn-danger{background:var(--bad)!important;border-color:var(--bad)!important;color:#fff!important}
-    body.glass-bg .btn-outline-danger{background:var(--surface);border-color:#f2c4c4;color:var(--bad)}
-    body.glass-bg .btn-outline-danger:hover{background:var(--bad-50);border-color:var(--bad);color:var(--bad)}
-    .glass-btn-hover:hover{filter:none}
-
-    /* ---------- jadual = jadual hub ---------- */
-    .glass-table{color:var(--ink)!important;font-size:12.5px;--bs-table-bg:transparent;--bs-table-color:var(--ink)}
-    .glass-table thead th{background:var(--surface)!important;color:var(--muted)!important;font-size:11.5px;font-weight:600;border-bottom:1px solid var(--line)!important;border-top:0;white-space:nowrap;padding:10px 12px}
-    .glass-table tbody td{background:transparent!important;border-color:var(--line2)!important;color:var(--ink)!important;padding:10px 12px}
-    .glass-table tbody tr:last-child td{border-bottom:0}
-    .glass-table tbody tr:hover td{background:#fafaff!important}
-
-    .checklist-table{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;font-size:13px}
-    .checklist-table th,.checklist-table td{border-color:var(--line)!important;color:var(--ink)!important}
-    .checklist-table thead th{font-weight:650;font-size:12px}
-    .drafter-header{background:var(--ind-50)!important;color:var(--ind-800)!important;border-bottom:2px solid var(--ind-100)!important}
-    .drafter-subheader{background:#f6f7ff!important;color:var(--ind-800)!important}
-    .checker-header{background:var(--yel-50)!important;color:var(--yel-ink)!important;border-bottom:2px solid #f1dc84!important}
-    .checker-subheader{background:#fffcec!important;color:var(--yel-ink)!important}
-    .category-banner{background:var(--ind-950)!important;color:#fff!important;font-weight:700;border-top:0!important;letter-spacing:.2px}
-    .category-banner td,td.category-banner{color:#fff!important;box-shadow:inset 4px 0 0 var(--yel)}
-    .drafter-cell{background:#fcfcff!important}
-    .checker-cell{background:#fffefa!important}
-
-    .tick-group{display:inline-flex;gap:4px}
-    .tick-btn{border:1px solid var(--line);background:#fff;color:var(--ink2);font-weight:700;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:12.5px;font-family:var(--f);transition:border-color .15s,background .15s,color .15s}
-    .tick-btn:hover:not(:disabled){border-color:var(--ind-600);color:var(--ind-600)}
-    .tick-btn:disabled{opacity:.6;cursor:not-allowed}
-    .tick-btn.active-PASS{background:var(--ok)!important;border-color:var(--ok)!important;color:#fff!important}
-    .tick-btn.active-FAIL{background:var(--bad)!important;border-color:var(--bad)!important;color:#fff!important}
-    .tick-btn.active-NA{background:var(--ink2)!important;border-color:var(--ink2)!important;color:#fff!important}
-
-    .list-group-item{background:transparent!important;border-color:var(--line2)!important;color:var(--ink)!important;font-size:12.5px}
-    .glass-badge{background:var(--bg)!important;border:1px solid var(--line)!important;color:var(--ink2)!important;font-weight:600}
-    #progressCounterBadge{background:var(--ind-50)!important;color:var(--ind-800)!important;border-color:var(--ind-100)!important}
-    .sticky-bottom-bar{position:sticky;bottom:0;z-index:1010;box-shadow:0 -10px 30px -18px rgba(23,21,74,.35)!important}
-    .pulse-btn{animation:pulse 2s infinite}
-    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
-
-    /* ---------- slicer = chip hub ---------- */
-    .slicer-btn{background:var(--surface);border:1px solid var(--line);color:var(--ink2);padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--f);transition:border-color .15s,background .15s,color .15s}
-    .slicer-btn:hover{background:var(--ind-50);color:var(--ind-600);border-color:var(--ind-100)}
-    .slicer-btn.active-project{background:var(--ind-600)!important;color:#fff!important;border-color:var(--ind-600)!important;box-shadow:0 8px 20px -12px rgba(23,21,74,.6)}
-    .slicer-btn .badge{font-weight:650}
-    .slicer-sheet-btn{background:var(--surface);border:1px solid var(--line);color:var(--ink);padding:8px 14px;border-radius:10px;font-size:12.5px;cursor:pointer;text-align:left;font-family:var(--f);transition:border-color .15s,background .15s}
-    .slicer-sheet-btn:hover{background:var(--yel-50);border-color:#f1dc84}
-    .slicer-sheet-btn.active-sheet{background:var(--yel-50)!important;border-color:var(--yel)!important;box-shadow:inset 0 0 0 1px var(--yel)}
-
-    /* ---------- badge status = chip hub ---------- */
-    .badge-approved,.badge-returned,.badge-draft,.badge-pending{display:inline-flex;align-items:center;gap:5px;font-weight:650;border:0!important;border-radius:20px}
-    .badge-approved::before,.badge-returned::before,.badge-draft::before,.badge-pending::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-    .badge-approved{background:var(--ok-50)!important;color:var(--ok)!important}
-    .badge-returned{background:var(--bad-50)!important;color:var(--bad)!important}
-    .badge-draft{background:var(--line2)!important;color:var(--ink2)!important}
-    .badge-pending{background:var(--ind-50)!important;color:var(--ind-600)!important}
-    .source-badge{font-size:11.5px;border-radius:8px;padding:6px 10px;font-weight:500}
-
-    /* ---------- modal ---------- */
-    .modal-content.glass-card{border-top:4px solid var(--yel)!important}
-    .modal-header{border-color:var(--line)!important}
-    .modal-title{font-size:16px;font-weight:700}
-    .modal-backdrop.show{background:var(--ind-950);opacity:.5}
-
-    @media (max-width:860px){.glass-tabs{display:flex}.glass-input-group select{min-width:0!important}}
-    @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-
-    /* ============================================================
-       JM THEME LAYER — ikut template "Dashboard Jualan & Invois"
-       ============================================================ */
-    body.glass-bg{font-family:var(--f);background:var(--bg)}
-    ::selection{background:var(--yel);color:var(--ind-950)}
-
-    /* Toolbar = bar navy rounded-2xl, tab aktif gold */
-    .ck-toolbar{background:var(--ind-950);border-radius:16px;padding:8px 12px;box-shadow:0 4px 10px -4px rgba(10,37,64,.4)}
-    .glass-tabs{background:none;border:0;padding:0;gap:6px}
-    body.glass-bg .glass-tabs .nav-link{color:#DBEAFE!important;padding:10px 16px;border-radius:12px}
-    body.glass-bg .glass-tabs .nav-link:hover{background:rgba(255,255,255,.1);color:#fff!important}
-    body.glass-bg .glass-tabs .nav-link.active{background:var(--yel);color:var(--ind-950)!important;font-weight:700!important;box-shadow:0 4px 10px -2px rgba(0,0,0,.25)}
-    body.glass-bg .ck-tools .glass-badge{background:rgba(255,255,255,.1)!important;border:0!important;color:#BFDBFE!important}
-    .ck-tools .glass-input-group{background:rgba(255,255,255,.1);border:0}
-    body.glass-bg .ck-tools .glass-input-group label{color:#BFDBFE!important}
-    .ck-tools .glass-input-group select{background:#fff!important;border-radius:10px!important}
-
-    /* Kad = bg-white rounded-2xl border-slate-200 shadow-sm */
-    .glass-card{border-radius:16px!important;box-shadow:0 1px 2px rgba(15,23,42,.06)!important}
-    .glass-header,.glass-header h6{color:var(--ind-950)!important}
-    .glass-summary-box{background:var(--line2)!important}
-
-    /* Aksen border-4 → bar atas berwarna (macam kad KPI template) */
-    .glass-card.border-start.border-4{border-top:4px solid #334155!important}
-    .glass-card.border-start.border-4.border-info{border-top-color:var(--ind-600)!important}
-    .glass-card.border-start.border-4.border-success{border-top-color:var(--ok)!important}
-    .glass-card.border-start.border-4.border-danger{border-top-color:var(--bad)!important}
-    .glass-card.border-start.border-4.border-warning{border-top-color:var(--yel)!important}
-    .glass-card.border-top.border-info.border-3{border-top:4px solid var(--ind-600)!important}
-
-    /* KPI */
-    #dashboardView .glass-card.p-3{padding:20px!important}
-    #dashboardView .glass-card .small.fw-bold{text-transform:uppercase;letter-spacing:.06em}
-    #dashboardView .glass-card .fs-1{font-weight:800!important;font-stretch:100%;color:var(--ind-950)}
-    #dashboardView .glass-card .fs-1.text-success{color:var(--ok)!important}
-    #dashboardView .glass-card .fs-1.text-danger{color:var(--bad)!important}
-    #dashboardView .glass-card .fs-1.text-warning{color:#A16207!important}
-    #kpiTotalSheets{background:none}
-    #dashboardView .row>.col-md-3:first-child .glass-card{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--ind-950),var(--ind-800))!important;border:1px solid #1E3A8A!important}
-    #dashboardView .row>.col-md-3:first-child .glass-card::after{content:"";position:absolute;right:-16px;top:-16px;width:96px;height:96px;border-radius:50%;background:rgba(250,204,21,.12);pointer-events:none}
-    #dashboardView .row>.col-md-3:first-child .glass-card .text-white-50{color:#BFDBFE!important}
-    #dashboardView .row>.col-md-3:first-child #kpiTotalSheets{color:#fff!important}
-    #dashboardView h4{color:var(--ind-950)!important;font-weight:800}
-
-    /* Input */
-    .glass-input,.glass-input-dark{border-color:#CBD5E1!important;border-radius:12px!important}
-    .glass-input:focus,.glass-input-dark:focus{border-color:var(--ind-600)!important;box-shadow:0 0 0 2px var(--ind-600)!important}
-
-    /* Butang */
-    body.glass-bg .btn{border-radius:12px}
-    body.glass-bg .btn:active{transform:scale(.97)}
-    body.glass-bg .btn-info,#btnCreateSheet,[data-sheet-id].btn-info{background:var(--ind-950)!important;border-color:var(--ind-950)!important}
-    body.glass-bg .btn-info:hover,#btnCreateSheet:hover,[data-sheet-id].btn-info:hover{background:var(--ind-800)!important;border-color:var(--ind-800)!important}
-    body.glass-bg .btn-secondary,body.glass-bg .btn-outline-light{border-color:#CBD5E1!important}
-    body.glass-bg .btn-secondary:hover,body.glass-bg .btn-outline-light:hover{background:var(--ind-50)!important;color:var(--ind-950)!important;border-color:var(--ind-600)!important}
-
-    /* Jadual = thead navy, teks putih uppercase */
-    .glass-table thead th{background:var(--ind-950)!important;color:#fff!important;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:12px 14px}
-    .glass-table tbody td{padding:12px 14px;border-color:var(--line)!important}
-    .glass-table tbody tr:hover td{background:rgba(239,246,255,.6)!important}
-    .checklist-table{border-radius:16px}
-    .checklist-table thead tr:first-child th:not(.drafter-header):not(.checker-header){background:var(--ind-950)!important;color:#fff!important}
-
-    /* Slicer = pill rounded-full */
-    .slicer-btn.active-project{background:var(--ind-950)!important;border-color:var(--ind-950)!important}
-    .slicer-sheet-btn{border-radius:12px}
-
-    /* Badge status */
-    .badge-pending{background:var(--ind-50)!important;color:var(--ind-600)!important}
-
-    /* Modal */
-    .modal-content.glass-card{border-radius:16px!important}
-    .modal-backdrop.show{background:var(--ind-950);opacity:.55}
-  
-/* ============================================================
-   JM MOBILE — skrin ≤ 640px: tiada scroll ke tepi.
-   Jadual bertukar jadi kad; label lajur diisi oleh skrip jmCards().
-   ============================================================ */
-html,body{max-width:100%;overflow-x:hidden}
-@media (max-width:640px){
-  .tbl,.tw,.table-responsive,.tbl-wrap{overflow:visible!important;border:0!important;background:none!important;margin:0!important;border-radius:0!important;max-height:none!important}
-  table.jm-cards{min-width:0!important;width:100%!important;border:0!important;background:none!important;border-collapse:separate!important}
-  table.jm-cards thead{display:none!important}
-  table.jm-cards,table.jm-cards tbody,table.jm-cards tfoot,table.jm-cards tr,table.jm-cards td{display:block!important;width:100%!important;max-width:none!important}
-  table.jm-cards tr{position:relative;background:#fff;border:1px solid #E2E8F0;border-radius:12px;margin:0 0 10px;padding:4px 14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
-  table.jm-cards tbody tr:hover td,table.jm-cards tbody tr:hover{background:#fff!important}
-  table.jm-cards td{position:relative;padding:9px 0 9px 40%!important;min-height:36px;border:0!important;border-bottom:1px solid #F1F5F9!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere;background:none!important;box-shadow:none!important}
-  table.jm-cards td:last-child{border-bottom:0!important}
-  table.jm-cards td::before{content:attr(data-label);position:absolute;left:0;top:9px;width:36%;font-size:10.5px;font-weight:600;line-height:1.35;text-transform:uppercase;letter-spacing:.05em;color:#64748B;white-space:normal}
-  /* sel pertama = tajuk kad: label di atas, nilai penuh lebar */
-  table.jm-cards td:first-child:not(.jm-full){padding:10px 0!important;font-size:14px}
-  table.jm-cards td:first-child:not(.jm-full)::before{position:static;display:block;width:auto;margin-bottom:3px}
-  /* sel tanpa label (cth. butang padam) */
-  table.jm-cards td.jm-nolabel{padding-left:0!important;text-align:right!important}
-  table.jm-cards td.jm-nolabel::before{display:none}
-  /* baris colspan (kategori, kosong, memuatkan) */
-  table.jm-cards td.jm-full{padding:12px 0!important;text-align:center!important;border-bottom:0!important}
-  table.jm-cards td.jm-full::before{display:none}
-  table.jm-cards tr:has(> td.jm-full:only-child){padding:0 14px}
-  table.jm-cards td.category-banner,table.jm-cards .category-banner td{text-align:left!important;padding:10px 14px!important;border-radius:10px;margin:0 -14px;width:calc(100% + 28px)!important}
-  table.jm-cards td.category-banner{background:#0A2540!important;color:#fff!important;box-shadow:inset 4px 0 0 #FACC15!important}
-  table.jm-cards tr:has(> td.category-banner){background:none;border:0;box-shadow:none;padding:0}
-  /* kandungan dalam sel */
-  table.jm-cards td .prog,table.jm-cards td .mini{min-width:0;max-width:100%}
-  table.jm-cards td input,table.jm-cards td select,table.jm-cards td textarea{width:100%;max-width:100%}
-  table.jm-cards td .tick-group{flex-wrap:wrap}
-  table.jm-cards td .clip{max-width:100%;white-space:normal}
-  img,video,canvas,svg{max-width:100%}
-}
-
-    @media (max-width:640px){
-      .container-fluid{padding-left:14px!important;padding-right:14px!important}
-      .ck-toolbar{flex-direction:column;align-items:stretch;padding:6px}
-      .glass-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
-      .glass-tabs .nav-item{margin:0!important;min-width:0}
-      body.glass-bg .glass-tabs .nav-link{width:100%;height:100%;white-space:normal;text-align:center;line-height:1.25;padding:9px 6px;font-size:12px}
-      .glass-tabs .nav-link .bi{display:none}
-      .ck-tools{margin-left:0;flex-direction:column;align-items:stretch}
-      .ck-tools .glass-input-group{flex-wrap:wrap;gap:6px}
-      .ck-tools .glass-input-group select{min-width:0!important;flex:1}
-      .glass-header{flex-wrap:wrap;gap:8px}
-      .glass-summary-box>[class*="col-"]{flex:0 0 50%;max-width:50%;border:0!important;padding:6px!important}
-      #activeChecklistContainer>.d-flex>.d-flex{flex-wrap:wrap}
-      .sticky-bottom-bar [class*="col-md"]{border:0!important}
-      .sticky-bottom-bar .d-flex{flex-wrap:wrap}
-      #dashboardView>.d-flex:first-child{flex-wrap:wrap;gap:10px}
-      #dashboardView h4{font-size:19px}
-      #dashboardView .glass-card .fs-1{font-size:26px!important}
-      .slicer-sheet-btn{flex:1 1 100%}
-    }
-</style>
-</head>
-<body class="glass-bg">
-
-
-  <div class="container-fluid px-4 pt-4 pb-4">
-    <!-- Notis mod baca sahaja (Google Sheet terbitan) -->
-    <div id="readOnlyNotice" class="alert glass-alert shadow-sm small mb-4" style="display:none;"></div>
-
-    <!-- Navigasi Tab -->
-    <div class="ck-toolbar mb-4">
-    <ul class="nav nav-pills glass-tabs" id="mainNavTabs">
-      <li class="nav-item me-2">
-        <button class="nav-link active fw-semibold" id="tabBtnSheets" onclick="switchView('sheetsView')">
-          <i class="bi bi-folder2-open me-1"></i>1. Pendaftaran &amp; Senarai Pelan
-        </button>
-      </li>
-      <li class="nav-item me-2">
-        <button class="nav-link fw-semibold" id="tabBtnChecklist" onclick="switchView('checklistView')">
-          <i class="bi bi-check2-square me-1"></i>2. Borang Senarai Semak
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link fw-semibold text-info" id="tabBtnDashboard" onclick="switchView('dashboardView')">
-          <i class="bi bi-speedometer2 me-1"></i>3. Interactive QC Dashboard
-        </button>
-      </li>
-    </ul>
-      <div class="ck-tools">
-        <span id="dataSourceBadge" class="badge glass-badge source-badge d-inline-flex align-items-center gap-1">
-          <i class="bi bi-hourglass-split"></i> Menyambung...
-        </span>
-        <div class="d-flex align-items-center glass-input-group">
-          <label for="activeUserSelect" class="small me-2 mb-0 text-nowrap"><i class="bi bi-person-badge me-1"></i>Akaun Aktif:</label>
-          <select id="activeUserSelect" class="form-select form-select-sm glass-input" style="min-width: 200px;" onchange="onUserChange()">
-            <option value="">-- Pilih Nama Anda --</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAPARAN 1: DAFTAR & SENARAI -->
-    <div id="sheetsView">
-      <div class="card glass-card mb-4">
-        <div class="card-header glass-header py-3 fw-bold d-flex justify-content-between align-items-center">
-          <div><i class="bi bi-plus-circle me-2 text-info"></i>Daftar Projek / Helaian Pelan Baharu</div>
-          <div>
-            <button class="btn btn-outline-info btn-sm me-2" onclick="openManageDrafterModal()"><i class="bi bi-people-fill me-1"></i>Urus Drafter</button>
-            <button class="btn btn-outline-warning btn-sm" onclick="openManageProjectModal()"><i class="bi bi-folder-fill me-1"></i>Urus Projek</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="row g-4 align-items-end">
-            <div class="col-md-2">
-              <label class="form-label small fw-semibold text-light mb-2">No. Fail / Projek <span class="text-danger">*</span></label>
-              <input type="text" id="newFileRef" class="form-control form-control-sm text-uppercase glass-input-dark" placeholder="Cth: MCP0162026" list="existingProjectsList">
-              <datalist id="existingProjectsList"></datalist>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-semibold text-light mb-2">Pilih Drafter <span class="text-danger">*</span></label>
-              <select id="newDrafterSelect" class="form-select form-select-sm glass-input-dark"><option value="">-- Pilih Drafter --</option></select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small fw-semibold text-light mb-2">No. DWG Sheet <span class="text-danger">*</span></label>
-              <input type="text" id="newSheetNumber" class="form-control form-control-sm text-uppercase glass-input-dark" placeholder="Cth: SHEET 01">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-semibold text-light mb-2">Jenis Checklist <span class="text-danger">*</span></label>
-              <select id="newDrawingType" class="form-select form-select-sm glass-input-dark">
-                <option value="TOPO">TOPO (Kak Wa)</option>
-                <option value="UMAP">UMAP (Khadijah)</option>
-                <option value="PRE-COMP">PRE-COMP (Kak Wa)</option>
-              </select>
-            </div>
-            <div class="col-md-2 d-grid">
-              <button class="btn btn-info btn-sm fw-bold py-2 shadow-sm glass-btn-hover" id="btnCreateSheet" onclick="handleCreateSheet()">
-                <i class="bi bi-file-earmark-plus me-1"></i>Daftar &amp; Buka
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Kotak Saringan (Filter) -->
-      <div class="card glass-card mb-4 border-start border-4 border-secondary">
-        <div class="card-body py-3">
-          <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label small text-white-50 mb-1">Cari Projek:</label>
-              <select id="filterProject" class="form-select form-select-sm glass-input-dark" onchange="renderDrawingSheetsTable()"><option value="">Semua Projek</option></select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small text-white-50 mb-1">Jenis Pelan:</label>
-              <select id="filterType" class="form-select form-select-sm glass-input-dark" onchange="renderDrawingSheetsTable()">
-                <option value="">Semua</option><option value="TOPO">TOPO</option><option value="UMAP">UMAP</option><option value="PRE-COMP">PRE-COMP</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small text-white-50 mb-1">Checker:</label>
-              <select id="filterChecker" class="form-select form-select-sm glass-input-dark" onchange="renderDrawingSheetsTable()">
-                <option value="">Semua Checker</option><option value="Kak Wa">Kak Wa</option><option value="Khadijah">Khadijah</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small text-white-50 mb-1">Status:</label>
-              <select id="filterStatus" class="form-select form-select-sm glass-input-dark" onchange="renderDrawingSheetsTable()">
-                <option value="">Semua Status</option><option value="DRAFT">DRAFT</option><option value="PENDING_CHECK">PENDING_CHECK</option><option value="RETURNED">RETURNED</option><option value="APPROVED">APPROVED</option>
-              </select>
-            </div>
-            <div class="col-md-2 d-grid">
-              <button class="btn btn-outline-light btn-sm opacity-75 glass-btn-hover" onclick="loadInitialData()"><i class="bi bi-arrow-clockwise me-1"></i>Muat Semula</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card glass-card">
-        <div class="card-header glass-header py-3 d-flex justify-content-between align-items-center">
-          <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2"></i>Rekod Projek &amp; Helaian Pelan</h6>
-          <span class="badge bg-dark fs-6" id="totalSheetsCountBadge">0 Helaian</span>
-        </div>
-        <div class="table-responsive">
-          <table class="table align-middle mb-0 glass-table">
-            <thead>
-              <tr><th>Projek</th><th>DWG Sheet</th><th>Jenis</th><th>Drafter</th><th>Checker</th><th>Round</th><th>Status</th><th class="text-center">Tindakan</th></tr>
-            </thead>
-            <tbody id="drawingSheetsTableBody"><tr><td colspan="8" class="text-center py-4">Memuatkan rekod...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAPARAN 2: BORANG CHECKLIST -->
-    <div id="checklistView" style="display: none;">
-      <div class="card glass-card mb-4 border-start border-4 border-info">
-        <div class="card-body py-3">
-          <div class="mb-3">
-            <div class="d-flex justify-content-between mb-2"><label class="small fw-bold text-info"><i class="bi bi-funnel-fill"></i> 1. Pilih Projek (Slicer):</label><span class="text-white-50 small" id="slicerProjectCount">0 Projek</span></div>
-            <div class="d-flex flex-wrap gap-2" id="projectSlicerContainer"><span class="text-white-50 small">Memuatkan...</span></div>
-          </div>
-          <div id="sheetSlicerSection" style="display: none;" class="pt-2 border-top border-light border-opacity-10">
-            <div class="d-flex justify-content-between mb-2"><label class="small fw-bold text-warning"><i class="bi bi-layers-fill"></i> 2. Pilih DWG Sheet:</label><span class="text-white-50 small" id="selectedProjectTitleLabel"></span></div>
-            <div class="d-flex flex-wrap gap-2" id="sheetSlicerContainer"></div>
-          </div>
-          <div id="sheetHeaderSummary" style="display: none;" class="mt-3">
-            <div class="row g-2 text-center rounded p-2 glass-summary-box">
-              <div class="col-3 border-end border-secondary border-opacity-25"><div class="small opacity-75">PROJEK &amp; SHEET</div><div class="fw-bold" id="summaryFileAndSheet">-</div></div>
-              <div class="col-2 border-end border-secondary border-opacity-25"><div class="small opacity-75">JENIS &amp; ROUND</div><div class="fw-bold text-info" id="summaryTypeAndRound">-</div></div>
-              <div class="col-3 border-end border-secondary border-opacity-25"><div class="small opacity-75">DRAFTER</div><div class="fw-bold" id="summaryDrafter">-</div></div>
-              <div class="col-2 border-end border-secondary border-opacity-25"><div class="small opacity-75">CHECKER</div><div class="fw-bold text-warning" id="summaryChecker">-</div></div>
-              <div class="col-2"><div class="small opacity-75">STATUS</div><div id="summaryStatusBadge">-</div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="noSheetSelectedNotice" class="alert glass-alert shadow-sm d-flex justify-content-between">
-        <div><i class="bi bi-arrow-up-circle-fill text-info me-2"></i>Sila klik butang projek dan pilih DWG Sheet di atas.</div>
-      </div>
-
-      <div id="activeChecklistContainer" style="display: none;">
-        <div class="d-flex flex-wrap justify-content-between mb-3 gap-2">
-          <div class="d-flex gap-2">
-            <span class="badge glass-badge fs-6 py-2" id="progressCounterBadge">0 / 0</span>
-            <button class="btn btn-sm btn-info fw-bold glass-btn-hover text-dark" id="btnQuickTickDrafter" onclick="quickTickAllEmpty('DRAFTER')"><i class="bi bi-check2-all"></i> Drafter: Tick (✓)</button>
-            <button class="btn btn-sm btn-warning fw-bold glass-btn-hover text-dark" id="btnQuickTickChecker" onclick="quickTickAllEmpty('CHECKER')"><i class="bi bi-check2-all"></i> Checker: Tick (✓)</button>
-          </div>
-          <div id="resubmitBannerBtnContainer" style="display: none;">
-            <button class="btn btn-sm btn-danger fw-bold pulse-btn" onclick="handleStartNewRound()"><i class="bi bi-arrow-repeat"></i> Buka Pusingan Baharu</button>
-          </div>
-        </div>
-
-        <div class="card glass-card mb-4 table-responsive rounded-3">
-          <table class="table table-bordered align-middle mb-0 checklist-table">
-            <thead>
-              <tr class="text-center">
-                <th rowspan="2" style="width:65px;">No.</th><th rowspan="2" style="min-width:300px;">Keterangan Semakan</th>
-                <th colspan="2" class="drafter-header">DRAFTER CHECK</th><th colspan="2" class="checker-header">OFFICIAL CHECKER</th>
-              </tr>
-              <tr class="text-center small">
-                <th class="drafter-subheader" style="width:175px;">Klik Tick</th><th class="drafter-subheader" style="width:210px;">Catatan Drafter</th>
-                <th class="checker-subheader" style="width:175px;">Klik Tick</th><th class="checker-subheader" style="width:210px;">Catatan Checker</th>
-              </tr>
-            </thead>
-            <tbody id="checklistTableBody"></tbody>
-          </table>
-        </div>
-
-        <div class="card glass-card mb-4 sticky-bottom-bar border-top border-info border-3">
-          <div class="card-body py-3">
-            <div class="row g-3">
-              <div class="col-md-5 border-end border-secondary border-opacity-25" id="drafterActionPanel">
-                <div class="small fw-bold text-info mb-2">Tindakan Drafter:</div>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-secondary btn-sm" id="btnSaveDraftDrafter" onclick="submitDrafterAction('SAVE_DRAFT')">Simpan Draf</button>
-                  <button class="btn btn-info text-dark btn-sm fw-bold px-3" id="btnSubmitDrafter" onclick="submitDrafterAction('SUBMIT')">Hantar ke Checker</button>
-                </div>
-              </div>
-              <div class="col-md-7" id="checkerActionPanel">
-                <div class="small fw-bold text-warning mb-2">Keputusan Checker (<span id="checkerPanelNameLabel"></span>):</div>
-                <div class="row g-2">
-                  <div class="col-md-5"><input type="text" id="checkerOverallRemarks" class="form-control form-control-sm glass-input-dark" placeholder="Ulasan keseluruhan..."></div>
-                  <div class="col-md-7 d-flex gap-2">
-                    <button class="btn btn-secondary btn-sm" id="btnSaveDraftChecker" onclick="submitCheckerDecision('SAVE_DRAFT')">Simpan Draf</button>
-                    <button class="btn btn-danger btn-sm fw-bold" id="btnReturnChecker" onclick="submitCheckerDecision('RETURNED')">Pulangkan</button>
-                    <button class="btn btn-success btn-sm fw-bold px-3" id="btnApproveChecker" onclick="submitCheckerDecision('APPROVED')">LULUS</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card glass-card mb-5">
-          <div class="card-header glass-header py-2 fw-bold small"><i class="bi bi-clock-history"></i> Sejarah Semakan (Audit)</div>
-          <div class="card-body p-0"><ul class="list-group list-group-flush small" id="reviewHistoryList"></ul></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAPARAN 3: INTERACTIVE QC DASHBOARD -->
-    <div id="dashboardView" style="display: none;">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold text-white mb-0"><i class="bi bi-speedometer2 me-2 text-info"></i>Interactive QC Dashboard</h4>
-        <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" id="btnRefreshDashboard" onclick="refreshDashboard(this)">
-          <i class="bi bi-arrow-clockwise me-1"></i>Muat Semula Metrik
-        </button>
-      </div>
-
-      <!-- KAD KPI -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <div class="card glass-card p-3 border-start border-4 border-info">
-            <div class="text-white-50 small fw-bold">JUMLAH PELAN DIREKOD</div>
-            <div class="fs-1 fw-bold text-white mt-1" id="kpiTotalSheets">-</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card glass-card p-3 border-start border-4 border-success">
-            <div class="text-white-50 small fw-bold">KADAR LULUS PUSINGAN 1</div>
-            <div class="fs-1 fw-bold text-success mt-1" id="kpiFirstPassRate">-%</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card glass-card p-3 border-start border-4 border-danger">
-            <div class="text-white-50 small fw-bold">PELAN DIPULANGKAN (RETURNED)</div>
-            <div class="fs-1 fw-bold text-danger mt-1" id="kpiReturnedCount">-</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card glass-card p-3 border-start border-4 border-warning">
-            <div class="text-white-50 small fw-bold">MENUNGGU SEMAKAN (PENDING)</div>
-            <div class="fs-1 fw-bold text-warning mt-1" id="kpiPendingCount">-</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ANALISIS & STATISTIK 1 -->
-      <div class="row g-4 mb-4">
-        <div class="col-md-6">
-          <div class="card glass-card h-100">
-            <div class="card-header glass-header py-3 fw-bold"><i class="bi bi-pie-chart me-2 text-info"></i>Taburan Pelan Mengikut Jenis</div>
-            <div class="card-body">
-              <ul class="list-group list-group-flush bg-transparent" id="dashTypeDistributionList">
-                <li class="list-group-item text-white-50">Memuatkan data...</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card glass-card h-100">
-            <div class="card-header glass-header py-3 fw-bold"><i class="bi bi-shield-check me-2 text-warning"></i>Beban Kerja Official Checker</div>
-            <div class="card-body">
-              <ul class="list-group list-group-flush bg-transparent" id="dashCheckerWorkloadList">
-                <li class="list-group-item text-white-50">Memuatkan data...</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ANALISIS & STATISTIK 2 -->
-      <div class="row g-4 mb-4">
-        <div class="col-md-6">
-          <div class="card glass-card h-100">
-            <div class="card-header glass-header py-3 fw-bold"><i class="bi bi-person-workspace me-2 text-primary"></i>Prestasi Pelukis Pelan (Drafter)</div>
-            <div class="card-body">
-              <ul class="list-group list-group-flush bg-transparent" id="dashDrafterWorkloadList">
-                <li class="list-group-item text-white-50">Memuatkan data...</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card glass-card h-100">
-            <div class="card-header glass-header py-3 fw-bold"><i class="bi bi-clock-history me-2 text-success"></i>Aktiviti Terkini Sistem (Log)</div>
-            <div class="card-body p-0">
-              <ul class="list-group list-group-flush bg-transparent small" id="dashRecentHistoryList">
-                <li class="list-group-item text-white-50 p-3">Memuatkan data...</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SENARAI RALAT KERAP -->
-      <div class="row">
-        <div class="col-12">
-          <div class="card glass-card mb-5">
-            <div class="card-header glass-header py-3 fw-bold"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Item Semak Paling Kerap Gagal (Top Errors)</div>
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table align-middle mb-0 glass-table">
-                  <thead>
-                    <tr>
-                      <th>Jenis Pelan</th>
-                      <th>No. Item</th>
-                      <th>Keterangan Semakan</th>
-                      <th class="text-end">Bilangan Kerap Gagal</th>
-                    </tr>
-                  </thead>
-                  <tbody id="dashTopErrorsTableBody">
-                    <tr><td colspan="4" class="text-center py-4 text-white-50">Memuatkan data...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Modal Urus Drafter -->
-  <div class="modal fade" id="manageDrafterModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content glass-card">
-        <div class="modal-header border-secondary border-opacity-25">
-          <h5 class="modal-title"><i class="bi bi-people-fill text-info me-2"></i>Senarai Drafter</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body p-0">
-          <div class="p-3 border-bottom border-secondary border-opacity-25 bg-dark bg-opacity-25">
-            <div class="input-group input-group-sm">
-              <input type="text" id="newDrafterName" class="form-control glass-input-dark" placeholder="Nama Drafter Baharu">
-              <button class="btn btn-success" onclick="handleAddDrafter(this)"><i class="bi bi-plus-lg"></i> Tambah</button>
-            </div>
-          </div>
-          <ul class="list-group list-group-flush" id="drafterListContainer" style="max-height: 300px; overflow-y: auto;">
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Urus Projek -->
-  <div class="modal fade" id="manageProjectModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content glass-card">
-        <div class="modal-header border-secondary border-opacity-25">
-          <h5 class="modal-title"><i class="bi bi-folder-fill text-warning me-2"></i>Senarai Projek Sedia Ada</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body p-0">
-          <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-            <table class="table table-sm glass-table mb-0 align-middle">
-              <thead><tr><th>No. Projek</th><th>Tajuk</th><th>Tarikh Daftar</th><th class="text-end">Tindakan</th></tr></thead>
-              <tbody id="projectListContainer">
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Kotak Mesej Custom (Pengganti alert & confirm) -->
-  <div class="modal fade" id="customDialogModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content glass-card border-secondary">
-        <div class="modal-body text-center p-4">
-          <div id="customDialogIcon" class="mb-3"></div>
-          <h6 id="customDialogMessage" class="text-white mb-4 lh-base"></h6>
-          <div class="d-flex justify-content-center gap-2">
-            <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal" id="btnDialogCancel">Batal</button>
-            <button type="button" class="btn btn-info text-dark btn-sm px-4 fw-bold shadow-sm" id="btnDialogConfirm">OK</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script>
-    /* =====================================================================
-       KONFIGURASI SUMBER DATA — GOOGLE SHEET "PUBLISH TO WEB"
-       ---------------------------------------------------------------------
-       Pautan terbitan tanpa gid hanya bagi tab PERTAMA (USERS). Untuk tab lain,
-       isi gid setiap tab di bawah. Cara dapatkan gid:
-         Buka Google Sheet asal > klik tab (cth: DRAWING_SHEETS) > lihat URL
-         di browser: ...edit#gid=123456789  → salin nombor tu.
-       Pastikan File > Share > Publish to web = "Entire Document".
-       Biarkan "" untuk tab yang tak wujud. Jenis tab dikesan automatik
-       berdasarkan nama lajur, jadi salah label pun tak apa.
-       ===================================================================== */
-    const PUBLISHED_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMpN02OTg3ylu896F-R11_ECgL7ePS8oMYoXn8CHcPkQvbELG6bbnr6wTNXkYewarxaIZ2thWSE8Ze/pub";
-    const PUBLISHED_TAB_GIDS = {
-      USERS: "",               // tab pertama — dibaca automatik walaupun kosong
-      PROJECTS: "",
-      DRAWING_SHEETS: "",
-      CHECKLIST_MASTER: "",
-      ITEM_RESULTS: "",        // keputusan tick drafter/checker setiap item
-      REVIEW_HISTORY: "",      // log audit
-      CHECKER_ASSIGNMENTS: ""
-    };
-
-    // Pemetaan jenis pelan → checker (sama seperti dropdown Jenis Checklist)
-    const DEFAULT_CHECKER_BY_TYPE = { "TOPO": "Kak Wa", "UMAP": "Khadijah", "PRE-COMP": "Kak Wa" };
-
-    let appState = {
-      users: [], checkerAssignments: [], projects: [], drawingSheets: [],
-      checklistMaster: [], itemResults: [], reviewHistory: [],
-      activeUser: null, currentDetail: null, localItemState: {},
-      selectedProjectId: null, selectedSheetId: null,
-      cachedChecklists: {},
-      dataSource: "", lastSyncAt: null, missingTabs: []
-    };
-
-    let customDialogModalInstance = null;
-
-    // Semak sama ada berjalan dalam Google Apps Script atau hosting statik biasa
-    /* =====================================================================
-       SAMBUNGAN APPS SCRIPT WEB APP (API)
-       ---------------------------------------------------------------------
-       Bila page ni dibuka dari GitHub / hub (bukan dari HtmlService), kita
-       sediakan "google.script.run" tiruan yang hantar panggilan ke doPost()
-       Web App. Kod lain dalam fail ni tak perlu berubah langsung.
-       Kalau API gagal semasa muat awal, app jatuh balik ke mod CSV (baca sahaja).
-       ===================================================================== */
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxZtlvQERuGapebTBHFHT2i6ZFEGRdUnRSDfEyVKPNUDNDsRO28iNKuZYRqFGoWHn5d/exec";
-    const GAS_API_TIMEOUT_MS = 30000;
-
-    async function callGasApi(fn, args) {
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), GAS_API_TIMEOUT_MS);
-      try {
-        // text/plain = "simple request" → tiada CORS preflight (Apps Script tak sokong OPTIONS)
-        const res = await fetch(GAS_API_URL, {
-          method: "POST", redirect: "follow", cache: "no-store", signal: ctl.signal,
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ fn: fn, args: args })
-        });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const text = await res.text();
-        let out;
-        try { out = JSON.parse(text); }
-        catch (e) { throw new Error("Respons Web App bukan JSON — semak doPost() & akses deployment 'Anyone'"); }
-        if (!out || out.ok !== true) throw new Error((out && out.error) || "Ralat tidak diketahui dari Web App");
-        return out.result;
-      } catch (e) {
-        throw new Error(e.name === "AbortError" ? "Web App tamat masa (" + (GAS_API_TIMEOUT_MS / 1000) + "s)" : e.message);
-      } finally { clearTimeout(timer); }
-    }
-
-    function makeGasRunner(onOk, onFail) {
-      return new Proxy({}, {
-        get(_, prop) {
-          if (typeof prop !== "string" || prop === "then") return undefined;
-          if (prop === "withSuccessHandler") return h => makeGasRunner(h, onFail);
-          if (prop === "withFailureHandler") return h => makeGasRunner(onOk, h);
-          if (prop === "withUserObject") return () => makeGasRunner(onOk, onFail);
-          return (...args) => {
-            callGasApi(prop, args)
-              .then(r => { if (onOk) onOk(r); })
-              .catch(err => { if (onFail) onFail(err); else console.error("[" + prop + "]", err); });
-          };
-        }
-      });
-    }
-
-    const IS_NATIVE_GAS = (typeof google !== 'undefined' && google.script && google.script.run);
-    const USING_GAS_API = !IS_NATIVE_GAS && !!GAS_API_URL;
-    if (USING_GAS_API) window.google = { script: { run: makeGasRunner(null, null) } };
-
-    // let (bukan const): ditukar ke false kalau API gagal semasa muat awal → mod CSV baca sahaja
-    let isGasEnvironment = !!(IS_NATIVE_GAS || USING_GAS_API);
-
-    window.addEventListener("DOMContentLoaded", () => {
-        customDialogModalInstance = new bootstrap.Modal(document.getElementById('customDialogModal'));
-        loadInitialData();
-    });
-
-    function customAlert(message) {
-      document.getElementById('customDialogIcon').innerHTML = '<i class="bi bi-info-circle-fill fs-1 text-info"></i>';
-      document.getElementById('customDialogMessage').textContent = message;
-      document.getElementById('btnDialogCancel').style.display = 'none';
-      const confirmBtn = document.getElementById('btnDialogConfirm');
-      confirmBtn.className = "btn btn-info text-dark btn-sm px-4 fw-bold shadow-sm";
-      confirmBtn.textContent = "OK";
-      confirmBtn.onclick = () => customDialogModalInstance.hide();
-      customDialogModalInstance.show();
-    }
-
-    function customConfirm(message, callbackObj) {
-      document.getElementById('customDialogIcon').innerHTML = '<i class="bi bi-question-circle-fill fs-1 text-warning"></i>';
-      document.getElementById('customDialogMessage').textContent = message;
-      document.getElementById('btnDialogCancel').style.display = 'block';
-      const confirmBtn = document.getElementById('btnDialogConfirm');
-
-      if(callbackObj.isDanger) {
-          confirmBtn.className = "btn btn-danger btn-sm px-4 fw-bold shadow-sm";
-          confirmBtn.textContent = "Ya, Padam";
-      } else {
-          confirmBtn.className = "btn btn-info text-dark btn-sm px-4 fw-bold shadow-sm";
-          confirmBtn.textContent = "Teruskan";
-      }
-
-      confirmBtn.onclick = () => {
-        customDialogModalInstance.hide();
-        if(callbackObj.onConfirm) callbackObj.onConfirm();
-      };
-      customDialogModalInstance.show();
-    }
-
-    // Data dari Google Sheet terbitan adalah BACA SAHAJA.
-    // Semua tindakan tulis mesti melalui Apps Script (google.script.run).
-    function requireWriteAccess() {
-      if (isGasEnvironment) return true;
-      customAlert("Mod baca sahaja: data dibaca terus dari Google Sheet terbitan. Untuk daftar, simpan, hantar atau padam, sila buka sistem melalui pautan Web App Apps Script.");
-      return false;
-    }
-
-    /* ======================= PEMBACA CSV ======================= */
-    function parseCSVTable(text) {
-      const rows = [];
-      let currentRow = [];
-      let currentVal = '';
-      let insideQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const nextChar = text[i + 1];
-        if (char === '"') {
-          if (insideQuotes && nextChar === '"') { currentVal += '"'; i++; }
-          else { insideQuotes = !insideQuotes; }
-        } else if (char === ',' && !insideQuotes) {
-          currentRow.push(currentVal.trim()); currentVal = '';
-        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-          if (char === '\r' && nextChar === '\n') i++;
-          currentRow.push(currentVal.trim());
-          if (currentRow.some(v => v !== '')) rows.push(currentRow);
-          currentRow = []; currentVal = '';
-        } else {
-          currentVal += char;
-        }
-      }
-      if (currentVal !== '' || currentRow.length > 0) {
-        currentRow.push(currentVal.trim());
-        if (currentRow.some(v => v !== '')) rows.push(currentRow);
-      }
-      if (rows.length === 0) return { headers: [], records: [] };
-      const headers = rows[0].map(h => h.replace(/^﻿/, '').trim());
-      const records = rows.slice(1).map(r => {
-        const obj = {};
-        headers.forEach((h, idx) => { if (h) obj[h] = r[idx] !== undefined ? r[idx] : ""; });
-        return obj;
-      });
-      return { headers, records };
-    }
-
-    // Kenal pasti jenis tab berdasarkan nama lajur (urutan penting)
-    function classifyTable(headers) {
-      const has = (...cols) => cols.every(c => headers.includes(c));
-      if (has("sheet_id", "sheet_number")) return "drawingSheets";
-      if (has("item_id") && (headers.includes("drafter_status") || headers.includes("checker_status"))) return "itemResults";
-      if (has("item_id", "category_name")) return "checklistMaster";
-      if (has("action", "performed_by")) return "reviewHistory";
-      if (has("project_id", "file_ref")) return "projects";
-      if (has("user_id", "role_label")) return "users";
-      if (headers.includes("drawing_type") && headers.some(h => h.includes("checker"))) return "checkerAssignments";
-      return null;
-    }
-
-    function isTruthy(v) { return v === true || String(v).trim().toUpperCase() === "TRUE"; }
-    function isFalsy(v) { return v === false || String(v).trim().toUpperCase() === "FALSE"; }
-
-    async function fetchCsv(gid) {
-      let url = PUBLISHED_BASE_URL + "?output=csv";
-      if (gid !== null && gid !== undefined && gid !== "") url += "&single=true&gid=" + encodeURIComponent(gid);
-      url += "&_ts=" + Date.now(); // elak cache browser
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) throw new Error(`HTTP ${response.status} (gid=${gid || "default"})`);
-      const text = await response.text();
-      if (/^\s*<!DOCTYPE html|^\s*<html/i.test(text)) throw new Error(`Bukan CSV (gid=${gid || "default"}) — semak tetapan Publish to web`);
-      return parseCSVTable(text);
-    }
-
-    async function fetchPublishedSheetData() {
-      // Senarai gid unik: null = tab default (pertama), + semua gid yang diisi
-      const gids = [null, ...new Set(Object.values(PUBLISHED_TAB_GIDS).map(g => String(g || "").trim()).filter(Boolean))];
-      const results = await Promise.allSettled(gids.map(g => fetchCsv(g)));
-
-      const buckets = {};
-      let okCount = 0;
-      results.forEach((r, idx) => {
-        if (r.status !== "fulfilled") { console.warn("Gagal baca tab:", gids[idx], r.reason); return; }
-        okCount++;
-        const type = classifyTable(r.value.headers);
-        if (!type) { console.warn("Tab tidak dikenali (gid=" + gids[idx] + "), lajur:", r.value.headers); return; }
-        if (!buckets[type]) buckets[type] = r.value.records; // tab default & gid sama tak bertindih
-      });
-      if (okCount === 0) return null;
-
-      // --- Normalisasi setiap jadual ---
-      let users = (buckets.users || []).filter(u => !isFalsy(u.is_active));
-      let drawingSheets = (buckets.drawingSheets || []).map(s => ({
-        ...s,
-        current_round: Number(s.current_round) || 1,
-        current_status: String(s.current_status || "DRAFT").trim().toUpperCase(),
-        drawing_type: String(s.drawing_type || "").trim().toUpperCase(),
-        assigned_checker_name: s.assigned_checker_name || DEFAULT_CHECKER_BY_TYPE[String(s.drawing_type || "").toUpperCase()] || ""
-      }));
-
-      let projects = buckets.projects || [];
-      if (projects.length === 0 && drawingSheets.length > 0) {
-        // Tiada tab PROJECTS → terbitkan senarai projek daripada helaian pelan
-        projects = [...new Set(drawingSheets.map(s => s.project_id).filter(Boolean))].map(pid => {
-          const sample = drawingSheets.find(s => s.project_id === pid) || {};
-          const ref = sample.file_ref || String(sample.drawing_no || "").split("-")[0] || pid;
-          return { project_id: pid, file_ref: ref, project_title: "Projek " + ref, status: "ACTIVE" };
-        });
-      }
-
-      if (users.length === 0 && drawingSheets.length > 0) {
-        const userMap = new Map();
-        drawingSheets.forEach(r => {
-          if (r.drafter_name) userMap.set(r.drafter_name, { user_id: r.drafter_user_id || r.drafter_name, full_name: r.drafter_name, role_label: "DRAFTER", is_active: true });
-          if (r.assigned_checker_name) userMap.set(r.assigned_checker_name, { user_id: r.assigned_checker_user_id || r.assigned_checker_name, full_name: r.assigned_checker_name, role_label: "CHECKER", is_active: true });
-        });
-        users = Array.from(userMap.values());
-      }
-
-      let checklistMaster = (buckets.checklistMaster || []).filter(m => !isFalsy(m.is_active));
-      if (checklistMaster.length > 0 && checklistMaster[0].sort_order !== undefined) {
-        checklistMaster = checklistMaster
-          .map((m, i) => ({ m, i }))
-          .sort((a, b) => (Number(a.m.sort_order) || a.i) - (Number(b.m.sort_order) || b.i))
-          .map(x => x.m);
-      }
-
-      const missing = ["drawingSheets", "checklistMaster", "itemResults", "reviewHistory"].filter(k => !buckets[k]);
-
-      return {
-        success: true,
-        source: "CSV",
-        missingTabs: missing,
-        users,
-        checkerAssignments: buckets.checkerAssignments || [],
-        projects,
-        drawingSheets,
-        checklistMaster: checklistMaster.length > 0 ? checklistMaster : getDefaultMasterItems(),
-        itemResults: buckets.itemResults || [],
-        reviewHistory: buckets.reviewHistory || []
-      };
-    }
-
-    function getDefaultMasterItems() {
-      return [
-        { item_id: "TOPO-001", drawing_type: "TOPO", category_name: "1.0 DATUM", item_number: "1.1", item_title: "Northing, Easting (X,Y)", description: "Nyatakan BKL-BKL yang terlibat di Catatan" },
-        { item_id: "TOPO-002", drawing_type: "TOPO", category_name: "1.0 DATUM", item_number: "1.2", item_title: "Heighting (Z)", description: "Nyatakan pemilihan BM dan TBM di Catatan" },
-        { item_id: "UMAP-001", drawing_type: "UMAP", category_name: "1.0 DATUM", item_number: "1.1", item_title: "Northing, Easting (X,Y)", description: "Nyatakan BKL-BKL Yang Terlibat di Catatan" },
-        { item_id: "PRECOMP-001", drawing_type: "PRE-COMP", category_name: "A. TITLE BLOCK", item_number: "A1", item_title: "Company block", description: "Company name, reg no and address exactly as standard" }
-      ];
-    }
-
-    async function loadInitialData(callbackAfterLoad) {
-      if (!isGasEnvironment) {
-        setSourceBadge("loading");
-        let liveCsvData = null;
-        try { liveCsvData = await fetchPublishedSheetData(); }
-        catch (e) { console.warn("Gagal membaca Google Sheet terbitan:", e); }
-
-        if (liveCsvData) {
-          onDataLoaded(liveCsvData);
-        } else {
-          onDataLoaded({ success: true, source: "OFFLINE", users: [], projects: [], drawingSheets: [], checklistMaster: getDefaultMasterItems(), itemResults: [], reviewHistory: [] });
-          customAlert("Gagal capai Google Sheet terbitan. Semak sambungan internet dan tetapan 'Publish to web'.");
-        }
-        if (typeof callbackAfterLoad === "function") callbackAfterLoad();
-        return;
-      }
-
-      google.script.run
-        .withSuccessHandler(res => {
-          onDataLoaded(Object.assign({ source: USING_GAS_API ? "API" : "GAS" }, res));
-          if (typeof callbackAfterLoad === "function") callbackAfterLoad();
-        })
-        .withFailureHandler(err => {
-          if (USING_GAS_API) {
-            // Web App tak dapat dicapai → guna Google Sheet terbitan (baca sahaja)
-            console.warn("Web App gagal, guna CSV:", err);
-            isGasEnvironment = false;
-            loadInitialData(callbackAfterLoad);
-            setTimeout(() => customAlert("Web App Apps Script tak dapat dicapai (" + err.message + "). Data dipaparkan dalam mod baca sahaja."), 300);
-            return;
-          }
-          customAlert("Gagal memuatkan data: " + err.message);
-        })
-        .getInitialAppData();
-    }
-
-    function onDataLoaded(res) {
-      if (!res || !res.success) return;
-      appState.users = res.users || [];
-      appState.checkerAssignments = res.checkerAssignments || [];
-      appState.projects = res.projects || [];
-      appState.drawingSheets = res.drawingSheets || [];
-      appState.checklistMaster = res.checklistMaster || [];
-      appState.itemResults = res.itemResults || [];
-      appState.reviewHistory = res.reviewHistory || [];
-      appState.dataSource = res.source || "";
-      appState.missingTabs = res.missingTabs || [];
-      appState.lastSyncAt = new Date();
-      appState.cachedChecklists = {};
-
-      setSourceBadge(appState.dataSource);
-      renderReadOnlyNotice();
-      populateUserDropdowns();
-      populateProjectFilters();
-      renderDrawingSheetsTable();
-      renderProjectSlicers();
-
-      if (document.getElementById("dashboardView").style.display !== "none") loadDashboardData();
-    }
-
-    function setSourceBadge(state) {
-      const el = document.getElementById("dataSourceBadge");
-      if (!el) return;
-      const time = appState.lastSyncAt ? appState.lastSyncAt.toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit" }) : "";
-      const map = {
-        loading: `<i class="bi bi-hourglass-split"></i> Menyegerak...`,
-        CSV: `<i class="bi bi-cloud-check text-success"></i> Google Sheet (baca sahaja) · ${time}`,
-        GAS: `<i class="bi bi-lightning-charge text-info"></i> Apps Script (langsung) · ${time}`,
-        API: `<i class="bi bi-lightning-charge text-info"></i> Web App API (langsung) · ${time}`,
-        OFFLINE: `<i class="bi bi-wifi-off text-danger"></i> Tiada sambungan data`
-      };
-      el.innerHTML = map[state] || map.loading;
-    }
-
-    function renderReadOnlyNotice() {
-      const el = document.getElementById("readOnlyNotice");
-      if (appState.dataSource !== "CSV") { el.style.display = "none"; return; }
-      const labels = { drawingSheets: "DRAWING_SHEETS", checklistMaster: "CHECKLIST_MASTER", itemResults: "ITEM_RESULTS", reviewHistory: "REVIEW_HISTORY" };
-      const missingTxt = appState.missingTabs.length
-        ? `<div class="mt-1 text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Tab belum disambung: <strong>${appState.missingTabs.map(k => labels[k]).join(", ")}</strong>. Isi gid tab tersebut dalam <code>PUBLISHED_TAB_GIDS</code>.</div>`
-        : "";
-      el.innerHTML = `<i class="bi bi-eye me-1 text-info"></i>Mod baca sahaja — data dibaca terus dari Google Sheet terbitan (Google kemas kini pautan terbitan lebih kurang setiap 5 minit).${missingTxt}`;
-      el.style.display = "block";
-    }
-
-    /* ======================= URUS DRAFTER ======================= */
-    function openManageDrafterModal() {
-      renderDrafterListModal();
-      new bootstrap.Modal(document.getElementById('manageDrafterModal')).show();
-    }
-
-    function renderDrafterListModal() {
-      const listEl = document.getElementById("drafterListContainer");
-      const drafters = appState.users.filter(u => String(u.role_label).toUpperCase() === 'DRAFTER' && isTruthy(u.is_active));
-
-      if(drafters.length === 0) {
-        listEl.innerHTML = `<li class="list-group-item text-white-50 text-center py-3">Tiada rekod Drafter.</li>`;
-        return;
-      }
-
-      listEl.innerHTML = drafters.map(d => `
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2" id="drafter-row-${escapeHtml(d.user_id)}">
-          <span class="text-light">${escapeHtml(d.full_name)}</span>
-          <button class="btn btn-sm btn-outline-danger border-0" data-user-id="${escapeHtml(d.user_id)}" onclick="handleDeleteDrafter(this.dataset.userId)">
-            <i class="bi bi-trash3"></i>
-          </button>
-        </li>
-      `).join("");
-    }
-
-    function handleAddDrafter(btn) {
-      if (!requireWriteAccess()) return;
-      const inputEl = document.getElementById("newDrafterName");
-      const name = inputEl.value.trim();
-      if (!name) return;
-
-      btn.disabled = true; btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
-
-      google.script.run
-        .withSuccessHandler(res => {
-          btn.disabled = false; btn.innerHTML = `<i class="bi bi-plus-lg"></i> Tambah`;
-          if(res.success) {
-            inputEl.value = "";
-            appState.users.push(res.newUser);
-            populateUserDropdowns();
-            renderDrafterListModal();
-          } else {
-            customAlert(res.message);
-          }
-        })
-        .withFailureHandler(err => { btn.disabled = false; btn.innerHTML = `<i class="bi bi-plus-lg"></i> Tambah`; customAlert(err.message); })
-        .addDrafter(name);
-    }
-
-    function handleDeleteDrafter(userId) {
-      if (!requireWriteAccess()) return;
-      const user = appState.users.find(u => u.user_id === userId);
-      const name = user ? user.full_name : userId;
-      customConfirm(`Adakah anda pasti untuk memadam drafter "${name}"?`, {
-          isDanger: true,
-          onConfirm: () => {
-              const row = document.getElementById(`drafter-row-${userId}`);
-              if (row) row.style.opacity = '0.5';
-              google.script.run
-                .withSuccessHandler(res => {
-                  if(res.success) {
-                    appState.users = appState.users.filter(u => u.user_id !== userId);
-                    populateUserDropdowns();
-                    renderDrafterListModal();
-                  } else { customAlert(res.message); renderDrafterListModal(); }
-                })
-                .withFailureHandler(err => { renderDrafterListModal(); customAlert(err.message); })
-                .deleteDrafter(userId);
-          }
-      });
-    }
-
-    /* ======================= URUS PROJEK ======================= */
-    function openManageProjectModal() {
-      renderProjectListModal();
-      new bootstrap.Modal(document.getElementById('manageProjectModal')).show();
-    }
-
-    function renderProjectListModal() {
-      const listEl = document.getElementById("projectListContainer");
-      const activeProjects = appState.projects.filter(p => p.status === 'ACTIVE' || !p.status);
-
-      if(activeProjects.length === 0) {
-        listEl.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-white-50">Tiada projek.</td></tr>`;
-        return;
-      }
-
-      listEl.innerHTML = activeProjects.map(p => `
-          <tr id="proj-row-${escapeHtml(p.project_id)}">
-            <td class="fw-bold text-info">${escapeHtml(p.file_ref)}</td>
-            <td>${escapeHtml(p.project_title || '-')}</td>
-            <td class="text-white-50 small">${formatDate(p.created_at)}</td>
-            <td class="text-end">
-              <button class="btn btn-sm btn-outline-danger border-0" data-project-id="${escapeHtml(p.project_id)}" onclick="handleDeleteProject(this.dataset.projectId)" title="Padam Projek">
-                <i class="bi bi-trash3"></i>
-              </button>
-            </td>
-          </tr>
-        `).join("");
-    }
-
-    function handleDeleteProject(projectId) {
-      if (!requireWriteAccess()) return;
-      const refName = getProjectById(projectId).file_ref;
-      const sheetsLinked = appState.drawingSheets.filter(s => s.project_id === projectId && s.current_status !== "INACTIVE");
-      if(sheetsLinked.length > 0) {
-        customAlert(`Projek ${refName} tidak boleh dipadam kerana masih mempunyai ${sheetsLinked.length} helaian pelan aktif. Padam helaian pelan terlebih dahulu.`);
-        return;
-      }
-
-      customConfirm(`Adakah anda pasti untuk padam projek ${refName} sepenuhnya?`, {
-          isDanger: true,
-          onConfirm: () => {
-              const row = document.getElementById(`proj-row-${projectId}`);
-              if (row) row.style.opacity = '0.5';
-              google.script.run
-                .withSuccessHandler(res => {
-                  if(res.success) {
-                    appState.projects = appState.projects.filter(p => p.project_id !== projectId);
-                    populateProjectFilters();
-                    renderProjectListModal();
-                  } else { customAlert(res.message); renderProjectListModal(); }
-                })
-                .withFailureHandler(err => { renderProjectListModal(); customAlert(err.message); })
-                .deleteProject(projectId);
-          }
-      });
-    }
-
-    /* ======================= DROPDOWN & FILTER ======================= */
-    function populateUserDropdowns() {
-      const activeSel = document.getElementById("activeUserSelect");
-      activeSel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
-      appState.users.forEach(u => {
-        if(isTruthy(u.is_active)) {
-          const opt = document.createElement("option");
-          opt.value = u.user_id; opt.textContent = `${u.full_name} (${u.role_label})`;
-          activeSel.appendChild(opt);
-        }
-      });
-
-      const drafterSel = document.getElementById("newDrafterSelect");
-      if(drafterSel) {
-          drafterSel.innerHTML = '<option value="">-- Pilih Drafter --</option>';
-          appState.users.filter(u => String(u.role_label).toUpperCase() === 'DRAFTER' && isTruthy(u.is_active)).forEach(u => {
-            const opt = document.createElement("option");
-            opt.value = `${u.user_id}|${u.full_name}`;
-            opt.textContent = u.full_name;
-            drafterSel.appendChild(opt);
-          });
-      }
-
-      // Senarai checker untuk filter dibina dari data sebenar
-      const filterChecker = document.getElementById("filterChecker");
-      const currentChecker = filterChecker.value;
-      const checkerNames = [...new Set([
-        ...appState.users.filter(u => String(u.role_label).toUpperCase() === 'CHECKER').map(u => u.full_name),
-        ...appState.drawingSheets.map(s => s.assigned_checker_name)
-      ].filter(Boolean))];
-      filterChecker.innerHTML = '<option value="">Semua Checker</option>';
-      checkerNames.forEach(n => { const o = document.createElement("option"); o.value = n; o.textContent = n; filterChecker.appendChild(o); });
-      filterChecker.value = currentChecker;
-
-      let savedUserId = null;
-      try { savedUserId = localStorage.getItem("mahabob_active_user_id"); } catch (e) {}
-      if (savedUserId && appState.users.some(u => u.user_id === savedUserId)) { activeSel.value = savedUserId; onUserChange(); }
-    }
-
-    function onUserChange() {
-      const userId = document.getElementById("activeUserSelect").value;
-      const found = appState.users.find(u => u.user_id === userId);
-      try {
-        if (found) {
-          appState.activeUser = found;
-          localStorage.setItem("mahabob_active_user_id", found.user_id);
-        } else {
-          appState.activeUser = null;
-          localStorage.removeItem("mahabob_active_user_id");
-        }
-      } catch (e) { appState.activeUser = found || null; }
-    }
-
-    function populateProjectFilters() {
-      const datalist = document.getElementById("existingProjectsList");
-      const filterProj = document.getElementById("filterProject");
-      const currentFilterVal = filterProj.value;
-      datalist.innerHTML = ""; filterProj.innerHTML = '<option value="">Semua Projek</option>';
-
-      appState.projects.filter(p => p.status === 'ACTIVE' || !p.status).forEach(p => {
-        const dOpt = document.createElement("option"); dOpt.value = p.file_ref; datalist.appendChild(dOpt);
-        const fOpt = document.createElement("option"); fOpt.value = p.project_id; fOpt.textContent = p.file_ref; filterProj.appendChild(fOpt);
-      });
-      filterProj.value = currentFilterVal;
-    }
-
-    function getProjectById(projectId) {
-      return appState.projects.find(p => p.project_id === projectId) || { project_id: projectId, file_ref: projectId || "-" };
-    }
-
-    function formatStatusBadge(status) {
-      const map = {
-        "DRAFT": '<span class="badge badge-draft shadow-sm">DRAFT</span>',
-        "PENDING_CHECK": '<span class="badge badge-pending shadow-sm">PENDING</span>',
-        "RETURNED": '<span class="badge badge-returned shadow-sm pulse-btn">RETURNED</span>',
-        "APPROVED": '<span class="badge badge-approved shadow-sm">APPROVED</span>'
-      };
-      return map[status] || `<span class="badge bg-dark">${escapeHtml(status || "-")}</span>`;
-    }
-
-    /* ======================= JADUAL HELAIAN PELAN ======================= */
-    function renderDrawingSheetsTable() {
-      const tbody = document.getElementById("drawingSheetsTableBody");
-      const filterProj = document.getElementById("filterProject").value;
-      const filterType = document.getElementById("filterType").value;
-      const filterChecker = document.getElementById("filterChecker").value;
-      const filterStatus = document.getElementById("filterStatus").value;
-
-      const filtered = appState.drawingSheets.filter(s => {
-        if (s.current_status === "INACTIVE") return false;
-        if (filterProj && s.project_id !== filterProj) return false;
-        if (filterType && s.drawing_type !== filterType) return false;
-        if (filterChecker && s.assigned_checker_name !== filterChecker) return false;
-        if (filterStatus && s.current_status !== filterStatus) return false;
-        return true;
-      });
-
-      document.getElementById("totalSheetsCountBadge").textContent = `${filtered.length} Helaian`;
-
-      if (filtered.length === 0) {
-        const hint = (appState.dataSource === "CSV" && appState.missingTabs.includes("drawingSheets"))
-          ? "Tab DRAWING_SHEETS belum disambung — isi gid dalam PUBLISHED_TAB_GIDS."
-          : "Tiada rekod ditemui.";
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-white-50">${hint}</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = filtered.map(s => {
-        const proj = getProjectById(s.project_id);
-        const sid = escapeHtml(s.sheet_id);
-        return `
-          <tr id="sheet-row-${sid}">
-            <td class="fw-bold text-info">${escapeHtml(proj.file_ref)}</td>
-            <td><span class="badge bg-white text-dark shadow-sm">${escapeHtml(s.sheet_number)}</span></td>
-            <td><span class="badge glass-badge">${escapeHtml(s.drawing_type)}</span></td>
-            <td>${escapeHtml(s.drafter_name)}</td>
-            <td class="text-warning">${escapeHtml(s.assigned_checker_name)}</td>
-            <td>Round ${escapeHtml(s.current_round || 1)}</td>
-            <td>${formatStatusBadge(s.current_status)}</td>
-            <td class="text-center">
-              <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" data-sheet-id="${sid}" onclick="openSheetChecklist(this.dataset.sheetId)">
-                  <i class="bi bi-check2-square"></i> Buka
-                </button>
-                <button class="btn btn-sm btn-outline-danger shadow-sm border-0" data-sheet-id="${sid}" onclick="handleDeleteSheet(this.dataset.sheetId)" title="Padam Helaian Pelan">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    function handleDeleteSheet(sheetId) {
-      if (!requireWriteAccess()) return;
-      const s = appState.drawingSheets.find(x => x.sheet_id === sheetId) || {};
-      const fileRef = getProjectById(s.project_id).file_ref;
-      customConfirm(`Padam helaian pelan ${s.sheet_number || sheetId} (${fileRef})?`, {
-        isDanger: true,
-        onConfirm: () => {
-          const row = document.getElementById(`sheet-row-${sheetId}`);
-          if (row) row.style.opacity = '0.5';
-
-          google.script.run
-            .withSuccessHandler(res => {
-              if (res.success) {
-                appState.drawingSheets = appState.drawingSheets.filter(x => x.sheet_id !== sheetId);
-                renderDrawingSheetsTable();
-                renderProjectSlicers();
-                if (document.getElementById("dashboardView").style.display !== "none") loadDashboardData();
-              } else {
-                customAlert(res.message);
-                renderDrawingSheetsTable();
-              }
-            })
-            .withFailureHandler(err => {
-              renderDrawingSheetsTable();
-              customAlert(err.message);
-            })
-            .deleteDrawingSheet(sheetId);
-        }
-      });
-    }
-
-    /* ======================= SLICER ======================= */
-    function renderProjectSlicers() {
-      const container = document.getElementById("projectSlicerContainer");
-      if (!container) return;
-
-      const activeSheets = appState.drawingSheets.filter(s => s.current_status !== "INACTIVE");
-      const uniqueProjectIds = [...new Set(activeSheets.map(s => s.project_id))];
-      const projectsWithSheets = appState.projects.filter(p => uniqueProjectIds.includes(p.project_id) && p.status !== "INACTIVE");
-
-      document.getElementById("slicerProjectCount").textContent = `${projectsWithSheets.length} Projek Tersedia`;
-
-      if (projectsWithSheets.length === 0) {
-        container.innerHTML = `<span class="text-white-50 small py-1">Tiada projek direkodkan lagi. Sila daftar di Tab 1.</span>`;
-        return;
-      }
-
-      container.innerHTML = projectsWithSheets.map(p => {
-        const sheetCount = activeSheets.filter(s => s.project_id === p.project_id).length;
-        const isActive = appState.selectedProjectId === p.project_id ? "active-project" : "";
-        return `
-          <button type="button" class="slicer-btn ${isActive}" data-project-id="${escapeHtml(p.project_id)}" onclick="selectProjectSlicer(this.dataset.projectId)">
-            <i class="bi bi-folder-fill"></i><span>${escapeHtml(p.file_ref)}</span>
-            <span class="badge bg-dark bg-opacity-50 text-white rounded-pill px-2">${sheetCount}</span>
-          </button>
-        `;
-      }).join("");
-    }
-
-    function selectProjectSlicer(projectId) {
-      appState.selectedProjectId = projectId;
-      appState.selectedSheetId = null;
-
-      renderProjectSlicers();
-
-      document.getElementById("activeChecklistContainer").style.display = "none";
-      document.getElementById("sheetHeaderSummary").style.display = "none";
-      document.getElementById("noSheetSelectedNotice").style.display = "flex";
-
-      const sheetSection = document.getElementById("sheetSlicerSection");
-      sheetSection.style.display = "block";
-
-      const proj = getProjectById(projectId);
-      document.getElementById("selectedProjectTitleLabel").textContent = `Projek: ${proj.file_ref}`;
-
-      const sheets = appState.drawingSheets.filter(s => s.project_id === projectId && s.current_status !== "INACTIVE");
-      const sheetContainer = document.getElementById("sheetSlicerContainer");
-
-      if (sheets.length === 0) {
-        sheetContainer.innerHTML = `<span class="text-white-50 small">Tiada DWG Sheet untuk projek ini.</span>`;
-        return;
-      }
-
-      sheetContainer.innerHTML = sheets.map(s => {
-        let statusColor = "text-secondary";
-        if (s.current_status === "PENDING_CHECK") statusColor = "text-warning";
-        if (s.current_status === "RETURNED") statusColor = "text-danger";
-        if (s.current_status === "APPROVED") statusColor = "text-success";
-        const sid = escapeHtml(s.sheet_id);
-
-        return `
-          <button type="button" class="slicer-sheet-btn" id="sheet-btn-${sid}" data-sheet-id="${sid}" onclick="selectSheetSlicer(this.dataset.sheetId)">
-            <div class="d-flex align-items-center justify-content-between gap-3 mb-1">
-              <strong class="text-white"><i class="bi bi-file-earmark-ruled me-1"></i>${escapeHtml(s.sheet_number)}</strong>
-              <span class="badge glass-badge">${escapeHtml(s.drawing_type)}</span>
-            </div>
-            <div class="small text-white-50" style="font-size: 0.75rem;">
-              Drafter: <strong>${escapeHtml(s.drafter_name)}</strong><br>Checker: <strong>${escapeHtml(s.assigned_checker_name)}</strong>
-            </div>
-            <div class="small fw-bold ${statusColor} mt-1" style="font-size: 0.75rem;">● ${escapeHtml(s.current_status)} (R${escapeHtml(s.current_round || 1)})</div>
-          </button>
-        `;
-      }).join("");
-    }
-
-    // Bina butiran checklist daripada data CSV (format sama seperti getSheetChecklistDetails di Apps Script)
-    function buildChecklistDetailFromState(sheetId) {
-      const sheet = appState.drawingSheets.find(s => s.sheet_id === sheetId);
-      if (!sheet) return { success: false, message: "Helaian pelan tidak dijumpai." };
-      const masterItems = appState.checklistMaster.filter(m => String(m.drawing_type).toUpperCase() === sheet.drawing_type);
-      const itemResults = appState.itemResults.filter(r => r.sheet_id === sheetId);
-      const history = appState.reviewHistory
-        .filter(h => h.sheet_id === sheetId)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      return { success: true, sheet, project: getProjectById(sheet.project_id), masterItems, itemResults, history };
-    }
-
-    function selectSheetSlicer(sheetId) {
-      appState.selectedSheetId = sheetId;
-
-      document.querySelectorAll(".slicer-sheet-btn").forEach(el => el.classList.remove("active-sheet"));
-      const activeBtn = document.getElementById(`sheet-btn-${sheetId}`);
-      if (activeBtn) activeBtn.classList.add("active-sheet");
-
-      document.getElementById("noSheetSelectedNotice").style.display = "none";
-      document.getElementById("activeChecklistContainer").style.display = "block";
-      document.getElementById("checklistTableBody").innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted"><div class="spinner-border text-info me-2"></div>Memuatkan senarai semak...</td></tr>`;
-
-      if (!isGasEnvironment) {
-        renderActiveChecklistDetail(buildChecklistDetailFromState(sheetId));
-        return;
-      }
-
-      if(appState.cachedChecklists[sheetId]) {
-         renderActiveChecklistDetail(appState.cachedChecklists[sheetId]);
-      } else {
-        google.script.run
-          .withSuccessHandler(res => {
-             if(res.success) appState.cachedChecklists[sheetId] = res;
-             renderActiveChecklistDetail(res);
-          })
-          .withFailureHandler(err => customAlert("Ralat memuatkan checklist: " + err.message))
-          .getSheetChecklistDetails(sheetId);
-      }
-    }
-
-    function openSheetChecklist(sheetId) {
-      switchView("checklistView");
-      const targetSheet = appState.drawingSheets.find(s => s.sheet_id === sheetId);
-      if (targetSheet) {
-        selectProjectSlicer(targetSheet.project_id);
-        selectSheetSlicer(sheetId);
-      }
-    }
-
-    function handleCreateSheet() {
-      if (!requireWriteAccess()) return;
-      const fileRef = document.getElementById("newFileRef").value.trim().toUpperCase();
-      const drafterVal = document.getElementById("newDrafterSelect").value;
-      const sheetNumber = document.getElementById("newSheetNumber").value.trim().toUpperCase();
-      const drawingType = document.getElementById("newDrawingType").value;
-
-      if (!fileRef) { customAlert("Sila masukkan No. Fail / Projek."); return; }
-      if (!drafterVal) { customAlert("Sila pilih Nama Drafter."); return; }
-      if (!sheetNumber) { customAlert("Sila masukkan No. DWG Sheet."); return; }
-
-      const [drafterUserId, drafterName] = drafterVal.split("|");
-      const btn = document.getElementById("btnCreateSheet");
-      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Mendaftar...';
-
-      google.script.run
-        .withSuccessHandler(res => {
-          btn.disabled = false; btn.innerHTML = '<i class="bi bi-file-earmark-plus me-1"></i>Daftar & Buka';
-          if (!res.success) { customAlert(res.message); return; }
-          document.getElementById("newSheetNumber").value = "";
-          loadInitialData(() => { openSheetChecklist(res.sheet_id); });
-        })
-        .withFailureHandler(err => {
-          btn.disabled = false; btn.innerHTML = '<i class="bi bi-file-earmark-plus me-1"></i>Daftar & Buka';
-          customAlert("Ralat: " + err.message);
-        })
-        .createProjectAndSheet({
-          file_ref: fileRef, project_title: "Projek " + fileRef,
-          sheet_number: sheetNumber, drawing_no: `${fileRef}-${sheetNumber}`, drawing_type: drawingType,
-          drafter_user_id: drafterUserId, drafter_name: drafterName
-        });
-    }
-
-    /* ======================= BORANG CHECKLIST ======================= */
-    function renderActiveChecklistDetail(res) {
-      if (!res || !res.success) { customAlert((res && res.message) || "Gagal memuatkan butiran."); return; }
-      appState.currentDetail = res;
-      const sheet = res.sheet; const proj = res.project; const currentRound = Number(sheet.current_round || 1);
-
-      document.getElementById("sheetHeaderSummary").style.display = "block";
-      document.getElementById("summaryFileAndSheet").textContent = `${proj.file_ref || "-"} / ${sheet.sheet_number}`;
-      document.getElementById("summaryTypeAndRound").textContent = `${sheet.drawing_type} (Round ${currentRound})`;
-      document.getElementById("summaryDrafter").textContent = sheet.drafter_name;
-      document.getElementById("summaryChecker").textContent = sheet.assigned_checker_name;
-      document.getElementById("summaryStatusBadge").innerHTML = formatStatusBadge(sheet.current_status);
-      document.getElementById("checkerPanelNameLabel").textContent = sheet.assigned_checker_name;
-
-      appState.localItemState = {};
-      const roundResults = (res.itemResults || []).filter(r => Number(r.round_number) === currentRound);
-
-      res.masterItems.forEach(item => {
-        const found = roundResults.find(r => r.item_id === item.item_id);
-        appState.localItemState[item.item_id] = {
-          drafter_status: found ? found.drafter_status : "", drafter_remarks: found ? found.drafter_remarks : "",
-          checker_status: found ? found.checker_status : "", checker_remarks: found ? found.checker_remarks : "",
-          is_carried_forward: found ? isTruthy(found.is_carried_forward) : false
-        };
-      });
-
-      // Dalam mod baca sahaja, semua kawalan dikunci
-      const canWrite = !!isGasEnvironment;
-      const isDrafterEditable = canWrite && (sheet.current_status === "DRAFT");
-      const isCheckerEditable = canWrite && (sheet.current_status === "PENDING_CHECK");
-
-      document.getElementById("btnSaveDraftDrafter").disabled = !isDrafterEditable;
-      document.getElementById("btnSubmitDrafter").disabled = !isDrafterEditable;
-      document.getElementById("btnQuickTickDrafter").disabled = !isDrafterEditable;
-      document.getElementById("btnSaveDraftChecker").disabled = !isCheckerEditable;
-      document.getElementById("btnReturnChecker").disabled = !isCheckerEditable;
-      document.getElementById("btnApproveChecker").disabled = !isCheckerEditable;
-      document.getElementById("btnQuickTickChecker").disabled = !isCheckerEditable;
-      document.getElementById("checkerOverallRemarks").disabled = !isCheckerEditable;
-      document.getElementById("resubmitBannerBtnContainer").style.display = (canWrite && sheet.current_status === "RETURNED") ? "block" : "none";
-
-      if (res.masterItems.length === 0) {
-        document.getElementById("checklistTableBody").innerHTML = `<tr><td colspan="6" class="text-center py-4">Tiada item senarai semak untuk jenis ${escapeHtml(sheet.drawing_type)}. Semak tab CHECKLIST_MASTER.</td></tr>`;
-      } else {
-        renderChecklistRows(res.masterItems, isDrafterEditable, isCheckerEditable);
-      }
-      updateProgressBadge(); renderReviewHistory(res.history || []);
-    }
-
-    function renderChecklistRows(masterItems, isDrafterEditable, isCheckerEditable) {
-      const tbody = document.getElementById("checklistTableBody");
-      tbody.innerHTML = "";
-      const fragment = document.createDocumentFragment();
-
-      let currentCategory = "";
-
-      masterItems.forEach(item => {
-        if (item.category_name !== currentCategory) {
-          currentCategory = item.category_name;
-          const trCat = document.createElement("tr");
-          trCat.innerHTML = `<td colspan="6" class="category-banner py-2 px-3">${escapeHtml(currentCategory)}</td>`;
-          fragment.appendChild(trCat);
-        }
-
-        const st = appState.localItemState[item.item_id] || {};
-        const carriedBadge = st.is_carried_forward ? `<span class="badge bg-info text-dark shadow-sm ms-1">Carried Forward</span>` : "";
-        const iid = escapeHtml(item.item_id);
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="text-center fw-bold">${escapeHtml(item.item_number)}</td>
-          <td><div class="fw-semibold">${escapeHtml(item.item_title)} ${carriedBadge}</div><div class="small text-muted">${escapeHtml(item.description || "")}</div></td>
-          <td class="drafter-cell text-center">
-            <div class="tick-group" id="drafter-btn-group-${iid}">
-              <button type="button" class="tick-btn ${st.drafter_status === 'PASS' ? 'active-PASS' : ''}" ${!isDrafterEditable ? 'disabled' : ''} data-item-id="${iid}" onclick="setTickStatus(this.dataset.itemId, 'DRAFTER', 'PASS')">✓</button>
-              <button type="button" class="tick-btn ${st.drafter_status === 'FAIL' ? 'active-FAIL' : ''}" ${!isDrafterEditable ? 'disabled' : ''} data-item-id="${iid}" onclick="setTickStatus(this.dataset.itemId, 'DRAFTER', 'FAIL')">✗</button>
-              <button type="button" class="tick-btn ${st.drafter_status === 'NA' ? 'active-NA' : ''}" ${!isDrafterEditable ? 'disabled' : ''} data-item-id="${iid}" onclick="setTickStatus(this.dataset.itemId, 'DRAFTER', 'NA')">N/A</button>
-            </div>
-          </td>
-          <td class="drafter-cell"><input type="text" class="form-control form-control-sm" placeholder="Catatan Drafter..." value="${escapeHtml(st.drafter_remarks || '')}" ${!isDrafterEditable ? 'disabled' : ''} data-item-id="${iid}" oninput="setRemarks(this.dataset.itemId, 'DRAFTER', this.value)"></td>
-          <td class="checker-cell text-center">
-            <div class="tick-group" id="checker-btn-group-${iid}">
-              <button type="button" class="tick-btn ${st.checker_status === 'PASS' ? 'active-PASS' : ''}" ${!isCheckerEditable ? 'disabled' : ''} data-item-id="${iid}" onclick="setTickStatus(this.dataset.itemId, 'CHECKER', 'PASS')">✓</button>
-              <button type="button" class="tick-btn ${st.checker_status === 'FAIL' ? 'active-FAIL' : ''}" ${!isCheckerEditable ? 'disabled' : ''} data-item-id="${iid}" onclick="setTickStatus(this.dataset.itemId, 'CHECKER', 'FAIL')">✗</button>
-              <button type="button" class="tick-btn ${st.checker_status === 'NA' ? 'active-NA' : ''}" ${!isCheckerEditable ? 'disabled' : ''} data-item-id="${iid}" onclick="setTickStatus(this.dataset.itemId, 'CHECKER', 'NA')">N/A</button>
-            </div>
-          </td>
-          <td class="checker-cell"><input type="text" class="form-control form-control-sm" placeholder="Catatan Checker..." value="${escapeHtml(st.checker_remarks || '')}" ${!isCheckerEditable ? 'disabled' : ''} data-item-id="${iid}" oninput="setRemarks(this.dataset.itemId, 'CHECKER', this.value)"></td>
-        `;
-        fragment.appendChild(tr);
-      });
-
-      tbody.appendChild(fragment);
-    }
-
-    function setTickStatus(itemId, role, statusVal) {
-      if (!appState.localItemState[itemId]) return;
-      appState.localItemState[itemId][role === "DRAFTER" ? "drafter_status" : "checker_status"] = statusVal;
-      const groupEl = document.getElementById(`${role.toLowerCase()}-btn-group-${itemId}`);
-      if (groupEl) {
-        const buttons = groupEl.querySelectorAll(".tick-btn");
-        buttons[0].className = `tick-btn ${statusVal === 'PASS' ? 'active-PASS' : ''}`;
-        buttons[1].className = `tick-btn ${statusVal === 'FAIL' ? 'active-FAIL' : ''}`;
-        buttons[2].className = `tick-btn ${statusVal === 'NA' ? 'active-NA' : ''}`;
-      }
-      updateProgressBadge();
-    }
-
-    function setRemarks(itemId, role, val) {
-      if (appState.localItemState[itemId]) appState.localItemState[itemId][role === "DRAFTER" ? "drafter_remarks" : "checker_remarks"] = val;
-    }
-
-    function quickTickAllEmpty(role) {
-      if (!appState.currentDetail || !isGasEnvironment) return;
-      appState.currentDetail.masterItems.forEach(item => {
-        const currentVal = role === "DRAFTER" ? appState.localItemState[item.item_id].drafter_status : appState.localItemState[item.item_id].checker_status;
-        if (!currentVal) setTickStatus(item.item_id, role, "PASS");
-      });
-    }
-
-    function updateProgressBadge() {
-      if (!appState.currentDetail) return;
-      const total = appState.currentDetail.masterItems.length;
-      const drafterDone = Object.values(appState.localItemState).filter(v => v.drafter_status).length;
-      const checkerDone = Object.values(appState.localItemState).filter(v => v.checker_status).length;
-      document.getElementById("progressCounterBadge").textContent = `Drafter Tick: ${drafterDone}/${total} | Checker Tick: ${checkerDone}/${total}`;
-    }
-
-    function collectItemsPayload() {
-      return Object.entries(appState.localItemState).map(([itemId, val]) => ({ item_id: itemId, drafter_status: val.drafter_status, drafter_remarks: val.drafter_remarks, checker_status: val.checker_status, checker_remarks: val.checker_remarks }));
-    }
-
-    function submitDrafterAction(actionType) {
-      if (!requireWriteAccess()) return;
-      if (!appState.activeUser) { customAlert("Sila pilih Nama Staf anda di penjuru atas terlebih dahulu!"); return; }
-      const sheet = appState.currentDetail.sheet; const items = collectItemsPayload();
-
-      if (actionType === "SUBMIT") {
-        if (items.filter(i => !i.drafter_status).length > 0) { customAlert(`Terdapat item belum di-tick!`); return; }
-
-        customConfirm(`Hantar senarai semak ini kepada ${sheet.assigned_checker_name}?`, {
-            isDanger: false,
-            onConfirm: () => executeDrafterSubmission(actionType, sheet, items)
-        });
-      } else {
-        executeDrafterSubmission(actionType, sheet, items);
-      }
-    }
-
-    function executeDrafterSubmission(actionType, sheet, items) {
-      const btn = document.getElementById(actionType === "SUBMIT" ? "btnSubmitDrafter" : "btnSaveDraftDrafter");
-      btn.disabled = true;
-      google.script.run
-        .withSuccessHandler(res => {
-            btn.disabled = false; customAlert(res.message);
-            if (res.success) {
-                delete appState.cachedChecklists[sheet.sheet_id];
-                loadInitialData(() => selectSheetSlicer(sheet.sheet_id));
-            }
-        })
-        .withFailureHandler(err => { btn.disabled = false; customAlert("Ralat: " + err.message); })
-        .saveOrSubmitDrafterChecklist({ sheet_id: sheet.sheet_id, round_number: sheet.current_round, action_type: actionType, actor_name: appState.activeUser.full_name, items: items });
-    }
-
-    function submitCheckerDecision(decision) {
-      if (!requireWriteAccess()) return;
-      if (!appState.activeUser) { customAlert("Sila pilih Nama Staf anda di penjuru atas terlebih dahulu!"); return; }
-      const sheet = appState.currentDetail.sheet; const items = collectItemsPayload();
-      const overallRemarks = document.getElementById("checkerOverallRemarks").value.trim();
-
-      if (decision === "APPROVED" || decision === "RETURNED") {
-        if (items.filter(i => !i.checker_status).length > 0) { customAlert(`Sila Tick (✓/✗) pada semua semakan sebelum memberi keputusan.`); return; }
-
-        const msg = decision === "APPROVED" ? "Sahkan LULUS pelan ini?" : "Sahkan PULANGKAN pelan ini?";
-        customConfirm(msg, {
-            isDanger: decision === "RETURNED",
-            onConfirm: () => executeCheckerSubmission(decision, sheet, overallRemarks, items)
-        });
-      } else {
-          executeCheckerSubmission(decision, sheet, overallRemarks, items);
-      }
-    }
-
-    function executeCheckerSubmission(decision, sheet, overallRemarks, items) {
-      google.script.run
-        .withSuccessHandler(res => {
-            customAlert(res.message);
-            if (res.success) {
-                delete appState.cachedChecklists[sheet.sheet_id];
-                loadInitialData(() => selectSheetSlicer(sheet.sheet_id));
-            }
-        })
-        .withFailureHandler(err => customAlert("Ralat: " + err.message))
-        .saveOrDecideCheckerReview({ sheet_id: sheet.sheet_id, round_number: sheet.current_round, decision: decision, actor_name: appState.activeUser.full_name, overall_remarks: overallRemarks, items: items });
-    }
-
-    function handleStartNewRound() {
-      if (!requireWriteAccess()) return;
-      if (!appState.activeUser) { customAlert("Sila pilih Nama Staf anda di penjuru atas!"); return; }
-      customConfirm("Buka Pusingan Pembetulan Baharu?", {
-          isDanger: false,
-          onConfirm: () => {
-              const sheetId = appState.currentDetail.sheet.sheet_id;
-              google.script.run
-                .withSuccessHandler(res => {
-                    customAlert(res.message);
-                    if (res.success) {
-                        delete appState.cachedChecklists[sheetId];
-                        loadInitialData(() => selectSheetSlicer(sheetId));
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semakan Data QC | JURUKUR MAHABOB</title>
+    <!-- Tailwind CSS (CDN). Untuk production: guna assets/tailwind.css (npm run build:css) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        jm: {
+                            navy: '#0A2540', blue: '#1E40AF', royal: '#1D4ED8', light: '#EFF6FF',
+                            gold: '#FACC15', amber: '#EAB308', goldDark: '#CA8A04'
+                        }
                     }
-                })
-                .withFailureHandler(err => customAlert("Ralat: " + err.message))
-                .startCorrectionResubmissionRound({ sheet_id: sheetId, actor_name: appState.activeUser.full_name });
-          }
-      });
-    }
-
-    function renderReviewHistory(historyList) {
-      const ul = document.getElementById("reviewHistoryList");
-      if (!historyList || historyList.length === 0) { ul.innerHTML = '<li class="list-group-item text-white-50">Tiada rekod sejarah.</li>'; return; }
-      ul.innerHTML = historyList.map(h => `<li class="list-group-item d-flex justify-content-between align-items-start border-bottom border-light border-opacity-10 py-2">
-            <div><span class="badge bg-secondary shadow-sm me-2">Round ${escapeHtml(h.round_number || "-")}</span><strong class="text-info">${escapeHtml(h.action)}</strong> — <span class="text-light">${escapeHtml(h.details || "")}</span></div>
-            <small class="text-white-50 text-nowrap ms-3">${formatDateTime(h.timestamp)} (${escapeHtml(h.performed_by || "-")})</small>
-          </li>`).join("");
-    }
-
-    /* ======================= DASHBOARD ======================= */
-    // Kira metrik dashboard terus daripada data Google Sheet (mod CSV)
-    function computeDashboardFromState() {
-      const sheets = appState.drawingSheets.filter(s => s.current_status !== "INACTIVE");
-      let pendingCount = 0, returnedCount = 0, approvedCount = 0, firstPassCount = 0;
-      const typeCounts = { "TOPO": 0, "UMAP": 0, "PRE-COMP": 0 };
-      const checkerWorkload = {}, drafterWorkload = {};
-
-      sheets.forEach(s => {
-        if (s.current_status === "PENDING_CHECK") pendingCount++;
-        if (s.current_status === "RETURNED") returnedCount++;
-        if (s.current_status === "APPROVED") {
-          approvedCount++;
-          if (Number(s.current_round) === 1) firstPassCount++;
+                }
+            }
         }
-        if (s.drawing_type) typeCounts[s.drawing_type] = (typeCounts[s.drawing_type] || 0) + 1;
-        const chk = s.assigned_checker_name || "Belum Tetap";
-        checkerWorkload[chk] = (checkerWorkload[chk] || 0) + 1;
-        const drf = s.drafter_name || "Tiada Nama";
-        drafterWorkload[drf] = (drafterWorkload[drf] || 0) + 1;
-      });
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #F8FAFC; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-      // Item paling kerap gagal (berdasarkan keputusan checker = FAIL)
-      const activeSheetIds = new Set(sheets.map(s => s.sheet_id));
-      const failCounts = {};
-      appState.itemResults.forEach(r => {
-        if (String(r.checker_status).toUpperCase() === "FAIL" && activeSheetIds.has(r.sheet_id)) {
-          failCounts[r.item_id] = (failCounts[r.item_id] || 0) + 1;
+        .main-tab-btn.active { background-color: #FACC15; color: #0A2540; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+        .main-tab-btn:not(.active) { color: #BFDBFE; }
+        .main-tab-btn:not(.active):hover { background-color: rgba(255,255,255,.1); color: #fff; }
+        .main-tab-btn .cnt { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 9999px; background: rgba(255,255,255,.12); }
+        .main-tab-btn.active .cnt { background: rgba(10,37,64,.12); }
+
+        .print-only { display: none; }
+        @media print {
+            body { background: #fff !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            main { padding-top: 0 !important; }
+            section, .kpi-card { break-inside: avoid; box-shadow: none !important; }
+            table { min-width: 0 !important; font-size: 10px; }
+            th:last-child, td:last-child { display: none; }
         }
-      });
-      const topErrors = Object.entries(failCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([itemId, count]) => {
-          const m = appState.checklistMaster.find(x => x.item_id === itemId) || {};
-          return { drawing_type: m.drawing_type || "-", item_number: m.item_number || itemId, item_title: m.item_title || "-", count };
-        });
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-jm-gold selection:text-jm-navy">
 
-      const recentHistory = appState.reviewHistory
-        .slice()
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 10);
+    <!-- Toolbar: Tab Bidang QC & Kemaskini Data -->
+    <div class="no-print max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 pt-6">
+        <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <nav id="nav" class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Bidang QC"></nav>
+            <div class="flex items-center space-x-3 justify-end shrink-0">
+                <div class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap" title="Sumber: Google Sheets (CSV terbitan)">
+                    <span id="syncDot" class="w-2 h-2 rounded-full bg-blue-300 animate-pulse"></span>
+                    <span id="syncStatusText">Menyambung data...</span>
+                </div>
+                <button type="button" id="refreshBtn" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-progress whitespace-nowrap">
+                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
+                    <span>Kemaskini Data</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
-      return {
-        success: true,
-        metrics: {
-          totalSheets: sheets.length,
-          firstPassRate: approvedCount > 0 ? Math.round((firstPassCount / approvedCount) * 100) : 0,
-          returnedCount, pendingCount
-        },
-        typeCounts, checkerWorkload, drafterWorkload, topErrors, recentHistory
-      };
-    }
+    <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6 sm:py-8 space-y-6">
 
-    function renderDashboard(res) {
-      if (!res || !res.success) { customAlert("Gagal memuatkan data dashboard."); return; }
+        <!-- Tajuk khas untuk cetakan -->
+        <div class="print-only">
+            <h1 class="text-lg font-extrabold text-jm-navy">Semakan Data &amp; QC — Jurukur Mahabob &amp; Co. Sdn. Bhd.</h1>
+            <p id="printSub" class="text-xs text-slate-500">Semua Bidang</p>
+        </div>
 
-      const m = res.metrics;
-      document.getElementById("kpiTotalSheets").textContent = m.totalSheets;
-      document.getElementById("kpiFirstPassRate").textContent = m.firstPassRate + "%";
-      document.getElementById("kpiReturnedCount").textContent = m.returnedCount;
-      document.getElementById("kpiPendingCount").textContent = m.pendingCount;
+        <!-- Sub-header paparan semasa -->
+        <div class="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-jm-blue ring-4 ring-blue-100"></span>
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Paparan Semasa:</span>
+                    <h2 id="viewTitle" class="text-base sm:text-lg font-extrabold text-jm-navy">Semakan Data QC — Semua Bidang</h2>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">
+                Pantau status semakan QC &amp; kes rework setiap fail ukur terus daripada Google Sheets
+            </p>
+        </div>
 
-      const typeList = document.getElementById("dashTypeDistributionList");
-      const typeEntries = Object.entries(res.typeCounts || {});
-      typeList.innerHTML = typeEntries.length > 0 ?
-        typeEntries.map(([type, count]) => `
-          <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent text-white border-bottom border-light border-opacity-10">
-            <span><i class="bi bi-file-earmark-text text-info me-2"></i>${escapeHtml(type)}</span>
-            <span class="badge bg-info text-dark rounded-pill">${count} Helaian</span>
-          </li>
-        `).join("")
-        : `<li class="list-group-item text-white-50">Tiada data direkodkan.</li>`;
+        <!-- Amaran data (sampel / sebahagian) -->
+        <div id="dataWarning" class="no-print hidden flex items-start gap-3 bg-amber-50 border border-amber-200 border-l-4 border-l-jm-gold rounded-2xl px-5 py-3 text-sm text-amber-900">
+            <i class="fa-solid fa-triangle-exclamation text-jm-goldDark mt-0.5"></i>
+            <p id="dataWarningMsg" class="flex-1"></p>
+            <button type="button" id="dismissWarning" class="text-amber-700 hover:text-amber-900" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        </div>
 
-      const checkerList = document.getElementById("dashCheckerWorkloadList");
-      const checkerEntries = Object.entries(res.checkerWorkload || {});
-      checkerList.innerHTML = checkerEntries.length > 0 ?
-        checkerEntries.map(([checker, count]) => `
-          <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent text-white border-bottom border-light border-opacity-10">
-            <span><i class="bi bi-person-badge text-warning me-2"></i>${escapeHtml(checker)}</span>
-            <span class="badge bg-warning text-dark rounded-pill">${count} Tugasan Pelan</span>
-          </li>
-        `).join("")
-        : `<li class="list-group-item text-white-50">Tiada data direkodkan.</li>`;
+        <!-- 4 KPI -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="kpi-card bg-gradient-to-br from-jm-navy to-jm-blue text-white rounded-2xl p-5 shadow-md border border-blue-900 relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-jm-gold/10 group-hover:scale-110 transition-transform"></div>
+                <div class="flex justify-between items-start">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Jumlah Fail Semakan</p>
+                        <h2 id="kpiTotal" class="text-2xl sm:text-3xl font-extrabold text-white mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow shrink-0"><i class="fa-solid fa-clipboard-check text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/15 text-xs text-blue-100"><span id="kpiSurveyor">0</span> surveyor terlibat</div>
+            </div>
 
-      const drafterList = document.getElementById("dashDrafterWorkloadList");
-      const drafterEntries = Object.entries(res.drafterWorkload || {});
-      drafterList.innerHTML = drafterEntries.length > 0 ?
-        drafterEntries.map(([drafter, count]) => `
-          <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent text-white border-bottom border-light border-opacity-10">
-            <span><i class="bi bi-vector-pen text-primary me-2"></i>${escapeHtml(drafter)}</span>
-            <span class="badge bg-primary rounded-pill">${count} Helaian Dihasilkan</span>
-          </li>
-        `).join("")
-        : `<li class="list-group-item text-white-50">Tiada data direkodkan.</li>`;
+            <div class="kpi-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-royal hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Lulus / Siap</p>
+                        <h2 id="kpiLulus" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-blue-50 text-jm-royal rounded-xl shrink-0"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">Kadar lulus <span id="kpiLulusPct" class="ml-1 px-2 py-0.5 rounded-full bg-blue-100 text-jm-royal font-semibold">0%</span></div>
+            </div>
 
-      const historyList = document.getElementById("dashRecentHistoryList");
-      historyList.innerHTML = res.recentHistory && res.recentHistory.length > 0 ?
-        res.recentHistory.map(h => `
-            <li class="list-group-item bg-transparent text-white border-bottom border-light border-opacity-10 py-2">
-              <div class="d-flex justify-content-between">
-                <strong class="text-success">${escapeHtml(h.action)}</strong>
-                <span class="text-white-50" style="font-size: 0.75rem;">${formatDateTime(h.timestamp)}</span>
-              </div>
-              <div class="text-light mt-1">${escapeHtml(h.details || "")}</div>
-              <div class="text-white-50 mt-1" style="font-size: 0.75rem;">Oleh: ${escapeHtml(h.performed_by || "-")}</div>
-            </li>
-          `).join("")
-        : `<li class="list-group-item text-white-50 p-3">Belum ada aktiviti direkodkan dalam sistem.</li>`;
+            <div class="kpi-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-gold hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Dalam Proses QC</p>
+                        <h2 id="kpiProses" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-yellow-50 text-jm-goldDark rounded-xl shrink-0"><i class="fa-solid fa-hourglass-half text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">Semakan sedang aktif</div>
+            </div>
 
-      const errTbody = document.getElementById("dashTopErrorsTableBody");
-      if (!res.topErrors || res.topErrors.length === 0) {
-        errTbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-white-50">Syabas! Tiada ralat yang kerap gagal direkodkan.</td></tr>`;
-      } else {
-        errTbody.innerHTML = res.topErrors.map(err => `
-          <tr>
-            <td><span class="badge glass-badge">${escapeHtml(err.drawing_type)}</span></td>
-            <td class="fw-bold">${escapeHtml(err.item_number)}</td>
-            <td>${escapeHtml(err.item_title)}</td>
-            <td class="text-end fw-bold text-danger">${err.count} kali</td>
-          </tr>
-        `).join("");
-      }
-    }
+            <div class="kpi-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-red-600 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kes Rework</p>
+                        <h2 id="kpiRework" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-red-50 text-red-600 rounded-xl shrink-0"><i class="fa-solid fa-triangle-exclamation text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">Kadar semak semula <span id="kpiReworkPct" class="ml-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">0%</span></div>
+            </div>
+        </section>
 
-    // Butang "Muat Semula Metrik": ambil data terkini dahulu, kemudian kira semula
-    function refreshDashboard(btn) {
-      const reset = () => { if (btn) { btn.innerHTML = `<i class="bi bi-arrow-clockwise me-1"></i>Muat Semula Metrik`; btn.disabled = false; } };
-      if (btn) { btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Memuatkan...`; btn.disabled = true; }
-      if (!isGasEnvironment) {
-        loadInitialData(reset); // onDataLoaded akan panggil loadDashboardData()
-        return;
-      }
-      loadDashboardData(reset);
-    }
+        <!-- Carta -->
+        <section class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <h3 class="font-bold text-jm-navy text-base flex items-center gap-2 mb-1"><i class="fa-solid fa-chart-pie text-jm-blue"></i> Agihan Status Semakan</h3>
+                <p class="text-xs text-slate-500 mb-4">Pecahan fail mengikut status QC</p>
+                <div class="relative h-64"><canvas id="statusChart" aria-label="Agihan status semakan" role="img"></canvas></div>
+            </div>
+            <div class="lg:col-span-3 bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <h3 class="font-bold text-jm-navy text-base flex items-center gap-2 mb-1"><i class="fa-solid fa-chart-bar text-jm-blue"></i> Beban Kerja &amp; Rework Mengikut Surveyor</h3>
+                <p class="text-xs text-slate-500 mb-4">Jumlah fail setiap surveyor, bahagian merah = kes rework</p>
+                <div class="max-h-80 overflow-y-auto"><div id="surveyorWrap" class="relative h-64"><canvas id="surveyorChart" aria-label="Beban kerja surveyor" role="img"></canvas></div></div>
+            </div>
+        </section>
 
-    function loadDashboardData(onDone) {
-      if (!isGasEnvironment) {
-        renderDashboard(computeDashboardFromState());
-        if (typeof onDone === "function") onDone();
-        return;
-      }
+        <!-- Jadual -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 bg-slate-50/70 space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-jm-navy text-lg">Rekod Fail &amp; Keputusan Semakan QC</h3>
+                        <p id="recordsCount" class="text-xs text-slate-500 mt-0.5">Menyiapkan rekod...</p>
+                    </div>
+                    <div class="no-print flex items-center gap-2">
+                        <button type="button" id="btnCSV" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-file-arrow-down text-jm-blue"></i><span>Eksport</span>
+                        </button>
+                        <button type="button" id="btnPrint" class="px-3.5 py-2 bg-jm-navy hover:bg-jm-blue text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-print"></i><span>Cetak Laporan</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="no-print grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="relative lg:col-span-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="filterSearch" placeholder="Cari No Fail / Tetuan / Perkara / Surveyor..." aria-label="Carian"
+                            class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                    </div>
+                    <select id="filterStatus" aria-label="Status QC" class="px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                        <option value="ALL">Semua Status</option>
+                    </select>
+                    <select id="filterSurveyor" aria-label="Surveyor" class="px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                        <option value="ALL">Semua Surveyor</option>
+                    </select>
+                    <select id="filterRework" aria-label="Rework" class="px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                        <option value="ALL">Semua Kes</option>
+                        <option value="YES">Ada Rework (Kena Baiki)</option>
+                        <option value="NO">Tiada Rework (Lulus Sekali QC)</option>
+                    </select>
+                </div>
+            </div>
 
-      google.script.run
-        .withSuccessHandler(res => { renderDashboard(res); if (typeof onDone === "function") onDone(); })
-        .withFailureHandler(err => {
-          if (typeof onDone === "function") onDone();
-          customAlert("Ralat semasa memuatkan data dashboard: " + err.message);
-        })
-        .getDashboardMetrics();
-    }
+            <div class="w-full overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[1100px] text-xs">
+                    <thead>
+                        <tr class="bg-jm-navy text-white uppercase tracking-wider">
+                            <th class="px-3 py-3.5 font-semibold">Bil</th>
+                            <th class="px-3 py-3.5 font-semibold">Kategori</th>
+                            <th class="px-3 py-3.5 font-semibold">Tarikh Fail</th>
+                            <th class="px-3 py-3.5 font-semibold">No. Fail</th>
+                            <th class="px-3 py-3.5 font-semibold min-w-[220px]">Perkara / Projek</th>
+                            <th class="px-3 py-3.5 font-semibold min-w-[170px]">Tetuan / Pelanggan</th>
+                            <th class="px-3 py-3.5 font-semibold">Surveyor</th>
+                            <th class="px-3 py-3.5 font-semibold">Tempoh</th>
+                            <th class="px-3 py-3.5 font-semibold text-center">Status QC</th>
+                            <th class="px-3 py-3.5 font-semibold text-center">Rework</th>
+                            <th class="px-3 py-3.5 font-semibold text-center">Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200 text-slate-700"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-    function switchView(viewId) {
-      document.getElementById("sheetsView").style.display = viewId === "sheetsView" ? "block" : "none";
-      document.getElementById("checklistView").style.display = viewId === "checklistView" ? "block" : "none";
-      document.getElementById("dashboardView").style.display = viewId === "dashboardView" ? "block" : "none";
+    <footer class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 py-6 text-xs text-slate-400 border-t border-slate-200 mt-8 flex flex-col sm:flex-row justify-between gap-2">
+        <span>&copy; <span id="footerYear"></span> <strong class="text-jm-navy">JURUKUR MAHABOB &amp; Co. Sdn. Bhd.</strong> &middot; Semakan Data &amp; QC Ukur Tanah</span>
+        <span>Pengurusan Kualiti (ISO 9001 Compliant) &middot; Sumber: Google Sheets</span>
+    </footer>
 
-      document.getElementById("tabBtnSheets").classList.toggle("active", viewId === "sheetsView");
-      document.getElementById("tabBtnChecklist").classList.toggle("active", viewId === "checklistView");
-      document.getElementById("tabBtnDashboard").classList.toggle("active", viewId === "dashboardView");
+    <!-- Modal perincian -->
+    <div id="detailModal" class="fixed inset-0 z-[110] bg-jm-navy/50 backdrop-blur-sm hidden items-center justify-center p-4 overflow-auto" role="dialog" aria-modal="true" aria-labelledby="mFileNo">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden m-auto">
+            <div class="bg-jm-navy text-white px-6 py-4 flex items-center gap-3 border-b-4 border-jm-gold">
+                <div class="p-2.5 rounded-xl bg-jm-gold text-jm-navy shrink-0"><i class="fa-solid fa-folder-open"></i></div>
+                <div class="flex-1 min-w-0">
+                    <h4 id="mFileNo" class="font-extrabold text-base truncate">NO FAIL</h4>
+                    <p id="mCategory" class="text-xs text-blue-200">Maklumat QC Ukur Tanah</p>
+                </div>
+                <button type="button" id="mClose" data-close class="p-2 rounded-lg text-blue-200 hover:bg-white/10 hover:text-white" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tetuan / Pelanggan</p><p id="mTetuan" class="text-sm font-semibold text-jm-navy mt-0.5 break-words">-</p></div>
+                    <div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Surveyor / Pegawai</p><p id="mSurveyor" class="text-sm font-semibold text-jm-navy mt-0.5">-</p></div>
+                    <div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tarikh Fail</p><p id="mTarikh" class="text-sm font-semibold text-jm-navy mt-0.5">-</p></div>
+                    <div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tempoh Kerja</p><p id="mTempoh" class="text-sm font-semibold text-jm-navy mt-0.5">-</p></div>
+                </div>
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Perkara / Skop Projek</p>
+                    <div id="mPerkara" class="border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700">-</div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div id="mStatusBox" class="rounded-xl px-4 py-3"><p class="text-[11px] font-semibold uppercase tracking-wider opacity-70">Status Semakan QC</p><p id="mStatus" class="text-base font-extrabold mt-0.5">-</p></div>
+                    <div id="mReworkBox" class="rounded-xl px-4 py-3"><p class="text-[11px] font-semibold uppercase tracking-wider opacity-70">Status Rework</p><p id="mRework" class="text-base font-extrabold mt-0.5">-</p></div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-end">
+                <button type="button" data-close class="px-5 py-2.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-200 transition">Tutup</button>
+            </div>
+        </div>
+    </div>
 
-      if (viewId === "dashboardView") loadDashboardData();
-    }
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-[120] px-4 py-3 rounded-xl text-sm flex items-center gap-3 transition-all transform translate-y-2 opacity-0 hidden max-w-sm shadow-xl">
+        <i id="toastIcon" class="w-5 text-center shrink-0"></i>
+        <span id="toastMsg">Mesej notifikasi...</span>
+    </div>
 
-    /* ======================= UTILITI ======================= */
-    function escapeHtml(str) {
-      return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-    }
-
-    // Format DD/MM/YYYY
-    function formatDate(value) {
-      if (!value) return "-";
-      const d = new Date(value);
-      if (isNaN(d)) return escapeHtml(value);
-      return d.toLocaleDateString("en-GB", { timeZone: "Asia/Kuala_Lumpur" });
-    }
-
-    // Format DD/MM/YYYY, HH:MM
-    function formatDateTime(value) {
-      if (!value) return "-";
-      const d = new Date(value);
-      if (isNaN(d)) return escapeHtml(value);
-      return d.toLocaleString("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    }
-  </script>
+    <!-- Loading Overlay -->
+    <div id="loader" class="fixed inset-0 bg-slate-50/80 backdrop-blur-sm z-50 flex items-center justify-center" style="display:none;">
+        <div class="flex flex-col items-center gap-3">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-jm-blue"></i>
+            <p class="text-sm font-medium text-slate-600">Memuatkan data QC...</p>
+        </div>
+    </div>
 
 <script>
-/* JM MOBILE — isi data-label setiap sel jadual daripada header (sokong rowspan/colspan).
-   Tak sentuh data atau logic; jalan semula bila jadual dirender semula. */
-(function(){
-  'use strict';
-  function txt(el){ return el.textContent.replace(/[▲▼⇅]/g,'').replace(/\s+/g,' ').trim(); }
-  function headLabels(table){
-    const rows = table.tHead ? Array.from(table.tHead.rows) : [];
-    if (!rows.length) return null;
-    const grid = [];
-    rows.forEach(function(tr, r){
-      grid[r] = grid[r] || [];
-      let c = 0;
-      Array.from(tr.cells).forEach(function(cell){
-        while (grid[r][c]) c++;
-        const cs = cell.colSpan || 1, rs = cell.rowSpan || 1, t = txt(cell);
-        for (let i = 0; i < rs; i++) { grid[r+i] = grid[r+i] || []; for (let j = 0; j < cs; j++) grid[r+i][c+j] = { t: t }; }
-        c += cs;
-      });
-    });
-    const n = Math.max.apply(null, grid.map(function(g){ return g.length; }));
-    const out = [];
-    for (let c = 0; c < n; c++) {
-      const parts = [];
-      grid.forEach(function(g){ const x = g[c]; if (x && x.t && parts[parts.length-1] !== x.t) parts.push(x.t); });
-      out.push(parts.join(' · '));
+(function () {
+    'use strict';
+    /* ================= CONFIG ================= */
+    const SHEET_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSu5gATXzC5n6KzCNO5mk54h2EORGalqNs0XrGcxEeUXdIINtUZZfA2f7kNhAnFVPFnWFYXumEnx4FC/pub?output=csv';
+    /* Satu sumber: tab pertama sheet. Kategori (tab) diambil dari column MAKLUMAT / BIDANG / KATEGORI.
+       Kalau data dipecah ikut tab dalam Google Sheet, tambah satu baris setiap tab:
+       {name:'TITLE', url:`${SHEET_BASE_URL}&gid=XXXX`, defaultCategory:'TITLE'} */
+    const CSV_SOURCES = [
+        { name: 'QC', url: SHEET_BASE_URL, defaultCategory: 'UMUM' }
+    ];
+    const SAMPLE_DATA = [
+        { MAKLUMAT: 'ENGINEERING', TARIKH: '2026-02-03', 'NO. FAIL': 'JMB/ENG/2026/005', PERKARA: 'Ukur Aras Terperinci & Topografi Tapak Projek', TETUAN: 'Jabatan Kerja Raya (JKR)', 'NAMA SURVEYOR': 'Sr. Ahmad Zaki', 'TARIKH MULA': '2026-02-04', 'TARIKH AKHIR': '2026-02-11', STATUS: 'LULUS', REWORK: 'TIADA' },
+        { MAKLUMAT: 'TITLE', TARIKH: '2026-01-15', 'NO. FAIL': 'JMB/TTL/2026/014', PERKARA: 'Ukur Penentuan Sempadan Lot 40822 Mukim Pekan', TETUAN: 'Perbadanan Kemajuan Negeri Pahang', 'NAMA SURVEYOR': 'Sr. Khairul Anuar', 'TARIKH MULA': '2026-01-16', 'TARIKH AKHIR': '2026-01-22', STATUS: 'LULUS', REWORK: 'TIADA' },
+        { MAKLUMAT: 'TITLE', TARIKH: '2026-01-18', 'NO. FAIL': 'JMB/TTL/2026/018', PERKARA: 'Ukur Pecah Sempadan Bangunan Kondominium Vista', TETUAN: 'Tropicana Land Corp', 'NAMA SURVEYOR': 'Sr. Ahmad Zaki', 'TARIKH MULA': '2026-01-19', 'TARIKH AKHIR': '2026-02-05', STATUS: 'DALAM PROSES QC', REWORK: 'TIADA' },
+        { MAKLUMAT: 'UMAP', TARIKH: '2026-02-01', 'NO. FAIL': 'JMB/UMP/2026/001', PERKARA: 'Pemetaan Sempadan Zon UMAP & GIS Koridor Paip', TETUAN: 'Petronas Gas Berhad', 'NAMA SURVEYOR': 'Hafizuddin Bakar', 'TARIKH MULA': '2026-02-02', 'TARIKH AKHIR': '2026-02-10', STATUS: 'LULUS', REWORK: 'TIADA' },
+        { MAKLUMAT: 'TITLE', TARIKH: '2026-02-04', 'NO. FAIL': 'JMB/TTL/2026/029', PERKARA: 'Ukur Penandaan Sempadan Lot Industri Gebeng', TETUAN: 'BASF Petronas Chemicals', 'NAMA SURVEYOR': 'Sr. Khairul Anuar', 'TARIKH MULA': '2026-02-05', 'TARIKH AKHIR': '2026-02-12', STATUS: 'LULUS', REWORK: 'TIADA' },
+        { MAKLUMAT: 'UMAP', TARIKH: '2026-02-08', 'NO. FAIL': 'JMB/UMP/2026/003', PERKARA: 'Pengumpulan Data Spasial & Pemetaan GIS UMAP', TETUAN: 'Pihak Berkuasa Tempatan', 'NAMA SURVEYOR': 'Siti Nurhaliza QC', 'TARIKH MULA': '2026-02-09', 'TARIKH AKHIR': '2026-02-18', STATUS: 'DALAM PROSES QC', REWORK: 'TIADA' }
+    ];
+    const PREFERRED_TAB_ORDER = ['ENGINEERING', 'TITLE', 'UMAP'];
+    // [label, kelas chip Tailwind, warna carta, kelas kotak modal]
+    const ST_META = {
+        'LULUS': ['Lulus / Selesai', 'bg-blue-100 text-jm-royal', '#1D4ED8', 'bg-blue-50 text-jm-royal'],
+        'DALAM PROSES QC': ['Dalam Proses QC', 'bg-yellow-100 text-yellow-800', '#FACC15', 'bg-yellow-50 text-yellow-800'],
+        'REWORK REQUIRED': ['Rework Required', 'bg-red-100 text-red-700', '#DC2626', 'bg-red-50 text-red-700']
+    };
+    const NO_SURVEYOR = '(Tiada nama)';
+
+    let rawData = [], filteredData = [], dynamicTabs = [], currentTab = 'main', loading = false;
+    let statusChart = null, surveyorChart = null;
+
+    /* ================= HELPERS ================= */
+    const $ = s => document.querySelector(s);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const pad2 = n => String(n).padStart(2, '0');
+    const dmy = d => pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+    const fmtDate = s => { if (s && /^\d{4}-\d{2}-\d{2}/.test(s)) { const d = new Date(s.slice(0, 10) + 'T00:00:00'); if (!isNaN(d)) return dmy(d); } return s || '-'; };
+    const tempoh = (i, sep) => (i['TARIKH MULA'] || i['TARIKH AKHIR']) ? `${fmtDate(i['TARIKH MULA'])}${sep}${fmtDate(i['TARIKH AKHIR'])}` : '-';
+    /* Satu definisi rework untuk KPI, carta, penapis, jadual & modal */
+    const hasRework = i => i.REWORK !== 'TIADA' || i.STATUS === 'REWORK REQUIRED';
+
+    let toastTimer = null, toastHideTimer = null;
+    function showToast(msg, type = 'success') {
+        const toast = $('#toast'), icon = $('#toastIcon');
+        clearTimeout(toastTimer); clearTimeout(toastHideTimer);
+        $('#toastMsg').innerText = msg;
+        toast.className = 'fixed bottom-6 right-6 z-[120] px-4 py-3 rounded-xl text-sm flex items-center gap-3 transition-all transform translate-y-0 opacity-100 max-w-sm shadow-xl bg-jm-navy text-white border-l-4';
+        if (type === 'success') { toast.classList.add('border-jm-gold'); icon.className = 'fa-solid fa-circle-check text-jm-gold shrink-0'; }
+        else if (type === 'error') { toast.classList.add('border-red-500'); icon.className = 'fa-solid fa-triangle-exclamation text-red-400 shrink-0'; }
+        else { toast.classList.add('border-blue-300'); icon.className = 'fa-solid fa-circle-info text-blue-300 shrink-0'; }
+        toastTimer = setTimeout(() => {
+            toast.classList.add('translate-y-2', 'opacity-0');
+            toastHideTimer = setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3500);
     }
-    return out;
-  }
-  function label(table){
-    const labels = headLabels(table);
-    if (!labels) return;
-    table.classList.add('jm-cards');
-    const n = labels.length;
-    Array.from(table.tBodies).forEach(function(tb){
-      const occ = [];
-      Array.from(tb.rows).forEach(function(tr, r){
-        occ[r] = occ[r] || [];
-        let c = 0;
-        Array.from(tr.cells).forEach(function(cell){
-          while (occ[r][c]) c++;
-          const cs = cell.colSpan || 1, rs = cell.rowSpan || 1;
-          for (let i = 0; i < rs; i++) { occ[r+i] = occ[r+i] || []; for (let j = 0; j < cs; j++) occ[r+i][c+j] = 1; }
-          const full = cs > 1 && cs >= Math.ceil(n / 2);
-          cell.classList.toggle('jm-full', full);
-          const lab = full ? '' : (labels[c] || '');
-          if (cell.getAttribute('data-label') !== lab) cell.setAttribute('data-label', lab);
-          cell.classList.toggle('jm-nolabel', !full && !lab);
-          c += cs;
+    function showWarning(msg) { $('#dataWarningMsg').textContent = msg; $('#dataWarning').classList.toggle('hidden', !msg); }
+    $('#dismissWarning').onclick = () => showWarning('');
+    function setSync(state, txt) {
+        const cls = { ok: 'bg-emerald-400', warn: 'bg-jm-gold', bad: 'bg-red-400', '': 'bg-blue-300 animate-pulse' }[state];
+        $('#syncDot').className = 'w-2 h-2 rounded-full ' + cls;
+        $('#syncStatusText').textContent = txt;
+    }
+
+    /* CSV parser — sokong quote, koma & baris baru dalam sel */
+    function parseCSV(txt) {
+        txt = txt.replace(/^﻿/, '');
+        const rows = []; let row = [], cur = '', q = false;
+        for (let i = 0; i < txt.length; i++) {
+            const ch = txt[i];
+            if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+            else if (ch === '"') q = true;
+            else if (ch === ',') { row.push(cur); cur = ''; }
+            else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+            else if (ch !== '\r') cur += ch;
+        }
+        if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+        if (!rows.length) return [];
+        const hdr = rows[0].map(h => h.trim());
+        return rows.slice(1).filter(r => r.join('').trim() !== '').map(r => { const o = {}; hdr.forEach((h, j) => { if (h) o[h] = r[j] == null ? '' : r[j]; }); return o; });
+    }
+    async function fetchCSV(url) {
+        const sep = url.includes('?') ? '&' : '?';
+        const r = await fetch(`${url}${sep}_t=${Date.now()}`, { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const txt = await r.text();
+        if (/^\s*</.test(txt)) throw new Error('Respons bukan CSV (Sheet belum diterbitkan?)');
+        return parseCSV(txt);
+    }
+
+    /* ================= FETCH ================= */
+    async function fetchData() {
+        if (loading) return; loading = true;
+        $('#loader').style.display = 'flex';
+        $('#refreshIcon').classList.add('fa-spin'); $('#refreshBtn').disabled = true;
+        setSync('', 'Memuatkan data...');
+        const res = await Promise.allSettled(CSV_SOURCES.map(s => fetchCSV(s.url).then(rows => cleanData(rows, s.defaultCategory, s.name))));
+        let combined = []; const fails = [];
+        res.forEach((r, i) => { if (r.status === 'fulfilled') combined = combined.concat(r.value); else { fails.push(CSV_SOURCES[i].name); console.error('Fetch error for tab ' + CSV_SOURCES[i].name + ':', r.reason); } });
+        const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        if (combined.length && !fails.length) {
+            rawData = combined; showWarning('');
+            setSync('ok', `Dikemaskini: ${timeStr}`);
+            showToast(`${rawData.length} rekod dimuatkan daripada Google Sheets.`, 'success');
+        } else if (combined.length) {
+            rawData = combined;
+            showWarning(`Hanya sebahagian data berjaya dimuatkan (${rawData.length} rekod). Tab gagal: ${fails.join(', ')}.`);
+            setSync('warn', 'Sebahagian data sahaja');
+        } else {
+            rawData = cleanData(SAMPLE_DATA, 'ENGINEERING', 'SAMPLE');
+            showWarning(fails.length === CSV_SOURCES.length
+                ? 'Sambungan ke Google Sheets gagal. Angka di bawah ialah DATA SAMPEL, bukan data sebenar.'
+                : 'Google Sheet kosong atau belum diterbitkan. Angka di bawah ialah DATA SAMPEL, bukan data sebenar.');
+            setSync('bad', 'Data sampel (offline)');
+            showToast('Gagal memuat Google Sheets, papar data sampel.', 'error');
+        }
+        initDashboard();
+        $('#loader').style.display = 'none';
+        $('#refreshIcon').classList.remove('fa-spin'); $('#refreshBtn').disabled = false; loading = false;
+    }
+
+    /* ================= CLEAN ================= */
+    function cleanData(data, defaultCat, srcName) {
+        return data.map((item, idx) => {
+            const keys = Object.keys(item);
+            const getVal = possible => {
+                for (const p of possible) {
+                    const target = p.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const k = keys.find(k => k.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') === target);
+                    if (k !== undefined && item[k] != null) return String(item[k]).trim();
+                }
+                return '';
+            };
+            const maklumat = (getVal(['MAKLUMAT', 'BIDANG', 'KATEGORI']) || defaultCat).trim().toUpperCase();
+
+            let status = getVal(['STATUS', 'STATUS QC', 'KEPUTUSAN', 'STATE']) || 'DALAM PROSES QC';
+            const sl = status.toLowerCase();
+            if (/rework|tolak|baiki|reject|gagal|tidak lulus|tak lulus/.test(sl)) status = 'REWORK REQUIRED';
+            else if (/belum|pending|menunggu/.test(sl)) status = 'DALAM PROSES QC';
+            else if (/lul|siap|pass|selesai|approved/.test(sl)) status = 'LULUS';
+            else status = 'DALAM PROSES QC';
+
+            let rework = getVal(['REWORK', 'SEMAK SEMULA', 'BAIKI']);
+            const rl = rework.toLowerCase().trim();
+            if (!rl || /^(tiada|tidak|tak|no|none|false|n|nil)\b/.test(rl) || /^[-–0]+$/.test(rl)) rework = 'TIADA';
+            else if (/\bada\b|\bya\b|yes|true|\d/.test(rl)) rework = rework.toUpperCase();
+            else rework = 'TIADA';
+
+            /* Medan kosong dibiarkan kosong (papar "-"), bukan diisi tarikh/nama rekaan */
+            return {
+                id: srcName + '-' + idx,
+                MAKLUMAT: maklumat,
+                TARIKH: getVal(['TARIKH', 'DATE', 'TARIKH FAIL']),
+                'NO. FAIL': getVal(['NOFAIL', 'NO. FAIL', 'NO_FAIL', 'FILE NO', 'NO REF']) || '-',
+                PERKARA: getVal(['PERKARA', 'PROJEK', 'TAJUK', 'DESCRIPTION', 'PROJECT']) || '-',
+                TETUAN: getVal(['TETUAN', 'PELANGGAN', 'CLIENT', 'PEMOHON']) || '-',
+                'NAMA SURVEYOR': getVal(['NAMASURVEYOR', 'NAMA SURVEYOR', 'SURVEYOR', 'PEGAWAI']) || NO_SURVEYOR,
+                'TARIKH MULA': getVal(['TARIKHMULA', 'TARIKH MULA', 'START DATE']),
+                'TARIKH AKHIR': getVal(['TARIKHAKHIR', 'TARIKH AKHIR', 'END DATE']),
+                STATUS: status,
+                REWORK: rework
+            };
         });
-      });
+    }
+
+    /* ================= TAB ================= */
+    function initDashboard() {
+        extractDynamicTabs();
+        if (currentTab !== 'main' && !dynamicTabs.includes(currentTab)) currentTab = 'main';
+        renderNav(); populateFilterDropdowns(); updateTitle(); applyFilters();
+    }
+    function extractDynamicTabs() {
+        const cats = new Set(rawData.map(i => i.MAKLUMAT).filter(Boolean));
+        dynamicTabs = [...cats].sort((a, b) => {
+            const ia = PREFERRED_TAB_ORDER.indexOf(a), ib = PREFERRED_TAB_ORDER.indexOf(b);
+            if (ia !== -1 && ib !== -1) return ia - ib; if (ia !== -1) return -1; if (ib !== -1) return 1; return a.localeCompare(b);
+        });
+    }
+    function tabIcon(n) {
+        if (n.includes('TITLE') || n.includes('HAKMILIK')) return 'fa-file-contract';
+        if (n.includes('UMAP') || n.includes('GIS')) return 'fa-map-location-dot';
+        if (n.includes('ENGINEERING') || n.includes('KEJURUTERAAN')) return 'fa-ruler-combined';
+        return 'fa-folder-open';
+    }
+    function renderNav() {
+        const btn = (id, label, icon, n) => `<button type="button" data-tab="${esc(id)}" aria-pressed="${currentTab === id}" class="main-tab-btn ${currentTab === id ? 'active' : ''} px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap"><i class="fa-solid ${icon}"></i><span>${esc(label)}</span><span class="cnt">${n}</span></button>`;
+        $('#nav').innerHTML = btn('main', 'Semua Bidang', 'fa-gauge-high', rawData.length)
+            + dynamicTabs.map(t => btn(t, t, tabIcon(t), rawData.filter(i => i.MAKLUMAT === t).length)).join('');
+    }
+    $('#nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) switchTab(b.dataset.tab); });
+    function switchTab(t) {
+        currentTab = t;
+        document.querySelectorAll('#nav [data-tab]').forEach(b => { const on = b.dataset.tab === t; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+        updateTitle(); applyFilters();
+    }
+    function updateTitle() {
+        const t = currentTab === 'main' ? 'Semua Bidang' : `Bidang ${currentTab}`;
+        $('#viewTitle').textContent = `Semakan Data QC — ${t}`;
+        document.title = `QC ${t} | JURUKUR MAHABOB`;
+        $('#printSub').textContent = `${t} · Dicetak ${dmy(new Date())}`;
+    }
+
+    /* ================= PENAPIS ================= */
+    function populateFilterDropdowns() {
+        const fill = (sel, vals, allLabel, labelOf) => {
+            const el = $(sel), cur = el.value;
+            el.innerHTML = `<option value="ALL">${allLabel}</option>` + vals.map(v => `<option value="${esc(v)}">${esc(labelOf ? labelOf(v) : v)}</option>`).join('');
+            el.value = vals.includes(cur) ? cur : 'ALL';
+        };
+        fill('#filterStatus', Object.keys(ST_META).filter(k => rawData.some(i => i.STATUS === k)), 'Semua Status', k => ST_META[k][0]);
+        fill('#filterSurveyor', [...new Set(rawData.map(i => i['NAMA SURVEYOR']))].sort((a, b) => a.localeCompare(b)), 'Semua Surveyor');
+    }
+    function applyFilters() {
+        const q = $('#filterSearch').value.toLowerCase().trim();
+        const fs = $('#filterStatus').value, fv = $('#filterSurveyor').value, fr = $('#filterRework').value;
+        filteredData = rawData.filter(i => {
+            if (currentTab !== 'main' && i.MAKLUMAT !== currentTab) return false;
+            if (q && ![i['NO. FAIL'], i.PERKARA, i.TETUAN, i['NAMA SURVEYOR']].some(v => String(v).toLowerCase().includes(q))) return false;
+            if (fs !== 'ALL' && i.STATUS !== fs) return false;
+            if (fv !== 'ALL' && i['NAMA SURVEYOR'] !== fv) return false;
+            if (fr === 'YES' && !hasRework(i)) return false;
+            if (fr === 'NO' && hasRework(i)) return false;
+            return true;
+        });
+        updateMetrics(); renderTable(); renderCharts();
+    }
+    let searchT;
+    $('#filterSearch').addEventListener('input', () => { clearTimeout(searchT); searchT = setTimeout(applyFilters, 150); });
+    ['#filterStatus', '#filterSurveyor', '#filterRework'].forEach(s => $(s).addEventListener('change', applyFilters));
+    function resetFilters() { $('#filterSearch').value = ''; ['#filterStatus', '#filterSurveyor', '#filterRework'].forEach(s => $(s).value = 'ALL'); applyFilters(); }
+
+    /* ================= KPI ================= */
+    function updateMetrics() {
+        const total = filteredData.length;
+        const passed = filteredData.filter(i => i.STATUS === 'LULUS').length;
+        const prog = filteredData.filter(i => i.STATUS === 'DALAM PROSES QC').length;
+        const rework = filteredData.filter(hasRework).length;
+        const sv = new Set(filteredData.map(i => i['NAMA SURVEYOR']).filter(n => n !== NO_SURVEYOR)).size;
+        const pr = total ? Math.round(passed / total * 100) : 0, rr = total ? Math.round(rework / total * 100) : 0;
+        $('#kpiTotal').textContent = total;
+        $('#kpiSurveyor').textContent = sv;
+        $('#kpiLulus').textContent = passed;
+        $('#kpiLulusPct').textContent = pr + '%';
+        $('#kpiProses').textContent = prog;
+        $('#kpiRework').textContent = rework;
+        $('#kpiReworkPct').textContent = rr + '%';
+        $('#kpiReworkPct').className = 'ml-1 px-2 py-0.5 rounded-full font-semibold ' + (rr ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700');
+    }
+
+    /* ================= JADUAL ================= */
+    function renderTable() {
+        const tb = $('#tableBody');
+        $('#recordsCount').textContent = `Papar ${filteredData.length} daripada ${rawData.length} rekod`;
+        if (!filteredData.length) {
+            tb.innerHTML = `<tr><td colspan="11" class="text-center py-10 text-slate-400"><i class="fa-solid fa-folder-open text-2xl text-slate-300 mb-2 block"></i>Tiada rekod dijumpai. Cuba set semula penapis atau tukar bidang.<br><button type="button" data-reset class="mt-3 px-4 py-2 rounded-xl bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs">Reset Penapis</button></td></tr>`;
+            return;
+        }
+        tb.innerHTML = filteredData.map((i, n) => {
+            const m = ST_META[i.STATUS] || ST_META['DALAM PROSES QC'];
+            const rwTitle = i.REWORK !== 'TIADA' ? i.REWORK : 'Status QC: Rework Required';
+            const rw = hasRework(i)
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 inline-flex items-center gap-1" title="${esc(rwTitle)}"><i class="fa-solid fa-triangle-exclamation"></i>Rework</span>`
+                : '<span class="text-slate-400">Tiada</span>';
+            return `<tr class="hover:bg-blue-50/50 transition">
+                <td class="px-3 py-3 text-slate-400">${n + 1}</td>
+                <td class="px-3 py-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-jm-royal inline-block">${esc(i.MAKLUMAT)}</span></td>
+                <td class="px-3 py-3 text-slate-600 whitespace-nowrap">${esc(fmtDate(i.TARIKH))}</td>
+                <td class="px-3 py-3 font-bold text-jm-navy whitespace-nowrap">${esc(i['NO. FAIL'])}</td>
+                <td class="px-3 py-3 text-slate-800 font-medium">${esc(i.PERKARA)}</td>
+                <td class="px-3 py-3 text-slate-600">${esc(i.TETUAN)}</td>
+                <td class="px-3 py-3 text-slate-800 font-semibold whitespace-nowrap">${esc(i['NAMA SURVEYOR'])}</td>
+                <td class="px-3 py-3 text-slate-500 whitespace-nowrap">${esc(tempoh(i, ' – '))}</td>
+                <td class="px-3 py-3 text-center whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold inline-block ${m[1]}">${esc(i.STATUS)}</span></td>
+                <td class="px-3 py-3 text-center whitespace-nowrap">${rw}</td>
+                <td class="px-3 py-3 text-center"><button type="button" data-view="${esc(i.id)}" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-jm-blue/10 text-jm-blue hover:bg-jm-blue/20 font-semibold text-[11px] transition" aria-label="Papar perincian ${esc(i['NO. FAIL'])}"><i class="fa-solid fa-eye"></i> Lihat</button></td>
+            </tr>`;
+        }).join('');
+    }
+    $('#tableBody').addEventListener('click', e => {
+        const v = e.target.closest('[data-view]'); if (v) return openModal(v.dataset.view);
+        if (e.target.closest('[data-reset]')) resetFilters();
     });
-  }
-  let queued = false;
-  function run(){ queued = false; document.querySelectorAll('table').forEach(label); }
-  function schedule(){ if (!queued) { queued = true; requestAnimationFrame(run); } }
-  function start(){
-    run();
-    new MutationObserver(function(muts){
-      for (const m of muts) { if (m.type === 'childList') { schedule(); return; } }
-    }).observe(document.body, { childList: true, subtree: true });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+
+    /* ================= CARTA (Chart.js) ================= */
+    function renderCharts() {
+        if (typeof Chart === 'undefined') return;
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', system-ui, sans-serif";
+        Chart.defaults.color = '#64748B';
+
+        const keys = Object.keys(ST_META);
+        const counts = keys.map(k => filteredData.filter(i => i.STATUS === k).length);
+        const total = counts.reduce((a, b) => a + b, 0);
+        if (statusChart) statusChart.destroy();
+        statusChart = new Chart($('#statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: keys.map(k => ST_META[k][0]),
+                datasets: [{ data: total ? counts : [1], backgroundColor: total ? keys.map(k => ST_META[k][2]) : ['#E2E8F0'], borderColor: '#FFFFFF', borderWidth: 3, hoverOffset: 6 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '62%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, generateLabels: ch => keys.map((k, i) => ({ text: `${ST_META[k][0]} (${counts[i]})`, fillStyle: ST_META[k][2], strokeStyle: ST_META[k][2], index: i })) } },
+                    tooltip: { enabled: total > 0, callbacks: { label: c => ` ${c.label}: ${c.raw} fail (${Math.round(c.raw / total * 100)}%)` } }
+                }
+            }
+        });
+
+        const map = {};
+        filteredData.forEach(i => { const k = i['NAMA SURVEYOR']; map[k] = map[k] || { t: 0, r: 0 }; map[k].t++; if (hasRework(i)) map[k].r++; });
+        const rows = Object.entries(map).sort((x, y) => y[1].t - x[1].t || y[1].r - x[1].r);
+        $('#surveyorWrap').style.height = Math.max(256, rows.length * 36 + 40) + 'px';
+        if (surveyorChart) surveyorChart.destroy();
+        surveyorChart = new Chart($('#surveyorChart'), {
+            type: 'bar',
+            data: {
+                labels: rows.map(r => r[0]),
+                datasets: [
+                    { label: 'Tanpa rework', data: rows.map(r => r[1].t - r[1].r), backgroundColor: '#1D4ED8', borderRadius: 6, barPercentage: 0.6 },
+                    { label: 'Kes rework', data: rows.map(r => r[1].r), backgroundColor: '#DC2626', borderRadius: 6, barPercentage: 0.6 }
+                ]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } },
+                    tooltip: { callbacks: { footer: items => `Jumlah: ${rows[items[0].dataIndex][1].t} fail` } }
+                },
+                scales: {
+                    x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#F1F5F9' } },
+                    y: { stacked: true, grid: { display: false }, ticks: { color: '#334155' } }
+                }
+            }
+        });
+    }
+
+    /* ================= MODAL ================= */
+    let lastFocus = null;
+    function openModal(id) {
+        const r = rawData.find(i => i.id === id); if (!r) return;
+        lastFocus = document.activeElement;
+        const m = ST_META[r.STATUS] || ST_META['DALAM PROSES QC'];
+        $('#mFileNo').textContent = r['NO. FAIL'];
+        $('#mCategory').textContent = `Bidang: Ukur ${r.MAKLUMAT} (Kategori QC)`;
+        $('#mTetuan').textContent = r.TETUAN;
+        $('#mSurveyor').textContent = r['NAMA SURVEYOR'];
+        $('#mTarikh').textContent = fmtDate(r.TARIKH);
+        $('#mTempoh').textContent = tempoh(r, ' hingga ');
+        $('#mPerkara').textContent = r.PERKARA;
+        $('#mStatus').textContent = r.STATUS;
+        $('#mStatusBox').className = 'rounded-xl px-4 py-3 ' + m[3];
+        $('#mRework').textContent = r.REWORK !== 'TIADA' ? r.REWORK : (hasRework(r) ? 'ADA (ikut status QC)' : 'TIADA');
+        $('#mReworkBox').className = 'rounded-xl px-4 py-3 ' + (hasRework(r) ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600');
+        const modal = $('#detailModal'); modal.classList.remove('hidden'); modal.classList.add('flex');
+        $('#mClose').focus();
+    }
+    function closeModal() {
+        const modal = $('#detailModal'); modal.classList.add('hidden'); modal.classList.remove('flex');
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+    $('#detailModal').addEventListener('click', e => { if (e.target.id === 'detailModal' || e.target.closest('[data-close]')) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#detailModal').classList.contains('hidden')) closeModal(); });
+
+    /* ================= EKSPORT / CETAK ================= */
+    function exportCSV() {
+        if (!filteredData.length) { showToast('Tiada data untuk dieksport berdasarkan penapis semasa.', 'error'); return; }
+        const head = ['Kategori', 'Tarikh', 'No Fail', 'Perkara', 'Tetuan', 'Surveyor', 'Tarikh Mula', 'Tarikh Akhir', 'Status QC', 'Rework'];
+        const q = v => { v = String(v == null ? '' : v); if (/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
+        const lines = [head.map(q).join(',')].concat(filteredData.map(i => [i.MAKLUMAT, fmtDate(i.TARIKH), i['NO. FAIL'], i.PERKARA, i.TETUAN, i['NAMA SURVEYOR'], fmtDate(i['TARIKH MULA']), fmtDate(i['TARIKH AKHIR']), i.STATUS, hasRework(i) ? (i.REWORK !== 'TIADA' ? i.REWORK : 'ADA') : 'TIADA'].map(q).join(',')));
+        const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        const d = new Date(); a.download = `QC_Laporan_Mahabob_${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}.csv`;
+        document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        showToast(`${filteredData.length} rekod dieksport.`, 'success');
+    }
+    $('#btnCSV').onclick = exportCSV;
+    $('#btnPrint').onclick = () => window.print();
+    $('#refreshBtn').onclick = fetchData;
+
+    $('#footerYear').textContent = new Date().getFullYear();
+    fetchData();
 })();
 </script>
 </body>
