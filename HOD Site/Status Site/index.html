@@ -1869,11 +1869,17 @@ html,body{max-width:100%;overflow-x:hidden}
                 err.userMessage = `Pelayan membalas ralat (HTTP ${res.status}).`;
                 throw err;
             }
+            const text = await res.text();
             try {
-                return await res.json();
+                const json = JSON.parse(text);
+                if (json.status !== 'ok') console.error('[Apps Script] respons:', json);
+                return json;
             } catch (e) {
+                // Biasanya halaman HTML: deployment lama/tiada akses "Anyone", atau ralat skrip
+                const snippet = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+                console.error('[Apps Script] respons bukan JSON:', text.slice(0, 2000));
                 const err = new Error('Respons bukan JSON');
-                err.userMessage = 'Respons pelayan tidak sah. Pastikan Apps Script versi baru sudah di-deploy.';
+                err.userMessage = `Respons pelayan tidak sah (${snippet || 'kosong'}). Semak deployment Apps Script: akses "Anyone" dan versi terbaru.`;
                 throw err;
             }
         }
@@ -2035,7 +2041,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     return;
                 }
                 if (result.status !== 'ok') {
-                    showModal('Gagal Disimpan', result.message || 'Rekod gagal disimpan.', 'error');
+                    showModal('Gagal Disimpan', result.message || `Rekod gagal disimpan. Respons pelayan: ${JSON.stringify(result).slice(0, 160)}`, 'error');
                     return;
                 }
 
