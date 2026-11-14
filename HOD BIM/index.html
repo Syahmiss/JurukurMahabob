@@ -6,7 +6,7 @@
 <title>GEO-BIM Tracker · Scan to BIM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
 <style>
 /* ============================================================
    GEO-BIM Tracker — UI ikut template JMC Operations Hub
@@ -14,13 +14,13 @@
    bila dibuka dalam hub, sidebar hub jadi "rail".
    ============================================================ */
 :root{
-  --ind-950:#17154a; --ind-900:#1f1c63; --ind-800:#272483; --ind-600:#4338ca; --ind-500:#5b51e0; --ind-100:#e2e3fb; --ind-50:#eef0ff;
-  --yel:#f5c518; --yel-600:#d9a400; --yel-50:#fff8d6; --yel-ink:#2a2100;
-  --bg:#f6f7fb; --surface:#ffffff; --line:#e3e5ef; --line2:#eef0f6;
-  --ink:#16182b; --ink2:#484d66; --muted:#757a94;
-  --ok:#0f7a43; --ok-50:#e5f4ec; --warn:#b45309; --warn-50:#fdf1e1; --bad:#c52a2a; --bad-50:#fdeaea;
-  --f:'Archivo','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
-  --r-lg:16px; --r-md:10px; --r-sm:6px;
+  --ind-950:#0A2540; --ind-900:#0F2E55; --ind-800:#1E40AF; --ind-600:#1D4ED8; --ind-500:#3B82F6; --ind-100:#DBEAFE; --ind-50:#EFF6FF;
+  --yel:#FACC15; --yel-600:#EAB308; --yel-50:#FEFCE8; --yel-ink:#0A2540;
+  --bg:#F8FAFC; --surface:#FFFFFF; --line:#E2E8F0; --line2:#F1F5F9;
+  --ink:#1E293B; --ink2:#475569; --muted:#64748B;
+  --ok:#047857; --ok-50:#ECFDF5; --warn:#A16207; --warn-50:#FEF9C3; --bad:#DC2626; --bad-50:#FEE2E2;
+  --f:'Inter','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  --r-lg:16px; --r-md:12px; --r-sm:6px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--f);font-stretch:100%;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
@@ -206,6 +206,173 @@ input[type=checkbox]{accent-color:var(--ind-600);width:15px;height:15px;flex:non
   .panel{padding:16px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ============================================================
+   JM THEME LAYER — ikut template "Dashboard Jualan & Invois"
+   Navy #0A2540 · Royal #1D4ED8 · Gold #FACC15 · Inter · slate
+   Token di :root dah dipetakan; blok ni ubah rupa komponen.
+   ============================================================ */
+body{font-family:var(--f);background:var(--bg);color:var(--ink)}
+::selection{background:var(--yel);color:var(--ind-950)}
+:focus-visible{outline:2px solid var(--ind-600);outline-offset:2px}
+
+/* Panel / kad = bg-white rounded-2xl border-slate-200 shadow-sm */
+.panel,.fc,.pg,.item,.hero-head{box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.panel{border-radius:16px}
+.ph h3,.ph h2,.panel h2{color:var(--ind-950);font-weight:700;font-stretch:100%}
+.ph .src,.panel h2 small{background:var(--line2);color:var(--muted);font-weight:500;border-radius:8px}
+
+/* Butang */
+.btn{border-radius:12px;border-color:#CBD5E1;font-weight:600;transition:background .15s,border-color .15s,color .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn:hover{border-color:var(--ind-600);color:var(--ind-950);background:var(--ind-50)}
+.btn.p,.btn.primary{background:var(--ind-950);border-color:var(--ind-950);color:#fff}
+.btn.p:hover,.btn.primary:hover{background:var(--ind-800);border-color:var(--ind-800);color:#fff}
+.btn.y,.btn.back{background:var(--yel);border-color:var(--yel);color:var(--ind-950)}
+.btn.y:hover,.btn.back:hover{background:var(--yel-600);border-color:var(--yel-600);color:var(--ind-950)}
+
+/* Input = rounded-xl border-slate-300 focus:ring-2 ring-royal */
+.inp,.filters input,.filters select,.edit select,.edit input,.rn-form input{border-color:#CBD5E1;border-radius:12px}
+.inp:focus,.filters input:focus,.filters select:focus,.edit select:focus,.edit input:focus,.rn-form input:focus{outline:none;border-color:var(--ind-600);box-shadow:0 0 0 2px var(--ind-600)}
+.inp::placeholder,.filters input::placeholder{color:#94A3B8}
+
+/* Chip / pill = rounded-full */
+.chip,.pill{font-weight:600;padding:3px 10px}
+
+/* Jadual = thead navy, teks putih uppercase, hover biru lembut */
+table:not(.sheet) th{background:var(--ind-950);color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:12px 14px;border-bottom:0}
+table:not(.sheet) thead tr th:first-child{border-top-left-radius:12px}
+table:not(.sheet) thead tr th:last-child{border-top-right-radius:12px}
+table:not(.sheet) td{padding:12px 14px;border-bottom:1px solid var(--line)}
+tbody tr:hover td{background:rgba(239,246,255,.6)}
+.sheet th{background:var(--ind-950);text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+
+/* Hero → sub-header putih + kad KPI berasingan (gaya template) */
+.hero{background:none;border:0;border-radius:0;overflow:visible;display:flex;flex-direction:column;gap:20px}
+.hero .contour{display:none}
+.hero-head{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 20px;align-items:center}
+.hero-head h1,.hero-head h2{color:var(--ind-950);font-weight:800;font-stretch:100%;letter-spacing:-.3px;font-size:22px;display:flex;align-items:center;gap:12px}
+.hero-head h1::before,.hero-head h2::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--ind-800);box-shadow:0 0 0 4px var(--ind-100);flex:none}
+.eyebrow{color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:600}
+.eyebrow::before{display:none}
+
+.hero .kpis{display:grid;gap:20px;border-top:0;background:none}
+.hero .kpi{background:var(--surface);border:1px solid var(--line)!important;border-top:4px solid var(--ind-600)!important;border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(15,23,42,.06);transition:box-shadow .15s,transform .15s;overflow:hidden}
+.hero .kpi:hover{background:var(--surface);box-shadow:0 6px 16px -6px rgba(15,23,42,.18)}
+.hero .kpi .l{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.hero .kpi .v{font-size:28px;font-weight:800;font-stretch:100%;color:var(--ind-950);letter-spacing:-.5px;margin-top:8px}
+.hero .kpi .s{color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--line2)}
+.hero .kpi.hl .v{background:none}
+.hero .kpi:nth-child(2){border-top-color:var(--ind-600)!important}
+.hero .kpi:nth-child(3){border-top-color:var(--yel)!important}
+.hero .kpi:nth-child(4){border-top-color:#334155!important}
+.hero .kpi:nth-child(5){border-top-color:var(--bad)!important}
+.hero .kpi:nth-child(6){border-top-color:var(--ok)!important}
+/* KPI pertama = kad navy → blue gradient dengan bulatan gold */
+.hero .kpi:first-child{position:relative;background:linear-gradient(135deg,var(--ind-950),var(--ind-800));border:1px solid #1E3A8A!important;color:#fff}
+.hero .kpi:first-child::after{content:"";position:absolute;right:-16px;top:-16px;width:96px;height:96px;border-radius:50%;background:rgba(250,204,21,.12);transition:transform .2s;pointer-events:none}
+.hero .kpi:first-child:hover{background:linear-gradient(135deg,var(--ind-950),var(--ind-800))}
+.hero .kpi:first-child:hover::after{transform:scale(1.1)}
+.hero .kpi:first-child .l{color:#BFDBFE}
+.hero .kpi:first-child .v{color:#fff}
+.hero .kpi:first-child .s{color:#DBEAFE;border-top-color:rgba(255,255,255,.15)}
+.hero .kpi:first-child .s b,.hero .kpi:first-child .s .chip{color:var(--yel)}
+.hero .kpi.sel{box-shadow:0 0 0 3px var(--ind-100)!important;background:var(--ind-50)}
+.hero .kpi:first-child.sel{box-shadow:0 0 0 3px var(--yel)!important;background:linear-gradient(135deg,var(--ind-950),var(--ind-800))}
+
+/* Toolbar tab = bar navy rounded-2xl, tab aktif gold */
+.jm-bar{background:var(--ind-950);border:0;border-radius:16px;padding:8px 12px;box-shadow:0 4px 10px -4px rgba(10,37,64,.4)}
+.jm-tab{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;color:#DBEAFE;white-space:nowrap;transition:background .15s,color .15s}
+.jm-tab:hover{background:rgba(255,255,255,.1);color:#fff}
+.jm-tab.on{background:var(--yel);color:var(--ind-950);font-weight:700;box-shadow:0 4px 10px -2px rgba(0,0,0,.25)}
+.jm-tab.on svg{color:var(--ind-950)}
+
+/* Toast = navy + garis gold */
+.toast{background:var(--ind-950);border-left:4px solid var(--yel);border-radius:12px}
+
+@media (max-width:640px){.hero .kpis{gap:12px}.hero .kpi .v{font-size:22px}}
+
+/* --- GEO-BIM: .tabbar jadi toolbar navy penuh (tab + butang database) --- */
+.tabbar{background:var(--ind-950);border-radius:16px;padding:8px 12px;box-shadow:0 4px 10px -4px rgba(10,37,64,.4)}
+.tabs{background:none;border:0;padding:0;gap:6px}
+.tabs button{padding:10px 16px;border-radius:12px;color:#DBEAFE}
+.tabs button:hover{background:rgba(255,255,255,.1);color:#fff}
+.tabs button.on{background:var(--yel);color:var(--ind-950);font-weight:700;box-shadow:0 4px 10px -2px rgba(0,0,0,.25)}
+.tabs button.on svg{color:var(--ind-950)}
+.tabbar .btn{background:var(--yel);border-color:var(--yel);color:var(--ind-950)}
+.tabbar .btn:hover{background:var(--yel-600);border-color:var(--yel-600);color:var(--ind-950)}
+.hero .kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.chip.dr{background:var(--ind-100);color:var(--ind-800)}
+.chip.yel{background:#FEF9C3;color:#854D0E}
+.av{background:var(--ind-950);color:var(--yel)}
+.stat{background:var(--line2);border-radius:12px}
+.stat .v{color:var(--ind-950);font-weight:800;font-stretch:100%}
+.score{background:var(--line2);border-radius:16px}
+.bigbar i{background:linear-gradient(90deg,var(--ind-600),var(--ok))}
+.cat{border-radius:16px}
+.ck{border-radius:12px}
+.modal{background:rgba(10,37,64,.55)}
+.modal .box{border-radius:16px}
+.tw{border:1px solid var(--line);border-radius:12px;margin:0}
+@media (max-width:1320px){.hero .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.hero .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ============================================================
+   JM MOBILE — skrin ≤ 640px: tiada scroll ke tepi.
+   Jadual bertukar jadi kad; label lajur diisi oleh skrip jmCards().
+   ============================================================ */
+html,body{max-width:100%;overflow-x:hidden}
+@media (max-width:640px){
+  .tbl,.tw,.table-responsive,.tbl-wrap{overflow:visible!important;border:0!important;background:none!important;margin:0!important;border-radius:0!important;max-height:none!important}
+  table.jm-cards{min-width:0!important;width:100%!important;border:0!important;background:none!important;border-collapse:separate!important}
+  table.jm-cards thead{display:none!important}
+  table.jm-cards,table.jm-cards tbody,table.jm-cards tfoot,table.jm-cards tr,table.jm-cards td{display:block!important;width:100%!important;max-width:none!important}
+  table.jm-cards tr{position:relative;background:#fff;border:1px solid #E2E8F0;border-radius:12px;margin:0 0 10px;padding:4px 14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  table.jm-cards tbody tr:hover td,table.jm-cards tbody tr:hover{background:#fff!important}
+  table.jm-cards td{position:relative;padding:9px 0 9px 40%!important;min-height:36px;border:0!important;border-bottom:1px solid #F1F5F9!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere;background:none!important;box-shadow:none!important}
+  table.jm-cards td:last-child{border-bottom:0!important}
+  table.jm-cards td::before{content:attr(data-label);position:absolute;left:0;top:9px;width:36%;font-size:10.5px;font-weight:600;line-height:1.35;text-transform:uppercase;letter-spacing:.05em;color:#64748B;white-space:normal}
+  /* sel pertama = tajuk kad: label di atas, nilai penuh lebar */
+  table.jm-cards td:first-child:not(.jm-full){padding:10px 0!important;font-size:14px}
+  table.jm-cards td:first-child:not(.jm-full)::before{position:static;display:block;width:auto;margin-bottom:3px}
+  /* sel tanpa label (cth. butang padam) */
+  table.jm-cards td.jm-nolabel{padding-left:0!important;text-align:right!important}
+  table.jm-cards td.jm-nolabel::before{display:none}
+  /* baris colspan (kategori, kosong, memuatkan) */
+  table.jm-cards td.jm-full{padding:12px 0!important;text-align:center!important;border-bottom:0!important}
+  table.jm-cards td.jm-full::before{display:none}
+  table.jm-cards tr:has(> td.jm-full:only-child){padding:0 14px}
+  table.jm-cards td.category-banner,table.jm-cards .category-banner td{text-align:left!important;padding:10px 14px!important;border-radius:10px;margin:0 -14px;width:calc(100% + 28px)!important}
+  table.jm-cards td.category-banner{background:#0A2540!important;color:#fff!important;box-shadow:inset 4px 0 0 #FACC15!important}
+  table.jm-cards tr:has(> td.category-banner){background:none;border:0;box-shadow:none;padding:0}
+  /* kandungan dalam sel */
+  table.jm-cards td .prog,table.jm-cards td .mini{min-width:0;max-width:100%}
+  table.jm-cards td input,table.jm-cards td select,table.jm-cards td textarea{width:100%;max-width:100%}
+  table.jm-cards td .tick-group{flex-wrap:wrap}
+  table.jm-cards td .clip{max-width:100%;white-space:normal}
+  img,video,canvas,svg{max-width:100%}
+}
+
+@media (max-width:640px){
+  /* toolbar tab: 3 tab sebaris, teks boleh balut, ikon disorok */
+  .hero .tabs,.tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:6px!important;overflow:visible!important}
+  .hero .tabs .tab,.tabs button{justify-content:center;text-align:center;white-space:normal;line-height:1.25;padding:9px 6px!important;font-size:12px}
+  .hero .tabs .tab svg,.tabs button svg{display:none}
+  .tabbar{flex-direction:column;align-items:stretch;gap:8px}
+  .tabbar .sp{display:none}
+  .tabbar>.btn{justify-content:center}
+  .hero-head{padding:14px 16px}
+  .hero-head h1,.hero-head h2{font-size:19px}
+  .hero-head .actions,.hero-head .hero-act{width:100%}
+  .hero-head .actions .btn,.hero-head .hero-act .btn{flex:1;justify-content:center}
+  .hero-head>.btn{width:100%;justify-content:center}
+  .hero-head .chips{width:100%}
+  .ph .tools,.ph .search{width:100%}
+  .form-panel .form{grid-template-columns:minmax(0,1fr)}
+  .inp{min-width:0}
+  .ph select.inp,.ph .inp.sm{flex:1 1 160px;min-width:0;max-width:100%!important}
+  .tabbar .btn span,.hero-act .btn span{display:inline!important}
+}
 </style>
 </head>
 <body>
@@ -403,12 +570,12 @@ const SHEET_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRs4qLMVZWv6J__
 const KEYS={proj:'stb_projects',staff:'stb_staff',rpt:'stb_reports'};
 /* status → [kelas chip, warna bar, keterangan KPI] */
 const STATUS={
-  'Belum Mula':['mute','#a3a6c2','Perancangan / queue'],
-  'On-Site':['warn','#b45309','Laser scanning / UAV'],
-  'Processing':['info','#5b51e0','Registration / pointcloud'],
-  'Drafting':['dr','#272483','3D BIM modeling'],
-  'Sheet Final':['yel','#d9a400','Sheet & QC akhir'],
-  'Siap / Selesai':['ok','#0f7a43','Diserahkan']
+  'Belum Mula':['mute','#94A3B8','Perancangan / queue'],
+  'On-Site':['warn','#CA8A04','Laser scanning / UAV'],
+  'Processing':['info','#3B82F6','Registration / pointcloud'],
+  'Drafting':['dr','#1E40AF','3D BIM modeling'],
+  'Sheet Final':['yel','#FACC15','Sheet & QC akhir'],
+  'Siap / Selesai':['ok','#047857','Diserahkan']
 };
 const ST_KEYS=Object.keys(STATUS);
 const DONE='Siap / Selesai';
@@ -688,6 +855,72 @@ $('#dbLink').href=SHEET_URL;
 /* sync bila tab/iframe lain ubah data yang sama */
 window.addEventListener('storage',e=>{if(Object.values(KEYS).includes(e.key)){projects=load(KEYS.proj,DEF_PROJECTS);staff=load(KEYS.staff,DEF_STAFF);reports=load(KEYS.rpt,DEF_REPORTS);renderAll();}});
 renderAll();
+})();
+</script>
+
+<script>
+/* JM MOBILE — isi data-label setiap sel jadual daripada header (sokong rowspan/colspan).
+   Tak sentuh data atau logic; jalan semula bila jadual dirender semula. */
+(function(){
+  'use strict';
+  function txt(el){ return el.textContent.replace(/[▲▼⇅]/g,'').replace(/\s+/g,' ').trim(); }
+  function headLabels(table){
+    const rows = table.tHead ? Array.from(table.tHead.rows) : [];
+    if (!rows.length) return null;
+    const grid = [];
+    rows.forEach(function(tr, r){
+      grid[r] = grid[r] || [];
+      let c = 0;
+      Array.from(tr.cells).forEach(function(cell){
+        while (grid[r][c]) c++;
+        const cs = cell.colSpan || 1, rs = cell.rowSpan || 1, t = txt(cell);
+        for (let i = 0; i < rs; i++) { grid[r+i] = grid[r+i] || []; for (let j = 0; j < cs; j++) grid[r+i][c+j] = { t: t }; }
+        c += cs;
+      });
+    });
+    const n = Math.max.apply(null, grid.map(function(g){ return g.length; }));
+    const out = [];
+    for (let c = 0; c < n; c++) {
+      const parts = [];
+      grid.forEach(function(g){ const x = g[c]; if (x && x.t && parts[parts.length-1] !== x.t) parts.push(x.t); });
+      out.push(parts.join(' · '));
+    }
+    return out;
+  }
+  function label(table){
+    const labels = headLabels(table);
+    if (!labels) return;
+    table.classList.add('jm-cards');
+    const n = labels.length;
+    Array.from(table.tBodies).forEach(function(tb){
+      const occ = [];
+      Array.from(tb.rows).forEach(function(tr, r){
+        occ[r] = occ[r] || [];
+        let c = 0;
+        Array.from(tr.cells).forEach(function(cell){
+          while (occ[r][c]) c++;
+          const cs = cell.colSpan || 1, rs = cell.rowSpan || 1;
+          for (let i = 0; i < rs; i++) { occ[r+i] = occ[r+i] || []; for (let j = 0; j < cs; j++) occ[r+i][c+j] = 1; }
+          const full = cs > 1 && cs >= Math.ceil(n / 2);
+          cell.classList.toggle('jm-full', full);
+          const lab = full ? '' : (labels[c] || '');
+          if (cell.getAttribute('data-label') !== lab) cell.setAttribute('data-label', lab);
+          cell.classList.toggle('jm-nolabel', !full && !lab);
+          c += cs;
+        });
+      });
+    });
+  }
+  let queued = false;
+  function run(){ queued = false; document.querySelectorAll('table').forEach(label); }
+  function schedule(){ if (!queued) { queued = true; requestAnimationFrame(run); } }
+  function start(){
+    run();
+    new MutationObserver(function(muts){
+      for (const m of muts) { if (m.type === 'childList') { schedule(); return; } }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
 </body>
