@@ -221,10 +221,6 @@ html,body{max-width:100%;overflow-x:hidden}
   .fproj .pt b{color:var(--navy);font-size:14px;display:block}
   .fproj .pt .meta{font-size:12px}
   .fproj .pt .actions{gap:6px;flex-wrap:nowrap}
-  .sheets{display:flex;flex-wrap:wrap;gap:6px}
-  .sheets button{font:inherit;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;padding:3px 9px;border-radius:999px;border:1px solid var(--c);color:var(--c);background:#fff;cursor:pointer;transition:background .15s}
-  .sheets button:hover{background:var(--light)}
-  .sheets button.late{box-shadow:0 0 0 2px #FECACA}
   @media (max-width:640px){
     .fgrid{grid-template-columns:1fr;gap:14px}
     .pg-hd input{max-width:none}
@@ -403,12 +399,6 @@ html,body{max-width:100%;overflow-x:hidden}
         const prog = ps.avg !== null ? ps.avg : (ps.total ? Math.round(ps.done/ps.total*100) : 0);
         const client = COL.client ? [...new Set(rs.map(r => String(r[COL.client]||'').trim()).filter(Boolean))].join(', ') : '';
         const st = COL.status ? countBy(rs, COL.status) : [];
-        const chips = rs.map(r => {
-          const c = COL.status ? statusColor(r[COL.status]) : 'var(--royal)';
-          const lbl = r[COL.sheetNo] ? 'Sheet ' + r[COL.sheetNo] : 'Rekod';
-          const tip = [lbl, COL.status && r[COL.status], COL.person && r[COL.person], isLate(r) && 'LEWAT'].filter(Boolean).join(' · ');
-          return `<button type="button" data-row="${r._row}" class="${isLate(r)?'late':''}" style="--c:${c}" title="${esc(tip)}">${esc(r[COL.sheetNo] || '#' + r._row)}</button>`;
-        }).join('');
         return `<div class="fproj">
           <div class="pt">
             <div><b>${esc(p)}</b><span class="meta">${ps.total} sheet · ${ps.done} siap${ps.late ? ` · <span class="late">${ps.late} lewat</span>` : ''}${client ? ' · ' + esc(client) : ''}</span></div>
@@ -419,7 +409,6 @@ html,body{max-width:100%;overflow-x:hidden}
           </div>
           ${st.length ? `<div class="mini">${st.map(([k,n]) => `<span title="${esc(k)}: ${n}" style="width:${n/ps.total*100}%;background:${statusColor(k)}"></span>`).join('')}</div>` : ''}
           <div class="prog"><div class="t"><i style="width:${prog}%"></i></div>${prog}%</div>
-          <div class="sheets">${chips}</div>
         </div>`;
       }).join('');
       return `<article class="fcard">
@@ -599,9 +588,6 @@ html,body{max-width:100%;overflow-x:hidden}
     return `<div><label for="${id}">${esc(m.name)}${req}</label>${input}</div>`;
   }
 
-  const checkItemHtml = (name, checked) =>
-    `<label class="ci"><input type="checkbox" data-item="${esc(name)}" ${checked?'checked':''}><span>${esc(name)}</span></label>`;
-
   // opt.blank   = borang kosong sepenuhnya (tak ambil projek dari skop)
   // opt.prefill = { kolum: nilai } untuk rekod baru (cth. dari butang "+ Sheet" dalam kad)
   function openForm(row, opt){
@@ -610,7 +596,6 @@ html,body{max-width:100%;overflow-x:hidden}
     const isNew = !row;
     const pre = opt.prefill || {};
     $('formTitle').textContent = isNew ? 'Rekod Baru' : 'Kemaskini: ' + [row[COL.project], row[COL.sheetNo] && 'Sheet ' + row[COL.sheetNo]].filter(Boolean).join(' · ');
-    const addItemHtml = `<div><label for="newItem">Tambah item semakan</label><div class="row2"><input id="newItem" maxlength="200" placeholder="cth: Semakan rizab jalan"><button type="button" class="btn" id="addItem">Tambah</button></div></div>`;
     let html;
 
     if (isNew) {
@@ -630,22 +615,9 @@ html,body{max-width:100%;overflow-x:hidden}
     } else {
       const metas = DB.meta.slice().sort((a,b) => (b.name === COL.project) - (a.name === COL.project));
       html = metas.map((m, i) => fieldHtml(m, i, row[m.name], false, opt)).join('');
-      const items = row._chk ? row._chk.items : {};
-      const names = Object.keys(items).length ? Object.keys(items) : DB.checklistItems;
-      html += `<div class="sec">Senarai Semakan Sheet Ini</div>
-        <div><div class="row2" style="margin-bottom:8px"><button type="button" class="btn sm" id="chkAll">Tanda semua</button><button type="button" class="btn sm" id="chkNone">Kosongkan</button></div>
-          <div class="checklist" id="chkList">${names.map(n => checkItemHtml(n, !!items[n])).join('')}</div>
-          ${row._chk ? '' : '<div class="hint" style="margin-top:6px">Sheet ini belum ada senarai semakan — item standard akan dicipta bila disimpan.</div>'}</div>` + addItemHtml;
     }
     $('form').innerHTML = html;
 
-    if (!isNew) {
-      $('chkAll').onclick = () => { $('chkList').querySelectorAll('input').forEach(c => c.checked = true); updateSummary(); };
-      $('chkNone').onclick = () => { $('chkList').querySelectorAll('input').forEach(c => c.checked = false); updateSummary(); };
-      $('addItem').onclick = addItem;
-      $('newItem').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } });
-      $('chkList').addEventListener('change', updateSummary);
-    }
     if (isNew) ['nSheets','nFile','nSite'].forEach(id => $(id).addEventListener('input', updateSummary));
     updateSummary();
 
@@ -653,20 +625,9 @@ html,body{max-width:100%;overflow-x:hidden}
     const first = $('form').querySelector('input:not([disabled]),select,textarea'); if (first) first.focus();
   }
 
-  function addItem(){
-    const v = $('newItem').value.trim();
-    if (!v) return;
-    const exists = [...$('chkList').querySelectorAll('input')].some(c => c.dataset.item.toLowerCase() === v.toLowerCase());
-    if (exists) { toast('Item sudah ada dalam senarai.', true); return; }
-    $('chkList').insertAdjacentHTML('beforeend', checkItemHtml(v, !editing));
-    $('newItem').value = ''; updateSummary();
-  }
-
   const sheetCount = () => Math.floor(Number($('nSheets') ? $('nSheets').value : 1));
 
   function updateSummary(){
-    const boxes = $('chkList') ? [...$('chkList').querySelectorAll('input')] : [];
-    const checked = boxes.filter(c => c.checked).length;
     if (!editing) {
       const n = sheetCount(), ok = n >= 1 && n <= DB.maxBulk, shown = ok ? Math.min(n, 20) : 0;
       $('sheetChips').innerHTML = ok
@@ -676,7 +637,7 @@ html,body{max-width:100%;overflow-x:hidden}
       const ex = existingCount($('nFile').value.trim(), $('nSite').value.trim());
       $('siteHint').innerHTML = ex ? `<span style="color:var(--amber)">⚠ Site ini sudah ada ${ex} sheet di bawah no. fail yang sama.</span>` : '';
     } else {
-      $('formSum').textContent = `Semakan: ${checked}/${boxes.length} lulus`;
+      $('formSum').textContent = editing._chk ? `Semakan: ${editing._chk.done}/${editing._chk.total} lulus` : '';
     }
   }
 
@@ -693,8 +654,6 @@ html,body{max-width:100%;overflow-x:hidden}
     if (!editing && COL.file && !data[COL.file]) { toast('No. Fail wajib diisi.', true); $('nFile').focus(); return; }
     if (COL.project && !data[COL.project]) { toast((editing ? '"' + COL.project + '"' : 'Nama Site') + ' wajib diisi.', true); return; }
     if (COL.progress && typeof data[COL.progress] === 'number' && (data[COL.progress] < 0 || data[COL.progress] > 100)) { toast('Kemajuan mesti antara 0–100.', true); return; }
-    const boxes = $('chkList') ? [...$('chkList').querySelectorAll('input')] : [];
-
     let payload;
     const wasNew = !editing;
     if (wasNew) {
@@ -704,8 +663,10 @@ html,body{max-width:100%;overflow-x:hidden}
       if (existing && !confirm(`No. Fail "${data[COL.file]}" · Site "${data[COL.project]}" sudah ada ${existing} sheet.\nSheet baru akan dinomborkan 1/${n} hingga ${n}/${n}. Teruskan?`)) return;
       payload = { row: null, data, sheets: n, checklist: DB.checklistItems.slice() };   // senarai semakan standard, tanpa pilihan dalam borang
     } else {
+      // Senarai semakan tak lagi diedit dalam borang — hantar semula status sedia ada supaya tak terusik
       const checklist = {};
-      boxes.forEach(c => checklist[c.dataset.item] = c.checked);
+      if (editing._chk) Object.assign(checklist, editing._chk.items);
+      else DB.checklistItems.forEach(it => checklist[it] = false);
       const key = String((COL.uid && editing[COL.uid]) || editing[DB.headers[0]] || '');
       payload = { row: editing._row, key, data, checklist };
     }
