@@ -53,7 +53,7 @@
                 <div>
                     <h1 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                         Laporan Harian Kerja Lapangan
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v2.6</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v2.7</span>
                     </h1>
                     <p class="text-xs text-blue-200">Copy-paste laporan WhatsApp/Telegram &amp; pantau kemajuan kerja ukur tapak</p>
                 </div>
@@ -231,6 +231,7 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-jm-navy text-white text-[11px] uppercase tracking-wider">
+                                <th class="py-3.5 px-3 font-semibold text-center">Tindakan</th>
                                 <th class="py-3.5 px-3 font-semibold">Tarikh</th>
                                 <th class="py-3.5 px-3 font-semibold">Nama</th>
                                 <th class="py-3.5 px-3 font-semibold">No File</th>
@@ -280,6 +281,76 @@
         </div>
     </div>
 
+    <!-- Edit Laporan Modal -->
+    <div id="editModal" class="fixed inset-0 z-50 hidden bg-jm-navy/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative max-w-4xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+            <div class="flex items-center justify-between px-5 py-4 bg-jm-navy">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-jm-gold text-jm-navy rounded-lg">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Edit Laporan Lapangan</h3>
+                        <p id="editModalSub" class="text-[11px] text-blue-200 font-mono">-</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEditModal()" class="w-8 h-8 rounded-lg text-blue-100 hover:bg-white/10 hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="editLocalNotice" class="hidden mx-5 mt-4 p-3 rounded-xl bg-yellow-50 border border-yellow-200 text-[11px] text-amber-800 flex items-start gap-2">
+                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                <span id="editLocalNoticeText"></span>
+            </div>
+
+            <form id="editForm" onsubmit="event.preventDefault(); saveEdit();" class="p-5 overflow-y-auto flex-1 space-y-5">
+                <!-- Teks Asal + Hurai Semula -->
+                <div class="p-4 rounded-xl bg-jm-light border border-blue-100 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="edit_rawText" class="text-xs font-semibold text-jm-navy flex items-center gap-1.5">
+                            <i class="fa-solid fa-paste text-jm-blue"></i> Teks Asal Laporan
+                        </label>
+                        <button type="button" onclick="reparseEditText()" class="text-xs px-3 py-1.5 rounded-lg bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 font-semibold transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles text-jm-blue"></i> Hurai Semula ke Medan
+                        </button>
+                    </div>
+                    <textarea id="edit_rawText" rows="5" class="w-full rounded-xl bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs font-mono text-slate-700 p-3 transition-all leading-relaxed"></textarea>
+                    <p class="text-[11px] text-slate-500">Edit teks ni kemudian tekan "Hurai Semula" untuk isi semua medan, atau terus edit medan di bawah.</p>
+                </div>
+
+                <!-- Medan berstruktur -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="editFieldsGrid"></div>
+
+                <!-- Gambar -->
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-jm-navy flex items-center gap-1.5">
+                            <i class="fa-solid fa-image text-jm-blue"></i> Gambar Tapak
+                        </span>
+                        <button type="button" id="editRemoveImgBtn" onclick="removeEditImage()" class="hidden text-[11px] font-semibold text-red-600 hover:underline">Buang Gambar</button>
+                    </div>
+                    <div id="editImagePreviewWrap" class="hidden rounded-lg overflow-hidden border border-slate-200 bg-white max-h-40 flex items-center justify-center">
+                        <img id="editImagePreview" src="" alt="Gambar laporan" class="max-h-40 w-auto object-contain" />
+                    </div>
+                    <input type="file" id="editImageFile" accept="image/*" onchange="handleEditImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
+                    <input type="text" id="editImageUrl" placeholder="Atau tampal URL gambar baharu (https://...)" oninput="handleEditImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
+                </div>
+            </form>
+
+            <div class="px-5 py-4 border-t border-slate-200 bg-slate-50 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
+                <p class="text-[11px] text-slate-500">Versi lama disimpan dalam tab <b>Log_Edit</b> di Google Sheet.</p>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 transition">Batal</button>
+                    <button type="button" id="editSaveBtn" onclick="saveEdit()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-jm-navy hover:bg-jm-blue disabled:opacity-60 disabled:cursor-not-allowed text-white shadow-md transition flex items-center gap-2">
+                        <i id="editSaveIcon" class="fa-solid fa-floppy-disk text-jm-gold"></i>
+                        <span id="editSaveText">Simpan Perubahan</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Apps Script Modal -->
     <div id="appsScriptModal" onclick="closeAppsScriptModal()" class="fixed inset-0 z-50 hidden bg-jm-navy/70 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative max-w-4xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
@@ -289,7 +360,7 @@
                         <i class="fa-solid fa-file-code"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script (Auto-Tab &amp; Auto-Header)</h3>
+                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v2.7 (Auto-Tab, Auto-Header &amp; Edit)</h3>
                         <p class="text-[11px] text-blue-200">Guna Active Spreadsheet • Tetapkan MACRO_URL dalam index.html sebelum push ke GitHub</p>
                     </div>
                 </div>
@@ -309,6 +380,7 @@
                         <li>Klik <b>Deploy &gt; New deployment</b> &rarr; pilih jenis <b>Web app</b>.</li>
                         <li>Set <i>Execute as:</i> <b>Me</b> dan <i>Who has access:</i> <b>Anyone</b> &rarr; klik <b>Deploy</b> dan salin <b>Web App URL</b>.</li>
                         <li>Buka fail <code>index.html</code> dan gantikan nilai <code>const MACRO_URL = "...";</code> sebelum push ke GitHub.</li>
+                        <li><b>Bila update kod sedia ada:</b> klik <b>Deploy &gt; Manage deployments</b> &rarr; ikon pensel &rarr; <b>Version: New version</b> &rarr; <b>Deploy</b>. URL kekal sama. Kalau skip langkah ni, URL masih jalankan kod lama.</li>
                     </ol>
                 </div>
 
@@ -323,9 +395,11 @@
                     <pre id="appsScriptCodeBlock" class="p-4 text-[11px] font-mono text-slate-100 bg-jm-navy overflow-auto flex-1 leading-relaxed select-all">/**
  * SISTEM LAPORAN HARIAN KERJA LAPANGAN &amp; ADUAN TAPAK (JURUKUR TANAH)
  * Menggunakan Active Spreadsheet serta membina Tab &amp; Header secara automatik jika tiada.
+ * v2.7: Tambah fungsi EDIT laporan (ikut ID + semakan versi) dan Log_Edit untuk jejak audit.
  */
 
 const SHEET_NAME = 'Laporan_Lapangan';
+const LOG_SHEET_NAME = 'Log_Edit';
 const HEADERS = [
   'Timestamp',
   'Tarikh',
@@ -343,54 +417,203 @@ const HEADERS = [
   'Maklumat Tambahan',
   'Perancangan',
   'Gambar',
-  'Teks Asal'
+  'Teks Asal',
+  'ID',
+  'Versi',
+  'Kemaskini Terakhir'
 ];
+const LOG_HEADERS = ['Masa Edit', 'ID', 'Versi Lama', 'Data Lama (JSON)'];
+
+// Medan laporan yang boleh diedit (ikut susunan lajur 2 hingga 15)
+const FIELD_KEYS = [
+  'tarikh', 'nama', 'noFile', 'tugasan', 'progressHariIni', 'totalSiap',
+  'jangkaAsal', 'jangkaSemasa', 'status', 'waktuMula', 'waktuTamat',
+  'isu', 'maklumat', 'perancangan'
+];
+const FIELD_DEFAULTS = { totalSiap: '0%', status: 'DALAM PROSES' };
+
+// Nombor lajur (1-based)
+const COL = {
+  TIMESTAMP: 1,
+  FIRST_FIELD: 2,
+  GAMBAR: HEADERS.indexOf('Gambar') + 1,
+  TEKS_ASAL: HEADERS.indexOf('Teks Asal') + 1,
+  ID: HEADERS.indexOf('ID') + 1,
+  VERSI: HEADERS.indexOf('Versi') + 1,
+  KEMASKINI: HEADERS.indexOf('Kemaskini Terakhir') + 1
+};
 
 /**
- * Fungsi pintar untuk mendapatkan Sheet aktif.
- * Membina Tab dan Header secara automatik jika belum wujud.
+ * Paksa nilai disimpan sebagai TEKS.
+ * - Elak formula injection (nilai bermula dengan = + - @)
+ * - Elak Sheets auto-tukar tarikh (12/11/2026) atau peratus (8%) ikut locale
+ */
+function asText(value) {
+  const s = String(value === undefined || value === null ? '' : value);
+  return s === '' ? '' : "'" + s;
+}
+
+function jsonOutput(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function styleHeader(range) {
+  range.setFontWeight('bold');
+  range.setBackground('#0f172a');
+  range.setFontColor('#38bdf8');
+}
+
+/**
+ * Dapatkan Sheet utama. Bina Tab &amp; Header jika tiada.
+ * Jika header lama (versi sebelum ini) kurang lajur, lajur baharu ditambah di hujung.
  */
 function getOrCreateSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAME);
 
-  // 1. Bina Tab secara automatik jika tiada
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
   }
 
-  // 2. Bina Header secara automatik jika tiada atau baris pertama kosong
-  const lastRow = sheet.getLastRow();
-  let needHeader = false;
+  const headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
+  const current = headerRange.getValues()[0];
+  let changed = false;
 
-  if (lastRow === 0) {
-    needHeader = true;
-  } else {
-    const firstRowValues = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
-    const isFirstRowEmpty = firstRowValues.every(cell => String(cell).trim() === '');
-    if (isFirstRowEmpty) {
-      needHeader = true;
+  for (let i = 0; i &lt; HEADERS.length; i++) {
+    if (String(current[i]).trim() === '') {
+      current[i] = HEADERS[i];
+      changed = true;
     }
   }
 
-  if (needHeader) {
-    const headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
-    headerRange.setValues([HEADERS]);
-    headerRange.setFontWeight('bold');
-    headerRange.setBackground('#0f172a');
-    headerRange.setFontColor('#38bdf8');
+  if (changed) {
+    headerRange.setValues([current]);
+    styleHeader(headerRange);
     sheet.setFrozenRows(1);
   }
 
   return sheet;
 }
 
+function getOrCreateLogSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(LOG_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(LOG_SHEET_NAME);
+    const range = sheet.getRange(1, 1, 1, LOG_HEADERS.length);
+    range.setValues([LOG_HEADERS]);
+    styleHeader(range);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
 /**
- * Menerima penghantaran data laporan baharu daripada Web App (Method: POST)
+ * Isi ID &amp; Versi untuk rekod lama yang belum ada (rekod sebelum v2.7).
+ */
+function ensureIds(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow &lt; 2) return;
+
+  const range = sheet.getRange(2, COL.ID, lastRow - 1, 2); // ID + Versi
+  const values = range.getValues();
+  let changed = false;
+
+  values.forEach(v =&gt; {
+    if (String(v[0]).trim() === '') { v[0] = Utilities.getUuid(); changed = true; }
+    if (!Number(v[1])) { v[1] = 1; changed = true; }
+  });
+
+  if (changed) range.setValues(values);
+}
+
+function findRowById(sheet, id) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow &lt; 2 || !id) return -1;
+  const ids = sheet.getRange(2, COL.ID, lastRow - 1, 1).getDisplayValues();
+  const idx = ids.findIndex(r =&gt; r[0] === id);
+  return idx === -1 ? -1 : idx + 2;
+}
+
+/**
+ * Tambah laporan baharu. Jika ID sama sudah wujud (contoh: tekan hantar 2 kali),
+ * rekod tidak ditambah semula.
+ */
+function createReport(sheet, payload) {
+  const id = String(payload.id || '').trim() || Utilities.getUuid();
+
+  if (findRowById(sheet, id) !== -1) {
+    return { status: 'success', message: 'Rekod sudah wujud', id: id };
+  }
+
+  const row = [new Date()];
+  FIELD_KEYS.forEach(k =&gt; row.push(asText(payload[k] || FIELD_DEFAULTS[k] || '-')));
+  row.push(asText(payload.image || ''));
+  row.push(asText(payload.rawText || ''));
+  row.push(id);
+  row.push(1);
+  row.push('');
+
+  sheet.appendRow(row);
+  return { status: 'success', message: 'Data berjaya disimpan ke dalam ' + SHEET_NAME, id: id };
+}
+
+/**
+ * Kemaskini laporan sedia ada ikut ID.
+ * baseVersi mesti sama dengan Versi semasa dalam Sheet. Jika tidak, bermakna
+ * orang lain telah edit dahulu, jadi kemaskini ditolak supaya data mereka tidak ditindih.
+ */
+function updateReport(sheet, payload) {
+  const id = String(payload.id || '').trim();
+  if (!id) throw new Error('ID laporan tiada.');
+
+  const rowNum = findRowById(sheet, id);
+  if (rowNum === -1) throw new Error('Rekod dengan ID ' + id + ' tidak dijumpai.');
+
+  const range = sheet.getRange(rowNum, 1, 1, HEADERS.length);
+  const row = range.getValues()[0];
+  const currentVersi = Number(row[COL.VERSI - 1]) || 1;
+
+  if (Number(payload.baseVersi) !== currentVersi) {
+    throw new Error('Konflik versi: laporan ini telah dikemaskini oleh orang lain. Sync semula dan cuba lagi.');
+  }
+
+  // Jejak audit: simpan salinan data lama (tanpa gambar supaya tidak melebihi had sel)
+  const oldData = {};
+  HEADERS.forEach((h, i) =&gt; { if (h !== 'Gambar') oldData[h] = row[i]; });
+  getOrCreateLogSheet().appendRow([
+    new Date(),
+    id,
+    currentVersi,
+    JSON.stringify(oldData).slice(0, 49000)
+  ]);
+
+  FIELD_KEYS.forEach((k, i) =&gt; {
+    row[COL.FIRST_FIELD - 1 + i] = asText(payload[k] || FIELD_DEFAULTS[k] || '-');
+  });
+  if (payload.imageChanged) {
+    row[COL.GAMBAR - 1] = asText(payload.image || '');
+  }
+  if (payload.rawText !== undefined) {
+    row[COL.TEKS_ASAL - 1] = asText(payload.rawText || '');
+  }
+  row[COL.VERSI - 1] = currentVersi + 1;
+  row[COL.KEMASKINI - 1] = new Date();
+
+  range.setValues([row]);
+  return { status: 'success', message: 'Laporan dikemaskini', id: id, versi: currentVersi + 1 };
+}
+
+/**
+ * POST: action = 'create' (default) atau 'update'
  */
 function doPost(e) {
   const lock = LockService.getScriptLock();
-  lock.tryLock(10000);
+  if (!lock.tryLock(10000)) {
+    return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
+  }
 
   try {
     const sheet = getOrCreateSheet();
@@ -402,59 +625,35 @@ function doPost(e) {
       payload = e.parameter;
     }
 
-    const rowData = [
-      new Date(),
-      payload.tarikh || '-',
-      payload.nama || '-',
-      payload.noFile || '-',
-      payload.tugasan || '-',
-      payload.progressHariIni || '-',
-      payload.totalSiap || '0%',
-      payload.jangkaAsal || '-',
-      payload.jangkaSemasa || '-',
-      payload.status || 'DALAM PROSES',
-      payload.waktuMula || '-',
-      payload.waktuTamat || '-',
-      payload.isu || '-',
-      payload.maklumat || '-',
-      payload.perancangan || '-',
-      payload.image || '',
-      payload.rawText || ''
-    ];
+    const result = payload.action === 'update'
+      ? updateReport(sheet, payload)
+      : createReport(sheet, payload);
 
-    sheet.appendRow(rowData);
-
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: 'success',
-        message: 'Data berjaya disimpan ke dalam Google Sheet (' + SHEET_NAME + ')'
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonOutput(result);
 
   } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: 'error',
-        message: error.toString()
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonOutput({ status: 'error', message: error.toString() });
   } finally {
     lock.releaseLock();
   }
 }
 
 /**
- * Mengambil semula semua rekod daripada Active Sheet untuk dipaparkan di Dashboard (Method: GET)
+ * GET: pulangkan semua rekod (terbaru dahulu) untuk Dashboard
  */
 function doGet(e) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
+  }
+
   try {
     const sheet = getOrCreateSheet();
+    ensureIds(sheet);
     const rows = sheet.getDataRange().getDisplayValues();
 
     if (rows.length &lt;= 1) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: 'success', data: [] }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return jsonOutput({ status: 'success', data: [] });
     }
 
     const data = rows.slice(1).reverse().map(r =&gt; ({
@@ -474,17 +673,18 @@ function doGet(e) {
       maklumat: r[13] || '-',
       perancangan: r[14] || '-',
       image: r[15] || '',
-      rawText: r[16] || ''
+      rawText: r[16] || '',
+      id: r[17] || '',
+      versi: Number(r[18]) || 1,
+      updatedAt: r[19] || ''
     }));
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'success', data: data }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonOutput({ status: 'success', data: data });
 
   } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonOutput({ status: 'error', message: error.toString() });
+  } finally {
+    lock.releaseLock();
   }
 }</pre>
                 </div>
@@ -508,6 +708,39 @@ function doGet(e) {
         let reportsData = [];
         let renderedData = [];
         let attachedImageData = "";
+
+        // State untuk Edit Laporan
+        let editingId = null;
+        let editImageData = "";
+        let editImageChanged = false;
+
+        // Medan yang boleh diedit dalam modal
+        const EDIT_FIELDS = [
+            { key: 'tarikh', label: 'Tarikh' },
+            { key: 'nama', label: 'Nama' },
+            { key: 'noFile', label: 'No File' },
+            { key: 'tugasan', label: 'Tugasan / Output', wide: true },
+            { key: 'progressHariIni', label: 'Progress Hari Ini' },
+            { key: 'totalSiap', label: 'Total Dah Siap' },
+            { key: 'status', label: 'Status' },
+            { key: 'jangkaAsal', label: 'Jangka Siap Asal' },
+            { key: 'jangkaSemasa', label: 'Jangka Siap Semasa' },
+            { key: 'waktuMula', label: 'Waktu Mula' },
+            { key: 'waktuTamat', label: 'Waktu Tamat' },
+            { key: 'isu', label: 'Isu / Halangan', wide: true, multiline: true },
+            { key: 'maklumat', label: 'Maklumat Tambahan', wide: true, multiline: true },
+            { key: 'perancangan', label: 'Perancangan', wide: true, multiline: true }
+        ];
+
+        function generateId() {
+            if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+            return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        }
+
+        // Rekod boleh diedit jika ada ID (rekod dari Apps Script atau dibuat dari dashboard ni)
+        function canEdit(item) {
+            return !!(item && item.id);
+        }
 
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
@@ -552,6 +785,12 @@ function doGet(e) {
 
         // Klik butang "Lihat" gambar (event delegation, tiada inline JS dengan data user)
         document.getElementById('reportTableBody').addEventListener('click', (e) => {
+            const editBtn = e.target.closest('[data-edit-id]');
+            if (editBtn) {
+                openEditModal(editBtn.dataset.editId);
+                return;
+            }
+
             const btn = e.target.closest('[data-img-idx]');
             if (!btn) return;
             const item = renderedData[Number(btn.dataset.imgIdx)];
@@ -561,7 +800,7 @@ function doGet(e) {
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { closeImageModal(); closeAppsScriptModal(); }
+            if (e.key === 'Escape') { closeImageModal(); closeAppsScriptModal(); closeEditModal(); }
         });
 
         function openAppsScriptModal() {
@@ -821,6 +1060,9 @@ Tamat : 3.00pm
                 showToast('error', 'Format Tidak Dikenali', 'Tak jumpa TARIKH, NAMA atau NO FILE dalam teks. Semak format laporan.');
                 return;
             }
+            parsedRecord.id = generateId();
+            parsedRecord.versi = 1;
+            parsedRecord.action = 'create';
 
             // Optimistic UI
             reportsData.unshift(parsedRecord);
@@ -847,7 +1089,7 @@ Tamat : 3.00pm
                 });
 
                 setSubmitting(true, 'Mengesahkan Dalam Sheet...');
-                const verified = await verifySaved(parsedRecord);
+                const verified = await verifyRecord(parsedRecord.id, 1);
 
                 if (verified) {
                     rawInput.value = '';
@@ -866,30 +1108,272 @@ Tamat : 3.00pm
             }
         }
 
-        // Tarik semula data dari Apps Script dan cari rekod yang baru dihantar
-        async function verifySaved(record) {
+        // Tarik semula data dari Apps Script dan sahkan rekod (ikut ID & versi) dah ada dalam Sheet.
+        // Jika Sheet berjaya dibaca, data Sheet dijadikan sumber utama (walaupun pengesahan gagal),
+        // supaya paparan tak tunjuk data yang sebenarnya tak tersimpan.
+        async function verifyRecord(id, expectedVersi) {
             await new Promise(r => setTimeout(r, 1500));
             try {
                 const res = await fetch(MACRO_URL, { method: 'GET', redirect: 'follow' });
                 const json = await res.json();
                 if (!json || json.status !== 'success' || !Array.isArray(json.data)) return false;
 
-                const norm = (t) => String(t || '').replace(/\r\n/g, '\n').trim();
-                const found = json.data.slice(0, 20).some(d =>
-                    norm(d.rawText) === norm(record.rawText) ||
-                    (d.nama === record.nama && d.noFile === record.noFile && d.tugasan === record.tugasan)
-                );
+                const match = json.data.find(d => d.id === id);
+                const found = !!match && Number(match.versi) === Number(expectedVersi);
 
-                if (found) {
-                    reportsData = json.data;
-                    saveStoredData();
-                    filterReports();
-                    updateKPIs(reportsData);
-                }
+                // Simpan rekod tempatan yang belum masuk Sheet (contoh: gagal hantar) supaya tak hilang
+                const sheetIds = new Set(json.data.map(d => d.id).filter(Boolean));
+                const localOnly = reportsData.filter(r => r.id && !sheetIds.has(r.id) && !(r.id === id && found));
+
+                reportsData = [...localOnly, ...json.data];
+                saveStoredData();
+                filterReports();
+                updateKPIs(reportsData);
                 return found;
             } catch (e) {
                 console.warn('Gagal sahkan rekod:', e);
                 return false;
+            }
+        }
+
+        // ============================================================================
+        // EDIT LAPORAN
+        // ============================================================================
+        function buildEditFields(item) {
+            const grid = document.getElementById('editFieldsGrid');
+            grid.innerHTML = EDIT_FIELDS.map(f => {
+                const val = item[f.key] && item[f.key] !== '-' ? item[f.key] : '';
+                const base = 'w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all';
+                const input = f.multiline
+                    ? `<textarea id="edit_${f.key}" rows="2" class="${base}">${escapeHtml(val)}</textarea>`
+                    : `<input type="text" id="edit_${f.key}" value="${escapeHtml(val)}" class="${base}" />`;
+                return `
+                    <div class="${f.wide ? 'sm:col-span-2 lg:col-span-3' : ''}">
+                        <label for="edit_${f.key}" class="block text-[11px] font-semibold text-slate-600 mb-1">${f.label}</label>
+                        ${input}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openEditModal(id) {
+            const item = reportsData.find(r => r.id === id);
+            if (!item) {
+                showToast('error', 'Rekod Tidak Dijumpai', 'Sync semula data dan cuba lagi.');
+                return;
+            }
+
+            editingId = id;
+            editImageData = safeImageSrc(item.image);
+            editImageChanged = false;
+
+            document.getElementById('editModalSub').textContent =
+                `${item.nama || '-'} • ${item.noFile || '-'} • Versi ${item.versi || 1}`;
+            document.getElementById('edit_rawText').value = item.rawText || '';
+            buildEditFields(item);
+
+            document.getElementById('editImageFile').value = '';
+            document.getElementById('editImageUrl').value = '';
+            refreshEditImagePreview();
+
+            const notice = document.getElementById('editLocalNotice');
+            const noticeText = document.getElementById('editLocalNoticeText');
+            if (!isMacroConfigured()) {
+                noticeText.textContent = 'MACRO_URL belum ditetapkan. Perubahan hanya disimpan dalam pelayar ini.';
+                notice.classList.remove('hidden');
+            } else {
+                notice.classList.add('hidden');
+            }
+
+            setEditSaving(false);
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            if (document.getElementById('editSaveBtn').disabled) return; // jangan tutup masa sedang simpan
+            modal.classList.add('hidden');
+            editingId = null;
+            editImageData = '';
+            editImageChanged = false;
+        }
+
+        // Hurai semula Teks Asal dan isi medan (gambar tidak disentuh)
+        function reparseEditText() {
+            const raw = document.getElementById('edit_rawText').value;
+            if (!raw.trim()) {
+                showToast('warning', 'Teks Kosong', 'Tiada teks untuk dihurai.');
+                return;
+            }
+            const savedAttached = attachedImageData;
+            const parsed = parseReportText(raw);
+            attachedImageData = savedAttached;
+
+            EDIT_FIELDS.forEach(f => {
+                const el = document.getElementById(`edit_${f.key}`);
+                if (el) el.value = parsed[f.key] && parsed[f.key] !== '-' ? parsed[f.key] : '';
+            });
+            showToast('info', 'Medan Dikemaskini', 'Semua medan diisi semula dari Teks Asal. Semak sebelum simpan.');
+        }
+
+        function refreshEditImagePreview() {
+            const wrap = document.getElementById('editImagePreviewWrap');
+            const img = document.getElementById('editImagePreview');
+            const removeBtn = document.getElementById('editRemoveImgBtn');
+            if (editImageData) {
+                img.src = editImageData;
+                wrap.classList.remove('hidden');
+                removeBtn.classList.remove('hidden');
+            } else {
+                img.src = '';
+                wrap.classList.add('hidden');
+                removeBtn.classList.add('hidden');
+            }
+        }
+
+        function handleEditImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('error', 'Fail Tidak Sah', 'Sila pilih fail gambar sahaja.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const data = compressImage(img);
+                    if (!data) {
+                        showToast('warning', 'Gambar Terlalu Besar', 'Tak muat dalam sel Google Sheet. Guna URL gambar sebagai ganti.');
+                        return;
+                    }
+                    editImageData = data;
+                    editImageChanged = true;
+                    document.getElementById('editImageUrl').value = '';
+                    refreshEditImagePreview();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleEditImageUrl(event) {
+            const url = event.target.value.trim();
+            if (!url) return;
+            const safe = safeImageSrc(url);
+            if (safe) {
+                editImageData = safe;
+                editImageChanged = true;
+                document.getElementById('editImageFile').value = '';
+                refreshEditImagePreview();
+            }
+        }
+
+        function removeEditImage() {
+            editImageData = '';
+            editImageChanged = true;
+            document.getElementById('editImageFile').value = '';
+            document.getElementById('editImageUrl').value = '';
+            refreshEditImagePreview();
+        }
+
+        function setEditSaving(isBusy, label) {
+            const btn = document.getElementById('editSaveBtn');
+            btn.disabled = isBusy;
+            document.getElementById('editSaveText').textContent = label || 'Simpan Perubahan';
+            document.getElementById('editSaveIcon').className = isBusy
+                ? 'fa-solid fa-circle-notch fa-spin text-jm-gold'
+                : 'fa-solid fa-floppy-disk text-jm-gold';
+        }
+
+        async function saveEdit() {
+            if (!editingId) return;
+            const idx = reportsData.findIndex(r => r.id === editingId);
+            if (idx === -1) {
+                showToast('error', 'Rekod Tidak Dijumpai', 'Rekod ini mungkin telah dibuang. Sync semula data.');
+                return;
+            }
+
+            const original = reportsData[idx];
+            const updated = { ...original };
+            EDIT_FIELDS.forEach(f => {
+                const el = document.getElementById(`edit_${f.key}`);
+                updated[f.key] = el && el.value.trim() ? el.value.trim() : '-';
+            });
+            updated.rawText = document.getElementById('edit_rawText').value;
+
+            if (updated.nama === '-' && updated.noFile === '-') {
+                showToast('warning', 'Medan Wajib', 'Sekurang-kurangnya Nama atau No File perlu diisi.');
+                return;
+            }
+
+            // Status auto jika dikosongkan
+            if (updated.status === '-') {
+                updated.status = (parseFloat(updated.totalSiap) || 0) >= 100 ? 'SIAP' : 'DALAM PROSES';
+            }
+            if (editImageChanged) updated.image = editImageData;
+
+            const baseVersi = Number(original.versi) || 1;
+
+            // Mod tempatan: terus simpan dalam pelayar
+            if (!isMacroConfigured()) {
+                updated.versi = baseVersi + 1;
+                reportsData[idx] = updated;
+                saveStoredData();
+                filterReports();
+                updateKPIs(reportsData);
+                setEditSaving(false);
+                closeEditModal();
+                showToast('info', 'Dikemaskini (Mod Tempatan)', 'Perubahan disimpan dalam pelayar sahaja.');
+                return;
+            }
+
+            const payload = {
+                action: 'update',
+                id: updated.id,
+                baseVersi: baseVersi,
+                rawText: updated.rawText,
+                imageChanged: editImageChanged
+            };
+            EDIT_FIELDS.forEach(f => { payload[f.key] = updated[f.key]; });
+            if (editImageChanged) payload.image = editImageData;
+
+            try {
+                setEditSaving(true, 'Menyimpan...');
+                setSyncStatus('Updating...');
+
+                await fetch(MACRO_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                setEditSaving(true, 'Mengesahkan...');
+                const verified = await verifyRecord(updated.id, baseVersi + 1);
+                setEditSaving(false);
+
+                if (verified) {
+                    setSyncStatus('Updated');
+                    closeEditModal();
+                    showToast('success', 'Laporan Dikemaskini', `${updated.nama} (${updated.noFile}) dah dikemaskini dalam Google Sheet.`);
+                } else {
+                    setSyncStatus('Edit Gagal');
+                    showToast('warning', 'Kemaskini Tidak Disahkan',
+                        'Perubahan tak masuk Sheet. Mungkin orang lain dah edit laporan ni dulu, atau rekod belum ada dalam Sheet. Data terkini dah dimuat semula, semak dan cuba lagi.');
+                    // Kemaskini paparan versi dalam modal supaya pengguna nampak data terkini
+                    const fresh = reportsData.find(r => r.id === editingId);
+                    if (fresh) {
+                        document.getElementById('editModalSub').textContent =
+                            `${fresh.nama || '-'} • ${fresh.noFile || '-'} • Versi ${fresh.versi || 1} (terkini dari Sheet)`;
+                    }
+                }
+            } catch (err) {
+                console.error('Ralat kemaskini:', err);
+                setEditSaving(false);
+                setSyncStatus('Edit Gagal');
+                showToast('error', 'Gagal Hubungi Server', 'Perubahan belum disimpan. Semak sambungan internet dan cuba lagi.');
             }
         }
 
@@ -928,8 +1412,19 @@ Tamat : 3.00pm
 
                 const hasIssue = item.isu && item.isu !== '-' && item.isu.toLowerCase() !== 'tiada';
 
+                const editCell = canEdit(item)
+                    ? `<button type="button" data-edit-id="${escapeHtml(item.id)}" title="Edit laporan" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-jm-gold hover:bg-jm-amber text-jm-navy text-[11px] font-bold transition-colors">
+                           <i class="fa-solid fa-pen-to-square"></i> Edit
+                       </button>`
+                    : `<span title="Rekod dari CSV fallback tiada ID. Sync melalui Apps Script untuk edit." class="text-slate-300 cursor-help"><i class="fa-solid fa-lock"></i></span>`;
+
+                const editedBadge = Number(item.versi) > 1
+                    ? `<div class="mt-1 text-[10px] font-semibold text-jm-goldDark" title="${escapeHtml(item.updatedAt ? 'Dikemaskini: ' + item.updatedAt : 'Telah diedit')}">diedit • v${Number(item.versi)}</div>`
+                    : '';
+
                 return `
                     <tr class="hover:bg-blue-50/50 transition-colors align-top">
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${editCell}${editedBadge}</td>
                         <td class="py-3.5 px-3 font-mono whitespace-nowrap text-slate-600">${escapeHtml(item.tarikh || '-')}</td>
                         <td class="py-3.5 px-3 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(item.nama || '-')}</td>
                         <td class="py-3.5 px-3 font-mono font-semibold text-jm-royal whitespace-nowrap">${escapeHtml(item.noFile || '-')}</td>
