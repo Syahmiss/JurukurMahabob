@@ -1134,7 +1134,14 @@ html,body{max-width:100%;overflow-x:hidden}
 
         // ---------- Blok kawasan dinamik ----------
         // Satu blok = satu kawasan (Kawasan di atas, Kuantiti + Unit di bawah) = satu rekod dalam sheet.
-        const UNIT_OPTIONS = ['Lot', 'Ekar', 'Meter', 'Point', 'Stesen', 'Kawasan']; // sama dengan Apps Script
+        const UNIT_OPTIONS = ['Lot', 'Ekar', 'Meter', 'm²', 'Point', 'Stesen', 'Kawasan']; // sama dengan Apps Script
+        const UNIT_ALIASES = { 'm2': 'm²', 'm^2': 'm²', 'meter persegi': 'm²', 'meter per segi': 'm²', 'sq m': 'm²', 'sqm': 'm²' };
+        // Padankan unit dari sheet (cth "m2" yang ditaip terus) ke pilihan rasmi; '' jika tiada padanan
+        function matchUnit(raw) {
+            const s = String(raw || '').trim().toLowerCase();
+            if (UNIT_ALIASES[s]) return UNIT_ALIASES[s];
+            return UNIT_OPTIONS.find(u => u.toLowerCase() === s) || '';
+        }
         const MAX_KAWASAN = 50;   // sama dengan CONFIG.MAX_BILANGAN_KAWASAN dalam Apps Script
         let kawasanRows = [];     // [{ kawasan, kuantiti, unit, skip, autoName }]
 
@@ -2053,7 +2060,7 @@ html,body{max-width:100%;overflow-x:hidden}
             document.getElementById('jangkaSiap').value = tarikhToIso(rec.jangkaSiap) || '';
             document.getElementById('tugas').value = rec.tugas || '';
             // Mod edit = satu rekod = satu blok kawasan sahaja
-            const unitOpt = UNIT_OPTIONS.find(u => u.toLowerCase() === String(rec.unit || '').toLowerCase());
+            const unitOpt = matchUnit(rec.unit);
             kawasanRows = [{ ...blankKawasanRow(unitOpt), kawasan: rec.kawasan || '', kuantiti: rec.kuantiti > 0 ? String(rec.kuantiti) : '' }];
             renderKawasanRows();
 
