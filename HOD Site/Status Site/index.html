@@ -191,6 +191,17 @@ button.mini:hover{background:var(--ind-50);border-color:var(--ind-100)}
 .opt input{width:15px;height:15px;accent-color:var(--ind-600)}
 .banner{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r-md);background:var(--yel-50);border:1px solid #f1dc84;color:var(--yel-ink);font-size:12.5px;margin-bottom:16px}
 .form-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:16px;border-top:1px solid var(--line2)}
+/* Blok kawasan dinamik: Kawasan di atas, Kuantiti + Unit di bawah */
+.kr-list{display:grid;gap:10px}
+.kr{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);display:grid;gap:10px}
+.kr-h{display:flex;align-items:center;gap:8px}
+.kr-no{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ind-950)}
+.kr-no i{width:22px;height:22px;border-radius:7px;background:var(--ind-950);color:var(--yel);display:grid;place-items:center;font-style:normal;font-size:11px}
+.kr .flab{margin-bottom:4px}
+.kr.skip{background:var(--line2);border-style:dashed}
+.kr.skip .kr-f{display:none}
+.kr.skip .kr-no{color:var(--muted)}
+.kr-empty{padding:14px;border:1px dashed var(--line);border-radius:12px;text-align:center;font-size:12.5px;color:var(--muted)}
 .form-foot .btn{padding:10px 16px;font-size:13px}
 
 /* ---------- Jadual ---------- */
@@ -453,10 +464,9 @@ html,body{max-width:100%;overflow-x:hidden}
             <datalist id="existingFilesList"></datalist>
           </div>
           <div>
-            <label class="flab" for="kawasan">Kawasan lapangan</label>
-            <input type="text" id="kawasan" class="inp" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mahabob">
-            <datalist id="kawasanList"></datalist>
-            <p class="hint">Satu No File boleh ada beberapa kawasan. Pilih dari cadangan supaya ejaan sama.</p>
+            <label class="flab" for="bilanganKawasan">Bilangan kawasan</label>
+            <input type="number" id="bilanganKawasan" class="inp" required min="1" max="50" step="1" inputmode="numeric" placeholder="Cth: 3" oninput="delete this.dataset.auto; onBilanganKawasanInput()">
+            <p class="hint" id="bilKawasanHint">Jumlah kawasan yang dirancang untuk No File ini.</p>
           </div>
           <div>
             <label class="flab" for="tarikh">Tarikh kerja</label>
@@ -492,23 +502,17 @@ html,body{max-width:100%;overflow-x:hidden}
           <input type="text" id="tugas" class="inp" required placeholder="Cth: Cerapan Sempadan">
         </div>
 
-        <div class="fgrid">
-          <div>
-            <label class="flab" for="kuantiti">Kuantiti</label>
-            <input type="number" id="kuantiti" class="inp" step="any" required placeholder="0.00">
+        <!-- Kawasan lapangan: satu blok setiap kawasan, dijana ikut Bilangan kawasan -->
+        <div>
+          <div class="row" style="margin-bottom:8px">
+            <span class="flab" style="margin-bottom:0">Kawasan lapangan, kuantiti &amp; unit</span>
+            <span class="muted sm" id="kawasanRowsInfo"></span>
           </div>
-          <div>
-            <label class="flab" for="unit">Unit</label>
-            <select id="unit" class="inp" required>
-              <option value="" disabled selected>Pilih Unit...</option>
-              <option value="Lot">Lot</option>
-              <option value="Ekar">Ekar</option>
-              <option value="Meter">Meter</option>
-              <option value="Point">Point</option>
-              <option value="Stesen">Stesen</option>
-              <option value="Kawasan">Kawasan</option>
-            </select>
+          <datalist id="kawasanList"></datalist>
+          <div id="kawasanRows" class="kr-list">
+            <div class="kr-empty">Masukkan <b>Bilangan kawasan</b> dahulu. Medan kawasan akan muncul ikut bilangan tu.</div>
           </div>
+          <p class="hint">Pilih nama kawasan dari cadangan supaya ejaan sama. Tekan "Langkau" untuk kawasan yang tiada kerja kali ni.</p>
         </div>
 
         <div class="form-foot">
@@ -1031,8 +1035,21 @@ html,body{max-width:100%;overflow-x:hidden}
                 if (!kawasanByFile[fNorm].has(k)) kawasanByFile[fNorm].set(k, kawasanLabel(r.kawasan));
             });
 
+            // Bilangan kawasan dirancang bagi setiap fail: ambil nilai daripada rekod paling baru
+            // (ikut Dikemaskini, kemudian tarikh) supaya suntingan 5 → 3 terus berkesan.
+            // Rekod tempatan berada di depan combinedRecords, jadi ia menang bila seri.
+            const bilKawasanByFile = {};
+            combinedRecords.forEach(r => {
+                if (!r.idFile || !(r.bilanganKawasan > 0)) return;
+                const fNorm = normalizeFileId(r.idFile);
+                const key = String(r.updatedAt || tarikhToIso(r.tarikh) || '');
+                const cur = bilKawasanByFile[fNorm];
+                if (!cur || key > cur.key) bilKawasanByFile[fNorm] = { n: r.bilanganKawasan, key };
+            });
+
             window.__processedData = {
                 kawasanByFile,
+                bilKawasanByFile,
                 combinedRecords,
                 parsedRekod: [...localAddedRecords, ...editedRekod],
                 parsedLaporan,
@@ -1073,6 +1090,132 @@ html,body{max-width:100%;overflow-x:hidden}
                 labels = Array.from(all.values());
             }
             list.innerHTML = labels.sort((a, b) => a.localeCompare(b)).map(k => `<option value="${escapeHtml(k)}">`).join('');
+            updateBilanganKawasanField();
+        }
+
+        // Isi auto Bilangan Kawasan bila No File dah wujud. Nilai yang pengguna taip sendiri tak ditimpa
+        // (data-auto dibuang bila pengguna menaip dalam medan tu).
+        function updateBilanganKawasanField() {
+            const el = document.getElementById('bilanganKawasan');
+            const hint = document.getElementById('bilKawasanHint');
+            const data = window.__processedData;
+            if (!el || !data) return;
+            const typed = document.getElementById('idFile')?.value || '';
+            const fNorm = typed.trim() ? normalizeFileId(splitFileAndKawasan(typed).file) : '';
+            const known = fNorm ? data.bilKawasanByFile?.[fNorm]?.n || 0 : 0;
+            const recorded = fNorm ? (data.kawasanByFile?.[fNorm]?.size || 0) : 0;
+
+            if (!el.value || el.dataset.auto === '1') {
+                if (known) {
+                    el.value = known; el.dataset.auto = '1';
+                    if (!editingRecord) {
+                        setKawasanRowCount(known);
+                        // Isi nama kawasan sedia ada fail ni ke dalam blok yang masih kosong
+                        const labels = Array.from((data.kawasanByFile?.[fNorm] || new Map()).values()).sort((a, b) => a.localeCompare(b));
+                        let changed = false;
+                        kawasanRows.forEach((r, i) => {
+                            if (labels[i] && (!r.kawasan || r.autoName)) { r.kawasan = labels[i]; r.autoName = true; changed = true; }
+                        });
+                        if (changed) renderKawasanRows();
+                    }
+                } else if (el.dataset.auto === '1') {
+                    el.value = ''; delete el.dataset.auto;
+                    if (!editingRecord) setKawasanRowCount(0);
+                }
+            }
+            if (hint) {
+                hint.textContent = known
+                    ? `Fail ini: ${known} kawasan dirancang, ${recorded} sudah ada rekod kerja.`
+                    : recorded
+                        ? `Fail ini ada ${recorded} kawasan direkod, tapi bilangan kawasan belum diisi.`
+                        : 'Jumlah kawasan yang dirancang untuk No File ini.';
+            }
+        }
+
+        // ---------- Blok kawasan dinamik ----------
+        // Satu blok = satu kawasan (Kawasan di atas, Kuantiti + Unit di bawah) = satu rekod dalam sheet.
+        const UNIT_OPTIONS = ['Lot', 'Ekar', 'Meter', 'Point', 'Stesen', 'Kawasan']; // sama dengan Apps Script
+        const MAX_KAWASAN = 50;   // sama dengan CONFIG.MAX_BILANGAN_KAWASAN dalam Apps Script
+        let kawasanRows = [];     // [{ kawasan, kuantiti, unit, skip, autoName }]
+
+        function blankKawasanRow(unit) {
+            return { kawasan: '', kuantiti: '', unit: unit || '', skip: false, autoName: false };
+        }
+
+        // Tukar bilangan blok tanpa padam data yang dah ditaip. Blok baru warisi Unit blok pertama.
+        function setKawasanRowCount(n) {
+            const target = Math.max(0, Math.min(MAX_KAWASAN, n | 0));
+            if (target === kawasanRows.length) return;
+            while (kawasanRows.length < target) kawasanRows.push(blankKawasanRow(kawasanRows[0]?.unit));
+            kawasanRows.length = target;
+            renderKawasanRows();
+        }
+
+        function onBilanganKawasanInput() {
+            if (editingRecord) { renderKawasanRows(); return; } // mod edit: hanya satu kawasan (rekod ni)
+            const n = Number(document.getElementById('bilanganKawasan').value);
+            setKawasanRowCount(Number.isInteger(n) && n > 0 ? n : 0);
+        }
+
+        function toggleSkipKawasan(i) {
+            const r = kawasanRows[i];
+            if (!r) return;
+            if (!r.skip && kawasanRows.filter(x => !x.skip).length <= 1) {
+                showToast('Sekurang-kurangnya satu kawasan mesti diisi.', 'error');
+                return;
+            }
+            r.skip = !r.skip;
+            renderKawasanRows();
+        }
+
+        function renderKawasanRows() {
+            const box = document.getElementById('kawasanRows');
+            const info = document.getElementById('kawasanRowsInfo');
+            if (!box) return;
+            const isEdit = Boolean(editingRecord);
+            if (!kawasanRows.length) {
+                box.innerHTML = `<div class="kr-empty">Masukkan <b>Bilangan kawasan</b> dahulu. Medan kawasan akan muncul ikut bilangan tu.</div>`;
+                if (info) info.textContent = '';
+                return;
+            }
+            box.innerHTML = kawasanRows.map((r, i) => {
+                const unitOpts = `<option value="" disabled ${r.unit ? '' : 'selected'}>Pilih Unit...</option>`
+                    + UNIT_OPTIONS.map(u => `<option value="${u}" ${r.unit === u ? 'selected' : ''}>${u}</option>`).join('');
+                const req = r.skip ? '' : 'required';
+                const skipBtn = isEdit ? ''
+                    : `<button type="button" class="mini" onclick="toggleSkipKawasan(${i})">${r.skip ? '<i data-lucide="rotate-ccw" class="i12"></i>Pulihkan' : '<i data-lucide="x" class="i12"></i>Langkau'}</button>`;
+                return `
+                    <div class="kr${r.skip ? ' skip' : ''}">
+                        <div class="kr-h">
+                            <span class="kr-no"><i>${i + 1}</i>${isEdit ? 'Kawasan rekod ini' : `Kawasan ${i + 1}`}${r.skip ? ' · dilangkau' : ''}</span>
+                            <span class="sp"></span>${skipBtn}
+                        </div>
+                        <div class="kr-f">
+                            <div>
+                                <label class="flab" for="kr-kw-${i}">Kawasan lapangan</label>
+                                <input type="text" id="kr-kw-${i}" class="inp" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mahabob" ${req}
+                                    value="${escapeHtml(r.kawasan)}" oninput="kawasanRows[${i}].kawasan=this.value;kawasanRows[${i}].autoName=false">
+                            </div>
+                            <div class="fgrid" style="margin-top:10px">
+                                <div>
+                                    <label class="flab" for="kr-qty-${i}">Kuantiti</label>
+                                    <input type="number" id="kr-qty-${i}" class="inp" step="any" min="0" placeholder="0.00" ${req}
+                                        value="${escapeHtml(r.kuantiti)}" oninput="kawasanRows[${i}].kuantiti=this.value">
+                                </div>
+                                <div>
+                                    <label class="flab" for="kr-unit-${i}">Unit</label>
+                                    <select id="kr-unit-${i}" class="inp" ${req} onchange="kawasanRows[${i}].unit=this.value">${unitOpts}</select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            if (info) {
+                const skipped = kawasanRows.filter(r => r.skip).length;
+                info.textContent = isEdit ? 'Mod edit: satu kawasan sahaja'
+                    : `${kawasanRows.length} kawasan${skipped ? ` · ${skipped} dilangkau` : ''}`;
+            }
+            refreshIcons();
         }
 
         function extractNormalizedRows(rows, sourceType = 'rekod') {
@@ -1135,7 +1278,11 @@ html,body{max-width:100%;overflow-x:hidden}
                 }
 
                 // Kawasan: lajur Kawasan, atau teks selepas nombor fail (data lama "MCP 001/26 Bangi")
-                const kawasanColIdx = findIndexByHeaderKeywords(['kawasan', 'lokasi', 'tapak']);
+                // Exclude "Bilangan Kawasan" supaya lajur nombor tak dibaca sebagai nama kawasan
+                const kawasanColIdx = findIndexByHeaderKeywords(['kawasan', 'lokasi', 'tapak'], ['bilangan', 'bil.', 'bil ', 'jumlah']);
+                const bilKawasanColIdx = findIndexByHeaderKeywords(['bilangan kawasan', 'bil kawasan', 'bil. kawasan', 'jumlah kawasan']);
+                const bilKawasanRaw = bilKawasanColIdx !== -1 ? parseInt(String(vals[bilKawasanColIdx] || '').replace(/[^0-9]/g, ''), 10) : NaN;
+                const bilanganKawasan = Number.isInteger(bilKawasanRaw) && bilKawasanRaw > 0 ? bilKawasanRaw : 0;
                 let kawasan = kawasanColIdx !== -1 ? kawasanLabel(vals[kawasanColIdx]) : '';
                 if (idFile) {
                     const parts = splitFileAndKawasan(idFile);
@@ -1156,7 +1303,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 const tugasColIdx = findIndexByHeaderKeywords(['tugas', 'kerja', 'task', 'aktiviti', 'perkara', 'deskripsi'], ['kategori', 'peratus', 'fail', 'file', 'masa', 'kuantiti', 'jarak', 'luas']);
                 const qtyColIdx = findIndexByHeaderKeywords(
                     ['kuantiti', 'qty', 'quantity', 'jarak', 'luas', 'bilangan', 'jumlah', 'meter', 'ekar', 'lot', 'ukuran'],
-                    ['peratus', '%', 'masa', 'timestamp', 'tarikh', 'jangka', 'siap', 'no file', 'no fail', 'unit']
+                    ['peratus', '%', 'masa', 'timestamp', 'tarikh', 'jangka', 'siap', 'no file', 'no fail', 'unit', 'kawasan']
                 );
                 const unitColIdx = findIndexByHeaderKeywords(['unit', 'ukuran'], ['kuantiti', 'masa', 'jarak', 'luas']);
 
@@ -1200,7 +1347,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 const recId = idColIdx !== -1 ? String(vals[idColIdx] || '').trim() : '';
                 const updatedAt = updColIdx !== -1 ? String(vals[updColIdx] || '').trim() : '';
 
-                const knownColIndices = new Set([fileColIdx, kawasanColIdx, tarikhColIdx, jangkaColIdx, tugasColIdx, qtyColIdx, unitColIdx, idColIdx, updColIdx]);
+                const knownColIndices = new Set([fileColIdx, kawasanColIdx, bilKawasanColIdx, tarikhColIdx, jangkaColIdx, tugasColIdx, qtyColIdx, unitColIdx, idColIdx, updColIdx]);
                 headers.forEach((h, idx) => {
                     const hRaw = String(h || '').trim();
                     const isOfficialKatHeader = isOfficialKategori(hRaw);
@@ -1224,6 +1371,7 @@ html,body{max-width:100%;overflow-x:hidden}
                         updatedAt: updatedAt,
                         idFile: idFile,
                         kawasan: kawasan,
+                        bilanganKawasan: bilanganKawasan,
                         tarikh: tarikh,
                         surveyor: surveyorValues.join(', '),
                         kategori: kategoriValues.join(', '),
@@ -1434,6 +1582,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 files: groups.map(g => ({
                     idFile: g.idFile,
                     kawasan: g.kawasanLabels,
+                    bilanganKawasan: g.bilKawasan || 0, // medan baru: 0 = belum diisi
                     progress: Math.min(100, Math.max(0, Math.round(isNaN(g.progress) ? 0 : g.progress))),
                     jangkaSiap: tarikhToIso(g.jangkaSiap),
                     surveyors: g.surveyorsArr,
@@ -1453,7 +1602,7 @@ html,body{max-width:100%;overflow-x:hidden}
             const container = document.getElementById('fileCardsContainer');
             if (!container || !window.__processedData) return;
 
-            const { combinedRecords, parsedLaporan, parsedTarget, fileSurveyorBackupMap } = window.__processedData;
+            const { combinedRecords, parsedLaporan, parsedTarget, fileSurveyorBackupMap, bilKawasanByFile } = window.__processedData;
             let matchedCount = 0, unmatchedCount = 0;
             const laporanAll = parsedLaporan || [];
             const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
@@ -1549,6 +1698,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     surveyorsArr: Array.from(grp.surveyors),
                     kawasanList,
                     kawasanLabels: kawasanList.filter(k => k.key).map(k => k.label),
+                    bilKawasan: bilKawasanByFile?.[grp.normKey]?.n || 0,
                     latestTask: newest?.tugas || 'Kerja ukur lapangan direkodkan',
                     laporanCount: laporanForFile.length,
                     lastReport: lastAll.length ? lastAll[lastAll.length - 1] : '',
@@ -1715,6 +1865,14 @@ html,body{max-width:100%;overflow-x:hidden}
                     `;
                 }).join('');
 
+                const namedKw = grp.kawasanLabels.length;
+                const bil = grp.bilKawasan;
+                const kawasanHead = bil ? `Kawasan (${namedKw} / ${bil} direkod)` : `Kawasan (${grp.kawasanList.length})`;
+                const kawasanNote = !bil ? ''
+                    : namedKw < bil ? `<p class="meta warn-t">${bil - namedKw} kawasan belum ada rekod kerja</p>`
+                    : namedKw > bil ? `<p class="meta warn-t">Kawasan direkod (${namedKw}) melebihi bilangan dirancang (${bil}). Semak semula.</p>`
+                    : '';
+
                 const subtitle = 'No. fail projek' + (grp.kawasanLabels.length > 1
                     ? ` · ${grp.kawasanLabels.length} kawasan`
                     : (grp.kawasanLabels.length === 1 ? ` · ${escapeHtml(grp.kawasanLabels[0])}` : ''));
@@ -1761,8 +1919,9 @@ html,body{max-width:100%;overflow-x:hidden}
                         </div>
 
                         <div>
-                            <div class="lbl">Kawasan (${grp.kawasanList.length})</div>
+                            <div class="lbl">${kawasanHead}</div>
                             <div class="kws">${kawasanHtml}</div>
+                            ${kawasanNote}
                         </div>
 
                         <div class="fc-f">
@@ -1860,10 +2019,13 @@ html,body{max-width:100%;overflow-x:hidden}
 
         function resetFieldWorkForm() {
             document.getElementById('fieldWorkForm').reset();
+            delete document.getElementById('bilanganKawasan').dataset.auto;
             document.getElementById('tarikh').value = todayLocalIso();
             document.getElementById('jangkaSiap').value = todayLocalIso();
             selectedKategoriList = [];
             selectedSurveyorList = [];
+            kawasanRows = [];
+            renderKawasanRows();
             renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
             syncMultiSelectLabels();
         }
@@ -1885,14 +2047,15 @@ html,body{max-width:100%;overflow-x:hidden}
             resetFieldWorkForm();
 
             document.getElementById('idFile').value = rec.idFile || '';
-            document.getElementById('kawasan').value = rec.kawasan || '';
+            // Rekod lama tanpa nilai: biar kosong supaya updateKawasanSuggestions() isi auto ikut fail
+            document.getElementById('bilanganKawasan').value = rec.bilanganKawasan > 0 ? rec.bilanganKawasan : '';
             document.getElementById('tarikh').value = tarikhToIso(rec.tarikh) || '';
             document.getElementById('jangkaSiap').value = tarikhToIso(rec.jangkaSiap) || '';
             document.getElementById('tugas').value = rec.tugas || '';
-            document.getElementById('kuantiti').value = rec.kuantiti > 0 ? rec.kuantiti : '';
-            const unitSel = document.getElementById('unit');
-            const unitOpt = Array.from(unitSel.options).find(o => o.value.toLowerCase() === String(rec.unit || '').toLowerCase());
-            unitSel.value = unitOpt ? unitOpt.value : '';
+            // Mod edit = satu rekod = satu blok kawasan sahaja
+            const unitOpt = UNIT_OPTIONS.find(u => u.toLowerCase() === String(rec.unit || '').toLowerCase());
+            kawasanRows = [{ ...blankKawasanRow(unitOpt), kawasan: rec.kawasan || '', kuantiti: rec.kuantiti > 0 ? String(rec.kuantiti) : '' }];
+            renderKawasanRows();
 
             // Hanya pilihan rasmi boleh dipilih; nilai lama yang tiada dalam senarai dimaklumkan
             const pick = (raw, options, mapFn) => {
@@ -1937,16 +2100,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 return;
             }
 
-            // Jika kawasan ditaip dalam No File ("MCP 001/26 Bangi"), pindahkan ke medan Kawasan
             const fileParts = splitFileAndKawasan(document.getElementById('idFile').value);
-            let kawasan = kawasanLabel(document.getElementById('kawasan').value);
-            if (fileParts.kawasan) {
-                if (kawasan && kawasanKey(kawasan) !== kawasanKey(fileParts.kawasan)) {
-                    showModal('Kawasan Bercanggah', 'Kawasan ditulis dalam No File dan medan Kawasan, tapi tak sama. Tulis kawasan dalam medan Kawasan sahaja.', 'error');
-                    return;
-                }
-                kawasan = kawasan || fileParts.kawasan;
-            }
             if (!fileParts.file) {
                 showModal('No File Kosong', 'Sila isi No File.', 'error');
                 return;
@@ -1955,8 +2109,69 @@ html,body{max-width:100%;overflow-x:hidden}
                 showModal('Format No File', `No File mesti dalam format ${FILE_PREFIX} 001/26.`, 'error');
                 return;
             }
-            if (!kawasan) {
-                showModal('Kawasan Kosong', 'Sila isi Kawasan Lapangan.', 'error');
+
+            const isEdit = Boolean(editingRecord);
+            const bilanganKawasan = Number(document.getElementById('bilanganKawasan').value);
+            if (!Number.isInteger(bilanganKawasan) || bilanganKawasan < 1 || bilanganKawasan > MAX_KAWASAN) {
+                showModal('Bilangan Kawasan', `Bilangan kawasan mesti nombor bulat antara 1 hingga ${MAX_KAWASAN}.`, 'error');
+                return;
+            }
+            if (!isEdit && kawasanRows.length !== bilanganKawasan) setKawasanRowCount(bilanganKawasan);
+
+            // Blok kawasan yang tak dilangkau = rekod yang akan dihantar
+            const items = kawasanRows.filter(r => !r.skip).map(r => ({
+                kawasan: kawasanLabel(r.kawasan),
+                kuantitiRaw: String(r.kuantiti ?? '').trim(),
+                unit: r.unit
+            }));
+            if (!items.length) {
+                showModal('Kawasan Kosong', 'Sekurang-kurangnya satu kawasan mesti diisi.', 'error');
+                return;
+            }
+
+            // Kawasan ditaip dalam No File ("MCP 001/26 Bangi"): hanya dibenarkan bila satu kawasan sahaja
+            if (fileParts.kawasan) {
+                const only = items.length === 1 ? items[0] : null;
+                if (!only || (only.kawasan && kawasanKey(only.kawasan) !== kawasanKey(fileParts.kawasan))) {
+                    showModal('Kawasan Bercanggah', 'Kawasan ditulis dalam No File. Buang nama kawasan dari No File dan isi dalam blok Kawasan lapangan.', 'error');
+                    return;
+                }
+                only.kawasan = only.kawasan || fileParts.kawasan;
+            }
+
+            const seen = new Set();
+            for (let i = 0; i < items.length; i++) {
+                const it = items[i];
+                const no = isEdit ? '' : ` ${kawasanRows.indexOf(kawasanRows.filter(r => !r.skip)[i]) + 1}`;
+                if (!it.kawasan) { showModal('Kawasan Kosong', `Sila isi nama Kawasan${no}.`, 'error'); return; }
+                const k = kawasanKey(it.kawasan);
+                if (seen.has(k)) { showModal('Kawasan Berulang', `Kawasan "${it.kawasan}" ditulis lebih sekali. Setiap blok mesti kawasan berbeza.`, 'error'); return; }
+                seen.add(k);
+                const q = Number(it.kuantitiRaw);
+                if (it.kuantitiRaw === '' || !isFinite(q) || q < 0) { showModal('Kuantiti', `Kuantiti untuk ${it.kawasan} mesti nombor 0 atau lebih.`, 'error'); return; }
+                it.kuantiti = q;
+                delete it.kuantitiRaw;
+                if (!UNIT_OPTIONS.includes(it.unit)) { showModal('Unit', `Sila pilih Unit untuk ${it.kawasan}.`, 'error'); return; }
+            }
+
+            // Bilangan tak boleh kurang daripada kawasan berbeza fail ini (rekod sedia ada + yang dihantar).
+            // Mod edit: abaikan rekod yang sedang diedit, sebab kawasannya mungkin sedang ditukar.
+            const fNormSubmit = normalizeFileId(fileParts.file);
+            const kwKeys = new Set(seen);
+            (window.__processedData?.combinedRecords || []).forEach(r => {
+                if (editingRecord && r.id && r.id === editingRecord.id) return;
+                const k = kawasanKey(r.kawasan);
+                if (k && r.idFile && normalizeFileId(r.idFile) === fNormSubmit) kwKeys.add(k);
+            });
+            if (bilanganKawasan < kwKeys.size) {
+                showModal('Bilangan Kawasan', `Fail ${fileParts.file} akan ada ${kwKeys.size} kawasan berbeza (rekod sedia ada + yang ini). Bilangan kawasan tak boleh kurang daripada ${kwKeys.size}.`, 'error');
+                return;
+            }
+
+            const tarikhVal = document.getElementById('tarikh').value;
+            const jangkaVal = document.getElementById('jangkaSiap').value;
+            if (tarikhVal && jangkaVal && jangkaVal < tarikhVal) {
+                showModal('Tarikh Jangka Siap', 'Tarikh jangka siap tak boleh lebih awal daripada tarikh kerja.', 'error');
                 return;
             }
 
@@ -1964,28 +2179,24 @@ html,body{max-width:100%;overflow-x:hidden}
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<span class="spin sm"></span> <span>Menghantar...</span>`;
 
-            const isEdit = Boolean(editingRecord);
-            const payload = {
+            // Medan sepunya untuk semua kawasan
+            const common = {
                 idFile: fileParts.file,
-                kawasan,
-                tarikh: document.getElementById('tarikh').value,
+                bilanganKawasan,
+                tarikh: tarikhVal,
                 surveyor: selectedSurveyorList.join(', '),
                 kategori: selectedKategoriList.join(', '),
                 tugas: document.getElementById('tugas').value.trim(),
-                kuantiti: parseFloat(document.getElementById('kuantiti').value) || 0,
-                unit: document.getElementById('unit').value,
-                jangkaSiap: document.getElementById('jangkaSiap').value
+                jangkaSiap: jangkaVal
             };
-            if (isEdit) {
-                payload.action = 'update';
-                payload.id = editingRecord.id;
-                payload.updatedAt = editingRecord.updatedAt;
-            }
+            const payload = isEdit
+                ? { ...common, ...items[0], action: 'update', id: editingRecord.id, updatedAt: editingRecord.updatedAt }
+                : { ...common, action: 'addMany', items };
 
             try {
                 const result = await postToAppsScript(payload);
                 if (result.status === 'duplicate') {
-                    showModal('Rekod Sudah Wujud', isEdit ? 'Kerja lain dengan maklumat yang sama sudah ada. Perubahan tidak disimpan.' : 'Kerja yang sama sudah ada dalam sheet. Tiada rekod baru disimpan.', 'error');
+                    showModal('Rekod Sudah Wujud', result.message || (isEdit ? 'Kerja lain dengan maklumat yang sama sudah ada. Perubahan tidak disimpan.' : 'Kerja yang sama sudah ada dalam sheet. Tiada rekod baru disimpan.'), 'error');
                     return;
                 }
                 if (result.status === 'conflict') {
@@ -1997,13 +2208,20 @@ html,body{max-width:100%;overflow-x:hidden}
                     return;
                 }
 
-                lastAddedFileId = payload.idFile;
-                const saved = { ...payload, id: result.id || payload.id || '', updatedAt: result.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' };
-                delete saved.action;
+                lastAddedFileId = common.idFile;
+                let savedRows = [];
                 if (isEdit) {
+                    const saved = { ...common, ...items[0], id: result.id || editingRecord.id, updatedAt: result.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' };
                     localEdits.set(saved.id, saved);
+                    savedRows = [result.row];
                 } else {
-                    localAddedRecords.unshift(saved);
+                    // Respons addMany: records[i] sepadan dengan items[i]
+                    const recs = Array.isArray(result.records) ? result.records : [];
+                    items.forEach((it, i) => {
+                        const r = recs[i] || {};
+                        localAddedRecords.unshift({ ...common, ...it, id: r.id || '', updatedAt: r.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' });
+                        if (r.row) savedRows.push(r.row);
+                    });
                 }
 
                 editingRecord = null;
@@ -2018,10 +2236,11 @@ html,body{max-width:100%;overflow-x:hidden}
                 }
                 switchTab('dashboard');
 
+                const rowTxt = savedRows.length > 1 ? `baris ${Math.min(...savedRows)}–${Math.max(...savedRows)}` : `baris ${savedRows[0] ?? '-'}`;
                 if (isEdit) {
-                    showModal('Kerja Dikemas Kini', `Perubahan untuk "${payload.idFile}" (${payload.kawasan}) disimpan pada baris ${result.row}.`, 'success');
+                    showModal('Kerja Dikemas Kini', `Perubahan untuk "${common.idFile}" (${items[0].kawasan}) disimpan pada ${rowTxt}.`, 'success');
                 } else {
-                    showModal('Kerja Berjaya Ditambah', `Fail "${payload.idFile}" (${payload.kawasan}) disimpan dalam sheet (baris ${result.row}) dan kad progres telah dijana.`, 'success');
+                    showModal('Kerja Berjaya Ditambah', `Fail "${common.idFile}": ${items.length} kawasan (${items.map(i => i.kawasan).join(', ')}) disimpan dalam sheet (${rowTxt}).`, 'success');
                 }
 
                 setTimeout(() => { refreshAllData(); }, 2500);
