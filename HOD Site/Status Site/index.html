@@ -394,7 +394,7 @@ html,body{max-width:100%;overflow-x:hidden}
       <div>
         <div class="eyebrow">HOD Site · Google Sheets &amp; Apps Script</div>
         <h1>Progres kerja ukur mengikut fail</h1>
-        <p>Kad dijana daripada rekod kerja lapangan. Kiraan peratus progres dimatikan buat sementara.</p>
+        <p>Target diambil daripada rekod kerja (Tugas + Kuantiti). Peratus siap dikira daripada "Progress Hari Ini" dalam laporan harian, dipadankan ikut No File dan Tugas.</p>
       </div>
       <div class="sp"></div>
       <div class="actions">
@@ -404,7 +404,7 @@ html,body{max-width:100%;overflow-x:hidden}
     </div>
     <div class="kpis">
       <div class="kpi"><div class="l">Fail kerja</div><div class="v" id="statTotalFiles">0</div><div class="s">Kad progres aktif</div></div>
-      <div class="kpi hl"><div class="l">Laporan harian</div><div class="v" id="statLaporanCount">0</div><div class="s">Baris dalam sheet laporan</div></div>
+      <div class="kpi hl"><div class="l">Purata progres</div><div class="v" id="statAvgProgress">0%</div><div class="s" id="statLaporanText">0 laporan harian</div></div>
       <div class="kpi"><div class="l">Kategori aktif</div><div class="v" id="statTotalCategories">0</div><div class="s" id="statTotalTasksText">0 rekod kerja aktif</div></div>
       <div class="kpi"><div class="l">Surveyor terlibat</div><div class="v" id="statTotalSurveyors">0</div><div class="s">Mengikut kategori &amp; fail</div></div>
     </div>
@@ -419,7 +419,7 @@ html,body{max-width:100%;overflow-x:hidden}
   <div id="view-dashboard" class="view-section">
     <section class="panel">
       <div class="ph">
-        <h3>Kad kerja mengikut fail</h3>
+        <h3>Kad progres mengikut fail</h3>
         <span class="src">Rekod kerja + laporan harian</span>
         <div class="sp"></div>
         <div class="tools">
@@ -522,12 +522,16 @@ html,body{max-width:100%;overflow-x:hidden}
   <!-- TAB 3: DATA SHEET -->
   <div id="view-statistik" class="view-section hidden">
     <section class="panel">
-      <div class="ph"><h3>Jadual laporan harian</h3><span class="src ok">Sumber URL 2 · Tarikh, Nama, No File, Tugasan / Output, Progress Hari Ini</span><span class="src" id="laporanInfo"></span></div>
+      <div class="ph"><h3>Jadual laporan harian (sumber peratus)</h3><span class="src ok">Sumber URL 2 · Tarikh, Nama, No File, Tugasan / Output, Progress Hari Ini</span><span class="src" id="laporanInfo"></span></div>
       <div id="statsTableContainer" class="tw"><div class="empty">Memuatkan jadual laporan harian…</div></div>
     </section>
     <section class="panel">
-      <div class="ph"><h3>Jadual rekod kerja</h3><span class="src info">Sumber URL 1 · Rekod kerja lapangan</span></div>
+      <div class="ph"><h3>Jadual rekod kerja</h3><span class="src info">Sumber URL 1 · Rekod kerja lapangan (sumber target)</span></div>
       <div id="recordsTableContainer" class="tw"><div class="empty">Memuatkan jadual rekod kerja…</div></div>
+    </section>
+    <section class="panel" id="targetPanel" style="display:none">
+      <div class="ph"><h3>Jadual target (sheet berasingan)</h3><span class="src info">CSV_TARGET_URL</span></div>
+      <div id="targetTableContainer" class="tw"><div class="empty">Memuatkan jadual target…</div></div>
     </section>
   </div>
 
@@ -546,9 +550,26 @@ html,body{max-width:100%;overflow-x:hidden}
         // 2. URL CSV 1: Rekod Kerja Lapangan (Sumber Penjanaan Kad Progres & Sasaran Kuantiti)
         const CSV_REKOD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW5BxrFQw07_bCiTfbARTgXh8qYvbMnLo4Uur7iM6ROw42DMmluHxrxXd3bKxVADyj_dLu_pCoEob8/pub?gid=1800236702&single=true&output=csv";
 
-        // 3. URL CSV 2: Laporan Harian (dipaparkan dalam tab Data sheet; belum digunakan untuk kiraan progres)
+        // 3. URL CSV 2: Laporan Harian = sumber PERATUS (Progress Hari Ini)
         //    Header: Tarikh | Nama | No File | Tugasan / Output | Progress Hari Ini
         const CSV_LAPORAN_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRF-BgmNrwBZVwf0ZWrePsiV2pCBo22Ud7_-m6KDIjSYVkOlvoKvzSeq0AzDUj5Hyx19FEVwyMtKIk8/pub?gid=720357072&single=true&output=csv";
+
+        // 4. Sumber TARGET progres. Header: No File | Tarikh | Surveyor | Tugas | Kuantiti | Unit (Kawasan pilihan)
+        //    Lalai = Rekod Kerja (CSV_REKOD_URL). Jika target dalam sheet lain, tampal link CSV tu di sini.
+        const CSV_TARGET_URL = CSV_REKOD_URL;
+        const TARGET_DARI_REKOD = CSV_TARGET_URL === CSV_REKOD_URL;
+
+        // Cara baca "Progress Hari Ini" bila ditulis dalam peratus (cth. "20%"):
+        //   false = progres HARI ITU sahaja, semua hari dijumlahkan (10% + 15% = 25%)
+        //   true  = progres terkumpul setakat hari itu, ambil laporan terkini (10% → 25% = 25%)
+        const PERATUS_KUMULATIF = false;
+
+        // Nombor tanpa % dan tanpa unit (cth. "20") dianggap PERATUS hari itu (= "20%").
+        // Nombor dengan unit (cth. "5 lot", "120 meter") tetap dikira kuantiti siap ÷ Kuantiti target.
+        const NOMBOR_BIASA_PERATUS = true;
+
+        // Surveyor, tugas & tarikh sama dihantar lebih sekali = laporan dikemas kini: ambil yang TERAKHIR sahaja.
+        const LAPORAN_BERGANDA_AMBIL_TERAKHIR = true;
 
         // Senarai sama dengan Dashboard Laporan Harian supaya kategori Engineering/Strata dari sheet statistik tak tercicir
         const DEFAULT_KATEGORI = ["Kadaster", "Kalibrasi", "Lidar", "Pemetaan Utiliti", "Strata", "TLS", "Topografi"];
@@ -568,6 +589,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
         let rawRekodRows = [];
         let rawLaporanRows = [];
+        let rawTargetRows = [];
         let localAddedRecords = [];
         let selectedKategoriList = [];
         let selectedSurveyorList = [];
@@ -695,6 +717,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
             renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
             switchTab('dashboard');
+            if (!TARGET_DARI_REKOD) document.getElementById('targetPanel').style.display = '';
             refreshAllData();
         });
 
@@ -793,15 +816,20 @@ html,body{max-width:100%;overflow-x:hidden}
             try {
                 const cacheBuster = `&_t=${Date.now()}`;
                 // allSettled: satu sumber gagal tak padam data sumber yang lain
-                const [resRekod, resLaporan] = await Promise.allSettled([
+                const [resRekod, resLaporan, resTarget] = await Promise.allSettled([
                     fetchCsvText(CSV_REKOD_URL + cacheBuster),
-                    fetchCsvText(CSV_LAPORAN_URL + cacheBuster)
+                    fetchCsvText(CSV_LAPORAN_URL + cacheBuster),
+                    TARGET_DARI_REKOD ? Promise.resolve(null) : fetchCsvText(CSV_TARGET_URL + cacheBuster)
                 ]);
                 const failed = [];
                 if (resRekod.status === 'fulfilled') rawRekodRows = parseCSV(resRekod.value);
                 else failed.push('Rekod Kerja');
                 if (resLaporan.status === 'fulfilled') rawLaporanRows = parseCSV(resLaporan.value);
                 else failed.push('Laporan Harian');
+                if (!TARGET_DARI_REKOD) {
+                    if (resTarget.status === 'fulfilled') rawTargetRows = parseCSV(resTarget.value);
+                    else failed.push('Target');
+                }
 
                 syncDynamicOptionsAndRender();
                 if (failed.length) {
@@ -942,6 +970,7 @@ html,body{max-width:100%;overflow-x:hidden}
         function syncDynamicOptionsAndRender() {
             const parsedRekod = extractNormalizedRows(rawRekodRows, 'rekod');
             const parsedLaporan = extractLaporanRows(rawLaporanRows);
+            const parsedTarget = TARGET_DARI_REKOD ? null : extractNormalizedRows(rawTargetRows, 'rekod');
 
             // Buang rekod tempatan yang dah masuk dalam sheet, supaya tugas tak dikira dua kali
             const rekodKey = r => [normalizeFileId(r.idFile), kawasanKey(r.kawasan), tarikhToIso(r.tarikh), String(r.tugas || '').trim().toLowerCase()].join('|');
@@ -1007,6 +1036,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 combinedRecords,
                 parsedRekod: [...localAddedRecords, ...editedRekod],
                 parsedLaporan,
+                parsedTarget,
                 fileSurveyorBackupMap
             };
 
@@ -1210,15 +1240,38 @@ html,body{max-width:100%;overflow-x:hidden}
         }
 
         // =====================================================================
-        // LAPORAN HARIAN (dibaca sahaja: nama surveyor, bilangan & tarikh laporan terakhir).
-        // Kiraan peratus progres DIBUANG buat sementara.
-        // Header CSV: Tarikh | Nama | No File | Tugasan / Output | Progress Hari Ini
+        // ENJIN PROGRES (dua sumber)
+        //   TARGET  : Rekod Kerja (atau CSV_TARGET_URL) → Tugas + Kuantiti + Unit
+        //   PERATUS : Laporan harian → Progress Hari Ini
+        // Setiap laporan dipadankan ke SATU tugas target (No File sama + Tugas paling serupa).
+        // Progres tugas = jumlah siap ÷ Kuantiti target. Progres fail = purata tugas yang ada target.
         // =====================================================================
 
         // Teks untuk perbandingan: huruf kecil, tanpa tanda baca, ruang tunggal
         function normText(s) {
             return String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^a-z0-9]+/g, ' ').trim();
+        }
+
+        // "Progress Hari Ini" → { qty, pct, done }
+        //   "5" / "5 lot" / "1,250 m" → qty   ·   "20%" → pct   ·   "Siap" / "Selesai" → done
+        function parseProgressValue(raw) {
+            const s = String(raw || '').trim();
+            const out = { qty: null, pct: null, done: false };
+            if (!s || s === '-') return out;
+            const cleaned = s.replace(/(\d),(\d{3})(?!\d)/g, '$1$2'); // 1,250 → 1250 (pemisah ribu)
+            const m = cleaned.match(/-?\d+(?:[.,]\d+)?/);
+            if (m) {
+                const n = parseFloat(m[0].replace(',', '.'));
+                if (!isNaN(n) && n > 0) {
+                    const adaUnit = /\d\s*[a-z]/i.test(cleaned.slice(m.index)); // "5 lot", "120m"
+                    if (cleaned.includes('%') || (NOMBOR_BIASA_PERATUS && !adaUnit)) out.pct = n;
+                    else out.qty = n;
+                }
+            } else if (/\b(siap|selesai|complete|completed|done)\b/i.test(s) && !/\b(belum|tak|tidak|x)\b/i.test(s)) {
+                out.done = true;
+            }
+            return out;
         }
 
         function splitNames(raw) {
@@ -1268,30 +1321,120 @@ html,body{max-width:100%;overflow-x:hidden}
                     tarikhIso: tarikhToIso(get(iTarikh)),
                     nama: get(iNama),
                     tugasan,
-                    progressRaw // disimpan mentah; belum dikira
+                    progressRaw,
+                    ...parseProgressValue(progressRaw)
                 });
             });
             return out;
         }
 
+        // Skor keserupaan laporan ↔ tugas rekod (0 = tak padan)
+        function matchScore(lap, task) {
+            const a = normText(lap.tugasan);
+            const b = normText(task.tugas);
+            if (!a) return 0;
+            let score = 0;
+            if (b && a === b) score = 100;
+            else if (b && b.length >= 4 && (a.includes(b) || b.includes(a))) score = 60 + Math.min(b.length, 30);
+            else {
+                const ta = new Set(a.split(' ').filter(w => w.length > 2));
+                const tb = b.split(' ').filter(w => w.length > 2);
+                const hit = tb.filter(w => ta.has(w)).length;
+                if (tb.length && hit / tb.length >= 0.6) score = 30 + hit;
+                else {
+                    const cats = splitMultiValues(task.kategori).map(normText).filter(Boolean);
+                    if (cats.some(c => a === c || a.includes(c))) score = 20;
+                }
+            }
+            if (!score) return 0;
+            const kw = kawasanKey(task.kawasan);
+            const hint = kawasanKey(lap.kawasanHint);
+            if (hint && kw && hint !== kw) return 0;           // No File sebut kawasan lain
+            if (hint && kw && hint === kw) score += 5;
+            if (kw && normText(lap.tugasan).includes(normText(kw))) score += 5; // kawasan disebut dalam Tugasan
+            return score;
+        }
+
+        // Padankan setiap laporan fail ini ke satu tugas. Laporan kabur/tak padan dikumpul berasingan.
+        function assignLaporanToTasks(tasks, laporanForFile) {
+            const byTask = tasks.map(() => []);
+            const unmatched = [];
+            laporanForFile.forEach(lap => {
+                let best = 0, top = [];
+                tasks.forEach((t, i) => {
+                    const s = matchScore(lap, t);
+                    if (s > best) { best = s; top = [i]; }
+                    else if (s && s === best) top.push(i);
+                });
+                if (!top.length) { unmatched.push({ ...lap, reason: 'tiada tugas sepadan' }); return; }
+                // Seri antara kawasan berbeza: jangan teka, minta pengguna nyatakan kawasan
+                const kws = new Set(top.map(i => kawasanKey(tasks[i].kawasan)));
+                if (kws.size > 1) { unmatched.push({ ...lap, reason: 'tugas sama di beberapa kawasan' }); return; }
+                byTask[top[0]].push(lap);
+            });
+            return { byTask, unmatched };
+        }
+
+        function computeTaskProgress(task, reps) {
+            const target = task.kuantiti > 0 ? task.kuantiti : 0;
+            // Susunan CSV = susunan hantar. Sort stabil ikut tarikh, kemudian buang laporan berganda hari sama.
+            let sorted = reps.slice().sort((x, y) => (x.tarikhIso || '').localeCompare(y.tarikhIso || ''));
+            let replacedCount = 0;
+            if (LAPORAN_BERGANDA_AMBIL_TERAKHIR) {
+                const last = new Map();
+                sorted.forEach((r, i) => {
+                    const key = r.tarikhIso ? `${r.tarikhIso}|${normText(r.nama)}` : `#${i}`;
+                    if (last.has(key)) replacedCount++;
+                    last.set(key, r);
+                });
+                const keep = new Set(last.values());
+                sorted = sorted.filter(r => keep.has(r));
+            }
+            const doneQty = sorted.reduce((t, r) => t + (r.qty || 0), 0);
+            const pctReps = sorted.filter(r => r.pct !== null);
+            const pctVal = pctReps.length
+                ? (PERATUS_KUMULATIF ? pctReps[pctReps.length - 1].pct : pctReps.reduce((t, r) => t + r.pct, 0))
+                : null;
+            const isDone = sorted.some(r => r.done);
+            const parts = [];
+            if (target > 0 && doneQty > 0) parts.push(doneQty / target * 100);
+            if (pctVal !== null) parts.push(pctVal);
+            let pct = isDone ? 100 : (PERATUS_KUMULATIF ? Math.max(0, ...parts) : parts.reduce((a, b) => a + b, 0));
+            const overTarget = pct > 100.5; // jumlah lebih 100%: kemungkinan salah isi, papar amaran
+            pct = Math.min(100, Math.max(0, pct));
+            const datesWithValue = sorted.map(r => r.tarikhIso).filter(Boolean);
+            return {
+                tugas: task.tugas || 'Tanpa tugas',
+                kategori: [...new Set(splitMultiValues(task.kategori))].join(', '),
+                percentage: Math.round(pct * 10) / 10,
+                // "Siap" = kuantiti penuh; laporan % sahaja tiada kuantiti siap (jangan papar 0 / target)
+                doneQty: Math.round((isDone && target > 0 ? Math.max(doneQty, target) : doneQty) * 100) / 100,
+                targetQty: Math.round(target * 100) / 100,
+                unit: task.unit || 'Unit',
+                hasTarget: target > 0 || pctVal !== null || isDone,
+                reportCount: sorted.length,
+                replacedCount,
+                overTarget,
+                lastDate: datesWithValue.length ? datesWithValue[datesWithValue.length - 1] : ''
+            };
+        }
+
         // Ringkasan untuk Operations Hub (Dashboard Utama). Hub muat app ini dalam iframe dan baca mesej ini,
         // Hub bergantung pada medan di bawah: tukar dengan berhati-hati.
-        // Kiraan progres dibuang buat sementara: avgProgress & progress dihantar null (bukan 0) supaya Hub boleh
-        // bezakan "belum dikira" dengan "0% siap".
-        function publishSummary(groups, totalRecords, surveyorCount) {
+        function publishSummary(groups, totalRecords, surveyorCount, avgProgress) {
             // Jangan tulis ganti ringkasan lama dengan "0 fail" bila CSV belum/gagal dimuat
             if (!rawRekodRows.length && !rawLaporanRows.length && !localAddedRecords.length) return;
             const summary = {
                 v: 1,
                 at: new Date().toISOString(),
                 totalFiles: groups.length,
-                avgProgress: null,
+                avgProgress: avgProgress,
                 totalRecords: totalRecords,
                 surveyorCount: surveyorCount,
                 files: groups.map(g => ({
                     idFile: g.idFile,
                     kawasan: g.kawasanLabels,
-                    progress: null,
+                    progress: Math.min(100, Math.max(0, Math.round(isNaN(g.progress) ? 0 : g.progress))),
                     jangkaSiap: tarikhToIso(g.jangkaSiap),
                     surveyors: g.surveyorsArr,
                     kategori: g.categoriesArr
@@ -1310,7 +1453,8 @@ html,body{max-width:100%;overflow-x:hidden}
             const container = document.getElementById('fileCardsContainer');
             if (!container || !window.__processedData) return;
 
-            const { combinedRecords, parsedLaporan, fileSurveyorBackupMap } = window.__processedData;
+            const { combinedRecords, parsedLaporan, parsedTarget, fileSurveyorBackupMap } = window.__processedData;
+            let matchedCount = 0, unmatchedCount = 0;
             const laporanAll = parsedLaporan || [];
             const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
             const filterKat = document.getElementById('filterKategoriSelect')?.value || 'ALL';
@@ -1358,6 +1502,20 @@ html,body{max-width:100%;overflow-x:hidden}
                 }
             });
 
+            // Target fail ini: dari Rekod Kerja (lalai) atau dari sheet target berasingan
+            const kiraProgresFail = (grp, laporanForFile) => {
+                const tasks = parsedTarget
+                    ? parsedTarget.filter(t => t.idFile && normalizeFileId(t.idFile) === grp.normKey && (t.tugas || t.kuantiti > 0))
+                    : grp.rekodEntries;
+                const { byTask, unmatched } = assignLaporanToTasks(tasks, laporanForFile);
+                const taskProgress = tasks.map((t, i) => ({ ...computeTaskProgress(t, byTask[i]), kawasan: kawasanLabel(t.kawasan) }));
+                matchedCount += laporanForFile.length - unmatched.length;
+                unmatchedCount += unmatched.length;
+                const counted = taskProgress.filter(t => t.hasTarget);
+                const progress = counted.length ? counted.reduce((sum, t) => sum + t.percentage, 0) / counted.length : 0;
+                return { taskProgress, unmatchedLaporan: unmatched, progress: Math.round(progress * 10) / 10, hasAnyTarget: counted.length > 0 };
+            };
+
             let fileGroups = Array.from(fileGroupsMap.values()).map(grp => {
                 if (fileSurveyorBackupMap && fileSurveyorBackupMap[grp.normKey]) {
                     fileSurveyorBackupMap[grp.normKey].forEach(s => addUniqueCaseInsensitive(grp.surveyors, s));
@@ -1394,12 +1552,20 @@ html,body{max-width:100%;overflow-x:hidden}
                     latestTask: newest?.tugas || 'Kerja ukur lapangan direkodkan',
                     laporanCount: laporanForFile.length,
                     lastReport: lastAll.length ? lastAll[lastAll.length - 1] : '',
-                    laporanText: laporanForFile.map(r => r.tugasan.toLowerCase()).join(' ')
+                    laporanText: laporanForFile.map(r => r.tugasan.toLowerCase()).join(' '),
+                    ...kiraProgresFail(grp, laporanForFile)
                 };
             });
 
+            const rekodFileKeys = new Set(fileGroupsMap.keys());
+            const orphanCount = laporanAll.filter(r => r.idFile && !rekodFileKeys.has(normalizeFileId(r.idFile))).length;
             const info = document.getElementById('laporanInfo');
-            if (info) info.textContent = `${laporanAll.length} laporan`;
+            if (info) {
+                const bits = [`${laporanAll.length} laporan`, `${matchedCount} dikira`];
+                if (unmatchedCount) bits.push(`${unmatchedCount} tak padan tugas`);
+                if (orphanCount) bits.push(`${orphanCount} No File tiada dalam rekod`);
+                info.textContent = bits.join(' · ');
+            }
 
             const allSurveyorsGlobal = new Set();
             const allCategoriesGlobal = new Set();
@@ -1408,10 +1574,16 @@ html,body{max-width:100%;overflow-x:hidden}
                 g.categoriesArr.forEach(c => allCategoriesGlobal.add(c));
             });
 
-            publishSummary(fileGroups, combinedRecords.length, allSurveyorsGlobal.size);
+            // Purata global: fail yang ada target sahaja (fail tanpa target tak tarik purata ke bawah)
+            const filesWithTarget = fileGroups.filter(g => g.hasAnyTarget);
+            const avgProgressGlobal = filesWithTarget.length
+                ? Math.round(filesWithTarget.reduce((sum, g) => sum + g.progress, 0) / filesWithTarget.length)
+                : 0;
+            publishSummary(fileGroups, combinedRecords.length, allSurveyorsGlobal.size, avgProgressGlobal);
 
             document.getElementById('statTotalFiles').innerText = fileGroups.length;
-            document.getElementById('statLaporanCount').innerText = laporanAll.length;
+            document.getElementById('statAvgProgress').innerText = `${avgProgressGlobal}%`;
+            document.getElementById('statLaporanText').innerText = `${laporanAll.length} laporan harian`;
             document.getElementById('statTotalCategories').innerText = allCategoriesGlobal.size;
             document.getElementById('statTotalSurveyors').innerText = allSurveyorsGlobal.size;
             document.getElementById('statTotalTasksText').innerText = `${combinedRecords.length} rekod kerja aktif`;
@@ -1446,13 +1618,51 @@ html,body{max-width:100%;overflow-x:hidden}
             const daysUntil = iso => Math.round((new Date(iso + 'T00:00:00') - new Date(todayIso + 'T00:00:00')) / 864e5);
 
             container.innerHTML = fileGroups.map(grp => {
-                // Tanpa progres, status hanya ikut tarikh jangka siap
+                const pct = Math.min(100, Math.max(0, Math.round(grp.progress || 0)));
                 const dd = grp.jangkaSiap ? daysUntil(grp.jangkaSiap) : null;
-                const st = dd === null ? ['Tiada jangka siap', 'mute']
-                    : dd < 0 ? ['Jangka siap lepas', 'warn']
-                    : ['Aktif', 'info'];
-                const dueTxt = dd === null ? ''
-                    : ` <em class="${dd < 0 ? 'bad' : dd <= 14 ? 'warn' : ''}">· ${dd < 0 ? Math.abs(dd) + ' hari lepas' : dd === 0 ? 'hari ini' : dd + ' hari lagi'}</em>`;
+                const isLate = pct < 100 && dd !== null && dd < 0;
+                const st = !grp.hasAnyTarget ? ['Tiada target', 'mute']
+                    : pct >= 100 ? ['Selesai', 'ok']
+                    : isLate ? ['Lewat jangka siap', 'bad']
+                    : pct > 0 ? ['Dalam progres', 'info']
+                    : ['Baru direkod', 'mute'];
+                const barCol = pct >= 100 ? 'var(--ok)' : isLate ? 'var(--bad)' : 'var(--ind-600)';
+                const dueTxt = dd === null || pct >= 100 ? ''
+                    : ` <em class="${dd < 0 ? 'bad' : dd <= 14 ? 'warn' : ''}">· ${dd < 0 ? Math.abs(dd) + ' hari lewat' : dd === 0 ? 'hari ini' : dd + ' hari lagi'}</em>`;
+
+                // Bar setiap tugas target
+                const taskBarsHtml = grp.taskProgress.map(tp => {
+                    const cPct = Math.min(100, Math.max(0, Math.round(tp.percentage || 0)));
+                    const cBarColor = cPct >= 100 ? 'var(--ok)' : 'var(--ind-600)';
+                    const frac = tp.doneQty <= 0 ? `<span>${tp.reportCount} laporan</span>`
+                        : tp.targetQty > 0 ? `<span>Siap <b class="g">${tp.doneQty}</b> / ${tp.targetQty} ${escapeHtml(tp.unit)}</span>`
+                        : `<span>Siap <b class="g">${tp.doneQty}</b></span>`;
+                    const right = !tp.reportCount ? `<span>Belum ada laporan</span>${tp.hasTarget ? `<b>0%</b>` : ''}`
+                        : tp.hasTarget ? `${frac}<b>${cPct}%</b>` : `${frac}<span class="warn-t">Tiada target</span>`;
+                    const notes = [
+                        tp.overTarget ? 'Jumlah laporan melebihi 100%, semak semula' : '',
+                        tp.replacedCount ? `${tp.replacedCount} laporan berganda diganti dengan yang terkini` : ''
+                    ].filter(Boolean);
+                    return `
+                        <div class="cr">
+                            <div class="row">
+                                <span class="cr-n"><span title="${escapeHtml(tp.kategori)}">${escapeHtml(tp.tugas)}${tp.kawasan ? ` <span class="muted">· ${escapeHtml(tp.kawasan)}</span>` : ''}</span></span>
+                                <span class="cr-v">${right}</span>
+                            </div>
+                            <div class="bar sm"><i style="width:${tp.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0}%;background:${cBarColor}"></i></div>
+                            ${notes.length ? `<p class="meta warn-t" style="margin-top:4px">${notes.map(escapeHtml).join(' · ')}</p>` : ''}
+                        </div>`;
+                }).join('');
+
+                const um = grp.unmatchedLaporan || [];
+                const unmatchedHtml = um.length ? `
+                        <div class="kw nokey">
+                            <div class="row">
+                                <span class="kw-n"><i data-lucide="alert-triangle" class="i14"></i><span>Laporan tak dikira (${um.length})</span></span>
+                            </div>
+                            <p class="meta">${um.slice(0, 5).map(r => `"${escapeHtml(r.tugasan || '-')}" ${escapeHtml(formatTarikh(r.tarikh))}: ${escapeHtml(r.reason)}`).join('<br>')}${um.length > 5 ? `<br>+${um.length - 5} lagi` : ''}</p>
+                            <p class="meta">Pastikan "Tugasan / Output" sama dengan Tugas dalam target. Jika tugas sama ada di beberapa kawasan, tulis No File sebagai "MCP 001/26 Kawasan".</p>
+                        </div>` : '';
 
                 const surveyorDisplay = grp.surveyorsArr.length > 0
                     ? grp.surveyorsArr.map(s => `<span class="person"><i data-lucide="user-check" class="i12"></i>${escapeHtml(s)}</span>`).join('')
@@ -1510,7 +1720,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     : (grp.kawasanLabels.length === 1 ? ` · ${escapeHtml(grp.kawasanLabels[0])}` : ''));
 
                 return `
-                    <article class="fc ${grp.isNewlyAdded ? 'new-card-highlight' : ''}">
+                    <article class="fc${isLate ? ' late' : ''} ${grp.isNewlyAdded ? 'new-card-highlight' : ''}">
                         <div class="fc-h">
                             <div class="fc-ic"><i data-lucide="folder-kanban" class="i18"></i></div>
                             <div class="fc-t">
@@ -1518,6 +1728,11 @@ html,body{max-width:100%;overflow-x:hidden}
                                 <span>${subtitle}</span>
                             </div>
                             <span class="chip ${st[1]}">${st[0]}</span>
+                        </div>
+
+                        <div>
+                            <div class="big"><b>${grp.hasAnyTarget ? pct + '%' : '–'}</b><span>${grp.hasAnyTarget ? 'progres keseluruhan' : 'tiada Kuantiti target untuk dikira'}</span></div>
+                            <div class="bar lg"><i style="width:${pct}%;background:${barCol}"></i></div>
                         </div>
 
                         <div class="tags">${kategoriDisplay}</div>
@@ -1538,6 +1753,11 @@ html,body{max-width:100%;overflow-x:hidden}
                                 <summary><i data-lucide="chevron-right" class="i14 chev"></i>Senarai kerja &amp; edit (${grp.rekodEntries.length})</summary>
                                 <ul>${kerjaListHtml}</ul>
                             </details>` : ''}
+                        </div>
+
+                        <div>
+                            <div class="lbl">Progres tugas (${grp.taskProgress.length})</div>
+                            <div class="kws"><div class="kw"><div class="cats" style="margin-top:0;padding-top:0;border-top:0">${taskBarsHtml || '<span class="muted sm">Tiada tugas target untuk fail ini</span>'}</div></div>${unmatchedHtml}</div>
                         </div>
 
                         <div>
@@ -1583,6 +1803,7 @@ html,body{max-width:100%;overflow-x:hidden}
             };
 
             renderTable(rawLaporanRows, 'statsTableContainer');
+            if (!TARGET_DARI_REKOD) renderTable(rawTargetRows, 'targetTableContainer');
             renderTable(rawRekodRows, 'recordsTableContainer');
         }
 
