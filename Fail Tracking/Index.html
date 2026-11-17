@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JURUKUR MAHABOB TRACKING FILE</title>
+<style>
+:root{
+  --bg:#0f172a; --panel:#ffffff; --muted:#64748b; --line:#e2e8f0;
+  --brand:#1d4ed8; --brand2:#2563eb; --ok:#16a34a; --warn:#d97706; --wait:#94a3b8;
+  --soft:#f1f5f9; --danger:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f6fb;color:#0f172a}
+header{background:linear-gradient(120deg,#1e3a8a,#2563eb);color:#fff;padding:18px 24px;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+header h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.3px}
+header p{margin:4px 0 0;font-size:12px;opacity:.85}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.btn{border:0;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:#fff;color:#1d4ed8}
+.btn-ghost{background:rgba(255,255,255,.15);color:#fff}
+.btn-sm{padding:6px 10px;font-size:12px}
+.btn-danger{background:#fee2e2;color:#b91c1c}
+.btn-soft{background:var(--soft);color:#334155}
+input,select,textarea{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;background:#fff;color:#0f172a}
+textarea{resize:vertical;min-height:38px}
+.wrap{max-width:1200px;margin:0 auto;padding:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat .n{font-size:24px;font-weight:800;color:#1d4ed8}
+.stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
+.filters input,.filters select{width:auto;min-width:180px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.06);display:flex;flex-direction:column}
+.card-head{padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.card-head h3{margin:0;font-size:15px;font-weight:700}
+.card-head .sub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:8px}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
+.progress{height:8px;background:var(--soft);border-radius:999px;overflow:hidden;margin-top:10px}
+.progress > div{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);transition:width .3s}
+.card-body{padding:0 16px 14px;display:none}
+.card.open .card-body{display:block}
+.stage{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;background:#fcfdff}
+.stage-top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.stage-top .name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.dot.pending{background:var(--wait)}
+.dot.progress{background:var(--warn)}
+.dot.done{background:var(--ok)}
+.stage-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.stage-fields .full{grid-column:1/-1}
+.lbl{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px;display:block}
+.card-foot{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:12px}
+.attach{margin-top:12px}
+.attach h4{margin:0 0 8px;font-size:13px}
+.att-list{display:flex;flex-wrap:wrap;gap:8px}
+.att-item{position:relative;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:11px;background:#fff;display:flex;align-items:center;gap:6px;max-width:160px}
+.att-item img{width:36px;height:36px;object-fit:cover;border-radius:5px}
+.att-item a{color:#1d4ed8;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att-x{cursor:pointer;color:#dc2626;font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:30px 16px;overflow:auto}
+.modal.open{display:flex}
+.modal-card{background:#fff;border-radius:14px;width:100%;max-width:520px;padding:22px}
+.modal-card h2{margin:0 0 14px;font-size:18px}
+.form-row{margin-bottom:12px}
+.form-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.empty{text-align:center;color:var(--muted);padding:50px 20px;background:#fff;border:2px dashed var(--line);border-radius:14px}
+.foot-note{text-align:center;color:var(--muted);font-size:11px;margin:26px 0 10px}
+@media(max-width:520px){.stage-fields,.form-2{grid-template-columns:1fr}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"><style id="jm-theme">body{font-family:'IBM Plex Sans','Segoe UI',system-ui,Arial,sans-serif!important}:root{--brand:#2a4fd6;--brand2:#1f3fb8}
+  body{background:#f5f6fa!important}
+  header{background:#0f1f5c!important;border-bottom:3px solid #f2b705}</style></head>
+<body>
+<header>
+  <h1>📋 JURUKUR MAHABOB TRACKING FILE</h1>
+  <p>Track every file from data collection to close — dates, flow, remarks, attachments &amp; photos. Saved in your browser.</p>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openModal()">➕ New File</button>
+    <button class="btn btn-ghost" onclick="exportData()">⬇️ Backup (JSON)</button>
+    <label class="btn btn-ghost" style="margin:0">⬆️ Restore<input type="file" accept="application/json" style="display:none" onchange="importData(event)"></label>
+    <button class="btn btn-ghost" onclick="window.print()">🖨️ Print</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="filters">
+    <input id="search" placeholder="🔍 Search client / ref / person..." oninput="render()">
+    <select id="fStatus" onchange="render()">
+      <option value="">All statuses</option>
+      <option value="active">Active (open)</option>
+      <option value="closed">Closed</option>
+    </select>
+    <select id="sortBy" onchange="render()">
+      <option value="created">Sort: Newest</option>
+      <option value="client">Sort: Client A–Z</option>
+      <option value="progress">Sort: Progress</option>
+    </select>
+  </div>
+  <div id="list" class="grid"></div>
+  <div class="foot-note">Data is stored locally in this browser (localStorage). Use Backup regularly to keep a copy.</div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <h2 id="mTitle">New File</h2>
+    <div class="form-row"><label class="lbl">File Reference / Job No.</label><input id="fRef" placeholder="e.g. SVY-2026-001"></div>
+    <div class="form-row"><label class="lbl">Client</label><input id="fClient" placeholder="Client name"></div>
+    <div class="form-row"><label class="lbl">Project / Description</label><textarea id="fDesc" placeholder="Scope of works, location..."></textarea></div>
+    <div class="form-2">
+      <div class="form-row"><label class="lbl">Start Date</label><input type="date" id="fStart"></div>
+      <div class="form-row"><label class="lbl">Target / End Date</label><input type="date" id="fEnd"></div>
+    </div>
+    <div class="form-row"><label class="lbl">Notes</label><textarea id="fNotes" placeholder="General remarks"></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-soft" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="background:#1d4ed8;color:#fff" onclick="saveFile()">Save File</button>
+    </div>
+  </div>
+</div>
+<script>
+const KEY='survey_tracker_v1';
+const STAGES=[
+  {k:'collection', label:'1. Data Collection', hint:'Survey team'},
+  {k:'processing', label:'2. Processing', hint:'Processed by'},
+  {k:'drafting', label:'3. Drafting', hint:'Drafted by'},
+  {k:'deliver', label:'4. Deliver Draft to Client', hint:'Delivered by'},
+  {k:'finaldraft', label:'5. Final Draft', hint:'Prepared by'},
+  {k:'email', label:'6. Final Draft by Email', hint:'Sent by'},
+  {k:'postage', label:'7. Postage', hint:'Posted by'},
+  {k:'signed', label:'8. Signed by Licensed Surveyor', hint:'Surveyor'},
+  {k:'invoice', label:'9. Claim & Invoice', hint:'Accountant'},
+  {k:'payment', label:'10. Payment by Client', hint:'Received by'},
+  {k:'close', label:'11. Close File', hint:'Closed by'}
+];
+let data=load();
+let editingId=null;
+
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}}
+function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
+function uid(){return 'f'+Date.now()+Math.random().toString(36).slice(2,6)}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function newStages(){const o={};STAGES.forEach(s=>o[s.k]={status:'pending',date:'',person:'',remarks:''});return o}
+
+function openModal(id){
+  editingId=id||null;
+  document.getElementById('mTitle').textContent=id?'Edit File':'New File';
+  const f=id?data.find(x=>x.id===id):null;
+  fRef.value=f?f.ref:''; fClient.value=f?f.client:''; fDesc.value=f?f.desc:'';
+  fStart.value=f?f.start:''; fEnd.value=f?f.end:''; fNotes.value=f?f.notes:'';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+function saveFile(){
+  if(!fClient.value.trim()&&!fRef.value.trim()){alert('Enter at least a Client or File Reference.');return}
+  if(editingId){
+    const f=data.find(x=>x.id===editingId);
+    Object.assign(f,{ref:fRef.value,client:fClient.value,desc:fDesc.value,start:fStart.value,end:fEnd.value,notes:fNotes.value});
+  }else{
+    data.unshift({id:uid(),ref:fRef.value,client:fClient.value,desc:fDesc.value,start:fStart.value,end:fEnd.value,notes:fNotes.value,created:Date.now(),stages:newStages(),files:[]});
+  }
+  closeModal();save();
+}
+function delFile(id){if(confirm('Delete this file permanently?')){data=data.filter(x=>x.id!==id);save()}}
+function toggleCard(id){const el=document.getElementById('card-'+id);if(el)el.classList.toggle('open')}
+
+function setStage(id,k,field,val){const f=data.find(x=>x.id===id);f.stages[k][field]=val;localStorage.setItem(KEY,JSON.stringify(data));if(field==='status')render(id)}
+function progressOf(f){const done=STAGES.filter(s=>f.stages[s.k].status==='done').length;return Math.round(done/STAGES.length*100)}
+
+// ---- Attachments (files & photos, stored as base64) ----
+function addAttach(id,ev){
+  const files=[...ev.target.files]; if(!files.length)return;
+  const f=data.find(x=>x.id===id);
+  let pending=files.length;
+  files.forEach(file=>{
+    if(file.size>4*1024*1024){alert(file.name+' is larger than 4MB and was skipped (browser storage limit).');if(--pending===0){save();openCard(id)}return}
+    const r=new FileReader();
+    r.onload=e=>{
+      f.files.push({name:file.name,type:file.type,isImg:file.type.startsWith('image/'),data:e.target.result});
+      if(--pending===0){save();openCard(id)}
+    };
+    r.readAsDataURL(file);
+  });
+  ev.target.value='';
+}
+function delAttach(id,idx){const f=data.find(x=>x.id===id);f.files.splice(idx,1);save();openCard(id)}
+function openCard(id){setTimeout(()=>{const el=document.getElementById('card-'+id);if(el)el.classList.add('open')},0)}
+
+// ---- Backup / Restore ----
+function exportData(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='survey-tracker-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importData(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{try{const d=JSON.parse(e.target.result);if(Array.isArray(d)){if(confirm('Restore will replace current data. Continue?')){data=d;save()}}else alert('Invalid backup file.')}catch(err){alert('Could not read file.')}};
+  r.readAsText(file);ev.target.value='';
+}
+
+// ---- Render ----
+function render(keepOpen){
+  const openIds=[...document.querySelectorAll('.card.open')].map(c=>c.id.replace('card-',''));
+  if(keepOpen&&!openIds.includes(keepOpen))openIds.push(keepOpen);
+  const q=(search.value||'').toLowerCase();
+  const fs=fStatus.value, sb=sortBy.value;
+  let rows=data.filter(f=>{
+    const closed=f.stages.close.status==='done';
+    if(fs==='active'&&closed)return false;
+    if(fs==='closed'&&!closed)return false;
+    const hay=(f.ref+' '+f.client+' '+f.desc+' '+STAGES.map(s=>f.stages[s.k].person).join(' ')).toLowerCase();
+    return hay.includes(q);
+  });
+  if(sb==='client')rows.sort((a,b)=>(a.client||'').localeCompare(b.client||''));
+  else if(sb==='progress')rows.sort((a,b)=>progressOf(b)-progressOf(a));
+  else rows.sort((a,b)=>b.created-a.created);
+
+  const total=data.length, closed=data.filter(f=>f.stages.close.status==='done').length;
+  const avg=data.length?Math.round(data.reduce((s,f)=>s+progressOf(f),0)/data.length):0;
+  document.getElementById('stats').innerHTML=
+    stat(total,'Total Files')+stat(total-closed,'Active')+stat(closed,'Closed')+stat(avg+'%','Avg Progress');
+
+  const list=document.getElementById('list');
+  if(!rows.length){list.innerHTML='<div class="empty" style="grid-column:1/-1">No files yet. Click <b>➕ New File</b> to start tracking.</div>';return}
+  list.innerHTML=rows.map(f=>cardHTML(f,openIds.includes(f.id))).join('');
+}
+function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
+
+function cardHTML(f,open){
+  const p=progressOf(f);
+  const closed=f.stages.close.status==='done';
+  const statusTag=closed?'<span class="tag" style="background:#dcfce7;color:#166534">Closed</span>':'<span class="tag" style="background:#dbeafe;color:#1e40af">Active</span>';
+  const dur=(f.start||f.end)?('<span>🗓️ '+esc(f.start||'?')+' → '+esc(f.end||'?')+'</span>'):'';
+  const stages=STAGES.map(s=>stageHTML(f,s)).join('');
+  const atts=(f.files||[]).map((a,i)=>attHTML(f.id,a,i)).join('')||'<span style="font-size:12px;color:#94a3b8">No attachments yet.</span>';
+  return `<div class="card ${open?'open':''}" id="card-${f.id}">
+    <div class="card-head" onclick="toggleCard('${f.id}')">
+      <h3>${esc(f.ref||'(no ref)')} — ${esc(f.client||'Unnamed client')} ${statusTag}</h3>
+      <div class="sub">${dur}${f.desc?'<span>📄 '+esc(f.desc.slice(0,60))+(f.desc.length>60?'…':'')+'</span>':''}</div>
+      <div class="progress"><div style="width:${p}%"></div></div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px">${p}% complete • click to ${open?'collapse':'expand'}</div>
+    </div>
+    <div class="card-body">
+      ${stages}
+      <div class="attach">
+        <h4>📎 Attachments &amp; Photos</h4>
+        <div class="att-list">${atts}</div>
+        <label class="btn btn-soft btn-sm" style="margin-top:10px">➕ Add file / photo<input type="file" multiple style="display:none" onchange="addAttach('${f.id}',event)"></label>
+      </div>
+      ${f.notes?'<div style="margin-top:12px;font-size:12px"><b>Notes:</b> '+esc(f.notes)+'</div>':''}
+      <div class="card-foot">
+        <button class="btn btn-soft btn-sm" onclick="openModal('${f.id}')">✏️ Edit info</button>
+        <button class="btn btn-danger btn-sm" onclick="delFile('${f.id}')">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>`;
+}
+function stageHTML(f,s){
+  const st=f.stages[s.k];
+  const sel=v=>st.status===v?'selected':'';
+  return `<div class="stage">
+    <div class="stage-top">
+      <span class="name"><span class="dot ${st.status}"></span>${s.label}</span>
+      <select style="width:auto" onchange="setStage('${f.id}','${s.k}','status',this.value)">
+        <option value="pending" ${sel('pending')}>Pending</option>
+        <option value="progress" ${sel('progress')}>In progress</option>
+        <option value="done" ${sel('done')}>Done</option>
+      </select>
+    </div>
+    <div class="stage-fields">
+      <div><label class="lbl">Date</label><input type="date" value="${esc(st.date)}" onchange="setStage('${f.id}','${s.k}','date',this.value)"></div>
+      <div><label class="lbl">${s.hint}</label><input value="${esc(st.person)}" placeholder="${s.hint}" onchange="setStage('${f.id}','${s.k}','person',this.value)"></div>
+      <div class="full"><label class="lbl">Remarks</label><input value="${esc(st.remarks)}" placeholder="Remarks / tracking notes" onchange="setStage('${f.id}','${s.k}','remarks',this.value)"></div>
+    </div>
+  </div>`;
+}
+function attHTML(id,a,i){
+  const thumb=a.isImg?`<a href="${a.data}" target="_blank"><img src="${a.data}" alt=""></a>`:'📄';
+  return `<div class="att-item">${thumb}<a href="${a.data}" download="${esc(a.name)}" title="${esc(a.name)}">${esc(a.name.slice(0,16))}</a><span class="att-x" onclick="delAttach('${id}',${i})">✕</span></div>`;
+}
+
+render();
+</script>
+</body>
+</html>
+```[cite: 2]
