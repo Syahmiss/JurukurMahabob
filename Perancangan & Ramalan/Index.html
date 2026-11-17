@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JURUKUR MAHABOB — Manpower Planning &amp; Prediction</title>
+<style>
+:root{--brand:#1d4ed8;--brand2:#2563eb;--line:#e2e8f0;--soft:#f1f5f9;--muted:#64748b;
+--ok:#16a34a;--warn:#d97706;--hard:#dc2626;--panel:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f6fb;color:#0f172a}
+header{background:linear-gradient(120deg,#1e3a8a,#2563eb);color:#fff;padding:18px 24px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+header h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.3px}
+header p{margin:4px 0 0;font-size:12px;opacity:.9}
+.wrap{max-width:1150px;margin:0 auto;padding:20px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+.panel h2{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:8px}
+.hint{font-size:12px;color:var(--muted);margin:-8px 0 14px}
+label.lbl{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;display:block}
+input,select{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;background:#fff;color:#0f172a}
+.row{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.btn{border:0;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:#1d4ed8;color:#fff}.btn-soft{background:var(--soft);color:#334155}
+.btn-danger{background:#fee2e2;color:#b91c1c}.btn-sm{padding:6px 10px;font-size:12px}
+.mode{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.mode button{flex:1;min-width:220px;border:2px solid var(--line);background:#fff;border-radius:12px;padding:14px;text-align:left;cursor:pointer;transition:.15s}
+.mode button.active{border-color:var(--brand);background:#eff6ff}
+.mode button b{display:block;font-size:14px;margin-bottom:3px}
+.mode button span{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+td input,td select{padding:6px 8px}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+.p-easy{background:#dcfce7;color:#166534}.p-mod{background:#fef3c7;color:#92400e}.p-hard{background:#fee2e2;color:#991b1b}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:linear-gradient(135deg,#f8fafc,#eef2ff);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .n{font-size:26px;font-weight:800;color:#1d4ed8;line-height:1.1}
+.kpi .l{font-size:12px;color:var(--muted);margin-top:4px}
+.kpi.big{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff}
+.kpi.big .n{color:#fff}.kpi.big .l{color:#dbeafe}
+.result-note{font-size:13px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:10px;padding:12px 14px;margin-top:14px;line-height:1.5}
+.breakdown td{font-size:12px}
+.foot{text-align:center;color:var(--muted);font-size:11px;margin:24px 0 10px}
+.small{font-size:11px;color:var(--muted)}
+.warnbox{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px}
+@media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}.hide-sm{display:none}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"><style id="jm-theme">body{font-family:'IBM Plex Sans','Segoe UI',system-ui,Arial,sans-serif!important}:root{--brand:#2a4fd6;--brand2:#1f3fb8}
+  body{background:#f5f6fa!important}
+  header{background:#0f1f5c!important;border-bottom:3px solid #f2b705}</style></head>
+<body>
+<header>
+  <h1>📐 JURUKUR MAHABOB — Manpower Planning &amp; Prediction</h1>
+  <p>Plan crews, predict duration, and order the right number of site teams to hit the deadline — based on terrain difficulty &amp; job scope.</p>
+</header>
+<div class="wrap">
+
+  <div class="panel">
+    <h2>🎯 1. What do you want to work out?</h2>
+    <div class="mode">
+      <button id="mA" class="active" onclick="setMode('A')"><b>🧮 I know my manpower</b><span>Enter available teams → predict finish date &amp; duration</span></button>
+      <button id="mB" onclick="setMode('B')"><b>📅 I have a deadline</b><span>Enter deadline → calculate teams (men) needed</span></button>
+    </div>
+    <div class="row g4">
+      <div><label class="lbl">Project start date</label><input type="date" id="startDate" onchange="compute()"></div>
+      <div><label class="lbl">Working days / week</label><select id="dpw" onchange="compute()"><option value="7">7 (every day)</option><option value="6" selected>6 (rest Sun)</option><option value="5">5 (rest Sat+Sun)</option></select></div>
+      <div id="boxTeams"><label class="lbl">Teams available</label><input type="number" id="teams" min="1" value="4" oninput="compute()"></div>
+      <div id="boxMen"><label class="lbl">Men per team</label><input type="number" id="perTeam" min="1" value="4" oninput="compute()"></div>
+      <div id="boxDead" style="display:none"><label class="lbl">Deadline (calendar date)</label><input type="date" id="deadline" onchange="compute()"></div>
+    </div>
+    <p class="hint" style="margin-top:12px">Rates below assume the standard <b>10 m corridor</b>. Widen the corridor on a section and the workload scales up automatically.</p>
+  </div>
+
+  <div class="panel">
+    <h2>🛠️ 2. Work sections / job scope</h2>
+    <p class="hint">Add each stretch of the project. Choose terrain, corridor width, length and whether it needs Topo, U-Map, or both.</p>
+    <div style="overflow-x:auto">
+    <table id="segTable">
+      <thead><tr>
+        <th style="min-width:120px">Section</th><th style="min-width:150px">Terrain / difficulty</th>
+        <th class="hide-sm">Corridor (m)</th><th>Qty (km / ha)</th><th style="min-width:120px">Job scope</th>
+        <th>Team-days</th><th></th>
+      </tr></thead>
+      <tbody id="segBody"></tbody>
+    </table>
+    </div>
+    <button class="btn btn-soft btn-sm" style="margin-top:12px" onclick="addSeg()">➕ Add section</button>
+  </div>
+
+  <div class="panel">
+    <h2>📊 3. Plan &amp; prediction</h2>
+    <div class="kpis" id="kpis"></div>
+    <div id="resultNote"></div>
+    <div style="overflow-x:auto;margin-top:16px">
+    <table class="breakdown"><thead><tr>
+      <th>Section</th><th>Terrain</th><th>Length</th><th>Topo days</th><th>U-Map days</th><th>Team-days</th><th>Cost (RM)</th><th>Difficulty</th>
+    </tr></thead><tbody id="bkBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>💰 4. Cost, quotation &amp; profit structure</h2>
+    <p class="hint">Ties your output &amp; team-days to cost (kos), quotation, markup and profit margin. Currency: RM.</p>
+    <div class="row g4">
+      <div><label class="lbl">Cost per team-day (RM)</label><input type="number" id="costTD" min="0" step="50" oninput="compute()"></div>
+      <div><label class="lbl">Overhead / mobilisation (RM)</label><input type="number" id="overhead" min="0" step="100" oninput="compute()"></div>
+      <div><label class="lbl">Costing basis</label><select id="costMode" onchange="setCostMode(this.value)"><option value="markup">Set markup % → get quote</option><option value="quote">Set quotation → get margin</option></select></div>
+      <div id="boxMarkup"><label class="lbl">Markup %</label><input type="number" id="markup" min="0" step="1" oninput="compute()"></div>
+      <div id="boxQuote" style="display:none"><label class="lbl">Quotation (RM)</label><input type="number" id="quote" min="0" step="100" oninput="compute()"></div>
+    </div>
+    <div class="kpis" id="finKpis" style="margin-top:16px"></div>
+    <div style="overflow-x:auto;margin-top:16px">
+    <table class="breakdown"><thead><tr><th>Item</th><th>Value</th><th>Per km</th></tr></thead><tbody id="finBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>⚙️ 5. Productivity rates (per 1 team / day, 10 m corridor)</h2>
+    <p class="hint">Editable — tune to your crew's real output. Metres/day for corridor work; hectares/day for area topo (per 1 team of 3).</p>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>Terrain type</th><th>Topo (m/day)</th><th>U-Map (m/day)</th><th>Topo area (ha/day)</th><th>Difficulty</th></tr></thead>
+      <tbody id="rateBody"></tbody></table>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-soft btn-sm" onclick="resetRates()">↺ Reset to defaults</button>
+    </div>
+  </div>
+
+  <div class="foot">All inputs are saved automatically in this browser. Rates &amp; calculations are planning estimates — verify against site conditions.</div>
+</div>
+<script>
+const KEY='jm_planner_v1';
+const DEFAULT_RATES={
+  flat:{label:'Flat & Undulation',topo:1000,umap:700,areaTopo:3.23749,diff:'Easy'},
+  forest:{label:'Forest & Village',topo:700,umap:1000,areaTopo:3.23749,diff:'Moderate'},
+  hilly:{label:'Hilly & Slope',topo:500,umap:1000,areaTopo:2.02343,diff:'Difficult'},
+  city:{label:'City & Dense Town',topo:700,umap:500,areaTopo:1.61874,diff:'Difficult'}
+};
+let S=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d){
+    Object.keys(DEFAULT_RATES).forEach(k=>{if(d.rates&&d.rates[k]&&d.rates[k].areaTopo==null)d.rates[k].areaTopo=DEFAULT_RATES[k].areaTopo;});
+    return d;}}catch(e){}
+  return {mode:'A',startDate:'',dpw:'6',teams:4,perTeam:4,deadline:'',
+    costTD:800,overhead:0,costMode:'markup',markup:25,quote:0,
+    rates:JSON.parse(JSON.stringify(DEFAULT_RATES)),
+    segs:[{name:'Section 1',terrain:'flat',corridor:10,length:5,scope:'both'}]};}
+function persist(){localStorage.setItem(KEY,JSON.stringify(S))}
+function diffClass(d){return d==='Easy'?'p-easy':d==='Moderate'?'p-mod':'p-hard'}
+function esc(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function setMode(m){S.mode=m;
+  document.getElementById('mA').classList.toggle('active',m==='A');
+  document.getElementById('mB').classList.toggle('active',m==='B');
+  document.getElementById('boxTeams').style.display=m==='A'?'':'none';
+  document.getElementById('boxDead').style.display=m==='B'?'':'none';
+  persist();compute();}
+
+function addSeg(){S.segs.push({name:'Section '+(S.segs.length+1),terrain:'flat',corridor:10,length:1,scope:'both'});persist();renderSegs();compute();}
+function delSeg(i){S.segs.splice(i,1);persist();renderSegs();compute();}
+function segChange(i,f,v){S.segs[i][f]=(f==='length'||f==='corridor')?parseFloat(v)||0:v;persist();compute();}
+
+function renderSegs(){
+  const opts=Object.keys(S.rates).map(k=>`<option value="${k}">${esc(S.rates[k].label)}</option>`).join('');
+  document.getElementById('segBody').innerHTML=S.segs.map((s,i)=>`<tr>
+    <td><input value="${esc(s.name)}" onchange="segChange(${i},'name',this.value)"></td>
+    <td><select onchange="segChange(${i},'terrain',this.value)">${opts}</select></td>
+    <td class="hide-sm"><input type="number" min="1" value="${s.corridor}" onchange="segChange(${i},'corridor',this.value)"></td>
+    <td><input type="number" min="0" step="0.1" value="${s.length}" onchange="segChange(${i},'length',this.value)"></td>
+    <td><select onchange="segChange(${i},'scope',this.value)">
+        <option value="both">Topo + U-Map (km)</option><option value="topo">Topo only (km)</option><option value="umap">U-Map only (km)</option><option value="area">Topo area (ha)</option>
+      </select></td>
+    <td id="td-${i}" style="font-weight:700">–</td>
+    <td><button class="btn btn-danger btn-sm" onclick="delSeg(${i})">✕</button></td>
+  </tr>`).join('');
+  // set current select values
+  S.segs.forEach((s,i)=>{const tr=document.getElementById('segBody').children[i];tr.children[1].firstChild.value=s.terrain;tr.children[4].firstChild.value=s.scope;});
+}
+
+function renderRates(){
+  document.getElementById('rateBody').innerHTML=Object.keys(S.rates).map(k=>{const r=S.rates[k];return `<tr>
+    <td>${esc(r.label)}</td>
+    <td><input type="number" min="1" value="${r.topo}" onchange="rateChange('${k}','topo',this.value)"></td>
+    <td><input type="number" min="1" value="${r.umap}" onchange="rateChange('${k}','umap',this.value)"></td>
+    <td><input type="number" min="0" step="0.0001" value="${r.areaTopo}" onchange="rateChange('${k}','areaTopo',this.value)"></td>
+    <td><span class="pill ${diffClass(r.diff)}">${r.diff}</span></td></tr>`;}).join('');
+}
+function rateChange(k,f,v){S.rates[k][f]=parseFloat(v)||0;persist();compute();}
+function resetRates(){S.rates=JSON.parse(JSON.stringify(DEFAULT_RATES));persist();renderRates();compute();}
+
+// working-days -> calendar finish date
+function addWorkingDays(start,wdays,dpw){
+  if(!start||wdays<=0)return null;
+  let d=new Date(start+'T00:00:00');let counted=0;
+  if(dpw>=7){d.setDate(d.getDate()+Math.ceil(wdays)-1);return d;}
+  while(counted<Math.ceil(wdays)){
+    const dow=d.getDay(); // 0 Sun ...6 Sat
+    const isWork=(dpw===6)?dow!==0:(dow!==0&&dow!==6);
+    if(isWork)counted++;
+    if(counted<Math.ceil(wdays))d.setDate(d.getDate()+1);
+  }
+  return d;
+}
+// calendar days between two dates counting only working days
+function workingDaysBetween(start,end,dpw){
+  if(!start||!end)return null;
+  let d=new Date(start+'T00:00:00');const e=new Date(end+'T00:00:00');
+  if(e<d)return 0;let c=0;
+  while(d<=e){const dow=d.getDay();const isWork=(dpw>=7)?true:(dpw===6)?dow!==0:(dow!==0&&dow!==6);if(isWork)c++;d.setDate(d.getDate()+1);}
+  return c;
+}
+function fmt(d){return d?d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'–'}
+
+function compute(){
+  // read simple inputs
+  S.startDate=document.getElementById('startDate').value;
+  S.dpw=document.getElementById('dpw').value;
+  S.teams=parseFloat(document.getElementById('teams').value)||0;
+  S.perTeam=parseFloat(document.getElementById('perTeam').value)||0;
+  S.deadline=document.getElementById('deadline').value;
+  S.costTD=parseFloat(document.getElementById('costTD').value)||0;
+  S.overhead=parseFloat(document.getElementById('overhead').value)||0;
+  S.costMode=document.getElementById('costMode').value;
+  S.markup=parseFloat(document.getElementById('markup').value)||0;
+  S.quote=parseFloat(document.getElementById('quote').value)||0;
+  persist();
+  const dpw=parseInt(S.dpw);
+  let totalTD=0,totalLen=0,totalArea=0,bk='';
+  S.segs.forEach((s,i)=>{
+    const r=S.rates[s.terrain];const cf=(s.corridor||10)/10;const lm=(s.length||0)*1000;
+    const isArea=s.scope==='area';
+    const areaD=isArea?((s.length||0)/(r.areaTopo||1)):0;
+    const topoD=isArea?areaD:((s.scope==='both'||s.scope==='topo')?(lm*cf/r.topo):0);
+    const umapD=isArea?0:((s.scope==='both'||s.scope==='umap')?(lm*cf/r.umap):0);
+    const td=topoD+umapD;totalTD+=td;
+    if(isArea)totalArea+=(s.length||0);else totalLen+=(s.length||0);
+    const cell=document.getElementById('td-'+i);if(cell)cell.textContent=td?td.toFixed(2):'0';
+    const segCost=td*S.costTD;
+    const qtyTxt=isArea?((s.length||0)+' ha'):((s.length||0)+' km'+(cf!==1?' ×'+cf.toFixed(1):''));
+    bk+=`<tr><td>${esc(s.name)}</td><td>${esc(r.label)}</td><td>${qtyTxt}</td>
+      <td>${topoD.toFixed(2)}</td><td>${umapD.toFixed(2)}</td><td style="font-weight:700">${td.toFixed(2)}</td>
+      <td>${money(segCost)}</td>
+      <td><span class="pill ${diffClass(r.diff)}">${r.diff}</span></td></tr>`;
+  });
+  document.getElementById('bkBody').innerHTML=bk||'<tr><td colspan="8" class="small">Add a work section above.</td></tr>';
+  const outParts=[];if(totalLen>0)outParts.push(totalLen.toFixed(2)+' km');if(totalArea>0)outParts.push(totalArea.toFixed(2)+' ha');
+  const outStr=outParts.join(' + ')||'0';
+
+  let kpis='',note='';
+  const tdTxt=totalTD.toFixed(1);
+  if(S.mode==='A'){
+    const teams=S.teams;
+    const days=teams>0?Math.ceil(totalTD/teams):0;
+    const finish=addWorkingDays(S.startDate,days,dpw);
+    const men=teams*S.perTeam;
+    kpis=kpi(outStr,'Total output')+kpi(tdTxt,'Total team-days')+
+      kpi(teams,'Teams ('+men+' men)')+kpiBig(days,'Working days to finish');
+    note=`<div class="result-note">With <b>${teams} team(s)</b> (≈ <b>${men} men</b>) working <b>${dpw} day(s)/week</b>, the ${outStr} project needs about <b>${totalTD.toFixed(1)} team-days</b> → roughly <b>${days} working day(s)</b>.` +
+      (finish?` Estimated completion: <b>${fmt(finish)}</b>.`:' Set a start date to see the finish date.') + `</div>`;
+  }else{
+    const avail=workingDaysBetween(S.startDate,S.deadline,dpw);
+    let teamsNeeded=0,men=0;
+    if(avail&&avail>0){teamsNeeded=Math.ceil(totalTD/avail);men=teamsNeeded*S.perTeam;}
+    kpis=kpi(outStr,'Total output')+kpi(tdTxt,'Total team-days')+
+      kpi(avail!=null?avail:'–','Working days available')+kpiBig(teamsNeeded||'–','Teams needed');
+    if(!S.startDate||!S.deadline){note='<div class="warnbox">Set both a <b>start date</b> and a <b>deadline</b> to calculate the manpower needed.</div>';}
+    else if(avail<=0){note='<div class="warnbox">Deadline is on/before the start date — adjust the dates.</div>';}
+    else{note=`<div class="result-note">To finish <b>${outStr}</b> (≈ ${totalTD.toFixed(1)} team-days) within <b>${avail} working day(s)</b> before <b>${fmt(new Date(S.deadline+'T00:00:00'))}</b>, you need about <b>${teamsNeeded} team(s)</b> — roughly <b>${men} men</b> on site.</div>`;}
+  }
+  document.getElementById('kpis').innerHTML=kpis;
+  document.getElementById('resultNote').innerHTML=note;
+
+  // ---- Cost / quotation / profit ----
+  const directCost=totalTD*S.costTD;
+  const totalCost=directCost+S.overhead;
+  let quotation,markup;
+  if(S.costMode==='markup'){markup=S.markup;quotation=totalCost*(1+markup/100);}
+  else{quotation=S.quote;markup=totalCost>0?((quotation-totalCost)/totalCost*100):0;
+    document.getElementById('markup').value=markup.toFixed(1);}
+  if(S.costMode==='markup')document.getElementById('quote').value=Math.round(quotation);
+  const profit=quotation-totalCost;
+  const margin=quotation>0?(profit/quotation*100):0;
+  const perKm=v=>totalLen>0?money(v/totalLen):'–';
+  const profCls=profit>=0?'':'style="color:#dc2626"';
+  document.getElementById('finKpis').innerHTML=
+    kpi(money(totalCost),'Total cost (Kos)')+kpi(money(quotation),'Quotation')+
+    kpi(markup.toFixed(1)+'%','Markup')+kpiBig(margin.toFixed(1)+'%','Profit margin');
+  document.getElementById('finBody').innerHTML=`
+    <tr><td>Output</td><td>${outStr}</td><td>–</td></tr>
+    <tr><td>Total team-days</td><td>${totalTD.toFixed(2)}</td><td>${totalLen>0?(totalTD/totalLen).toFixed(2)+' /km':'–'}</td></tr>
+    <tr><td>Cost per team-day</td><td>${money(S.costTD)}</td><td>–</td></tr>
+    <tr><td>Direct labour + ops cost</td><td>${money(directCost)}</td><td>${perKm(directCost)}</td></tr>
+    <tr><td>Overhead / mobilisation</td><td>${money(S.overhead)}</td><td>${perKm(S.overhead)}</td></tr>
+    <tr style="background:#f8fafc;font-weight:700"><td>Total cost (Kos)</td><td>${money(totalCost)}</td><td>${perKm(totalCost)}</td></tr>
+    <tr><td>Markup</td><td>${markup.toFixed(1)}%</td><td>–</td></tr>
+    <tr style="background:#eff6ff;font-weight:700"><td>Quotation to client</td><td>${money(quotation)}</td><td>${perKm(quotation)}</td></tr>
+    <tr style="font-weight:700"><td>Profit</td><td ${profCls}>${money(profit)}</td><td ${profCls}>${perKm(profit)}</td></tr>
+    <tr style="font-weight:700"><td>Profit margin</td><td ${profCls}>${margin.toFixed(1)}%</td><td>–</td></tr>`;
+}
+function money(n){return 'RM '+ (Math.round(n||0)).toLocaleString('en-US')}
+function setCostMode(m){S.costMode=m;persist();
+  document.getElementById('boxMarkup').style.display=m==='markup'?'':'none';
+  document.getElementById('boxQuote').style.display=m==='quote'?'':'none';
+  compute();}
+function kpi(n,l){return `<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`}
+function kpiBig(n,l){return `<div class="kpi big"><div class="n">${n}</div><div class="l">${l}</div></div>`}
+
+// init
+function init(){
+  document.getElementById('startDate').value=S.startDate||'';
+  document.getElementById('dpw').value=S.dpw||'6';
+  document.getElementById('teams').value=S.teams||4;
+  document.getElementById('perTeam').value=S.perTeam||4;
+  document.getElementById('deadline').value=S.deadline||'';
+  document.getElementById('costTD').value=S.costTD;
+  document.getElementById('overhead').value=S.overhead;
+  document.getElementById('costMode').value=S.costMode||'markup';
+  document.getElementById('markup').value=S.markup;
+  document.getElementById('quote').value=S.quote;
+  setCostMode(S.costMode||'markup');
+  setMode(S.mode||'A');
+  renderRates();renderSegs();compute();
+}
+init();
+</script>
+</body>
+</html>
+```[cite: 3]
