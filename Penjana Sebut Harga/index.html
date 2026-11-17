@@ -1,176 +1,259 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quotation Generator – Jurukur Mahabob & Co. Sdn. Bhd.</title>
+<!-- ==== GANTI dari <style> pertama hingga sebelum </head> dalam Quotation Generator dengan blok ini ==== -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
 <style>
-  :root{
-    --brand:#0b3d66; --brand2:#12639f; --accent:#c8a24a;
-    --ink:#1c2733; --muted:#6b7785; --line:#d7dde4; --bg:#eef1f5;
-    --ok:#1f8f4e; --warn:#c0392b; --soft:#f6f8fb;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.45}
-  button{font-family:inherit;cursor:pointer}
-  /* ---------- Toolbar ---------- */
-  .toolbar{position:sticky;top:0;z-index:50;background:var(--brand);color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-  .toolbar h1{font-size:15px;margin:0 14px 0 0;font-weight:600;letter-spacing:.3px}
-  .toolbar .spacer{flex:1}
-  .btn{border:0;border-radius:6px;padding:8px 13px;font-size:13px;font-weight:600;background:#ffffff22;color:#fff;border:1px solid #ffffff44;transition:.15s}
-  .btn:hover{background:#ffffff33}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#2a2000}
-  .btn.primary:hover{filter:brightness(1.08)}
-  .btn.green{background:var(--ok);border-color:var(--ok)}
-  .btn.ghost{background:transparent}
-  .hint{font-size:12px;color:#cdd8e4;margin-left:4px}
-  /* ---------- Layout ---------- */
-  .wrap{max-width:1180px;margin:18px auto;padding:0 16px;display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
-  @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
-  .side{position:sticky;top:64px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
-  .card h3{margin:0;padding:11px 14px;font-size:13px;background:var(--soft);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0;color:var(--brand)}
-  .card .body{padding:12px 14px}
-  /* ---------- Paper (the printable quotation) ---------- */
-  #paper{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:26px 30px;overflow:hidden}
-  [contenteditable]{outline:none}
-  [contenteditable]:focus{background:#fff8e6;border-radius:3px}
-  [contenteditable]:hover{background:#f3f7fc;border-radius:3px}
-  /* letterhead */
-  .lh{display:flex;gap:16px;align-items:flex-start;border-bottom:3px double var(--brand);padding-bottom:12px}
-  .lh .logo{width:90px;height:90px;flex:none;border:1px dashed #c4ccd5;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--soft);cursor:pointer;text-align:center;font-size:10px;color:var(--muted)}
-  .lh .logo img{width:100%;height:100%;object-fit:contain}
-  .lh .co{flex:1}
-  .lh .co .name{font-size:20px;font-weight:800;color:var(--brand);letter-spacing:.4px}
-  .lh .co .reg{font-size:11px;color:var(--muted)}
-  .lh .co .role{font-size:12px;font-weight:600;color:var(--brand2);margin-top:2px}
-  .lh .people{font-size:10.5px;color:var(--ink);margin-top:6px;line-height:1.35}
-  .lh .people b{color:var(--brand)}
-  .addr{font-size:10.5px;color:var(--ink);margin-top:8px;line-height:1.4;border-top:1px solid var(--line);padding-top:6px}
-  /* refs */
-  .refrow{display:flex;justify-content:space-between;margin-top:14px;font-size:12.5px}
-  .refrow .col{white-space:pre-wrap}
-  .clientbox{margin-top:10px;font-size:12.5px;line-height:1.5}
-  .title{margin:16px 0 10px;font-weight:800;text-align:center;text-transform:uppercase;font-size:13.5px;line-height:1.5;color:var(--ink)}
-  .intro{font-size:12.5px;text-align:justify;margin:8px 0}
-  .sub{font-weight:800;font-size:12.5px;margin:14px 0 6px}
-  /* items table */
-  table.items{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
-  table.items th,table.items td{border:1px solid #b9c2cc;padding:6px 7px;vertical-align:top}
-  table.items th{background:var(--brand);color:#fff;font-size:11.5px;text-align:center}
-  table.items td.c{text-align:center}
-  table.items td.r{text-align:right}
-  table.items tfoot td{font-weight:700;background:var(--soft)}
-  .rowbtns{display:flex;gap:3px}
-  .minibtn{border:1px solid var(--line);background:#fff;border-radius:5px;width:24px;height:24px;line-height:1;font-size:13px;color:var(--muted)}
-  .minibtn:hover{background:var(--soft);color:var(--warn)}
-  .minibtn.add:hover{color:var(--ok)}
-  /* generic small tables */
-  table.mini{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
-  table.mini th,table.mini td{border:1px solid #b9c2cc;padding:6px 8px}
-  table.mini th{background:var(--soft);color:var(--brand)}
-  .gantt input{width:16px}
-  /* signatures */
-  .signrow{display:flex;justify-content:space-between;gap:30px;margin-top:34px;font-size:12px}
-  .signbox{flex:1;text-align:center}
-  .signline{border-top:1px solid #333;margin-top:40px;padding-top:4px}
-  .bank{border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:9px 12px;margin-top:14px;font-size:12px;display:inline-block}
-  .fields{margin-top:12px;font-size:12px;line-height:2.1}
-  .dotline{border-bottom:1px dotted #333;display:inline-block;min-width:230px}
-  /* side panel */
-  .field{margin-bottom:9px}
-  .field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px}
-  .field input,.field textarea,.field select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit}
-  .field textarea{resize:vertical;min-height:52px}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .refsearch{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;margin-bottom:8px}
-  .reflist{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:6px}
-  .refitem{padding:7px 9px;border-bottom:1px solid #eef1f4;font-size:11.5px;cursor:pointer}
-  .refitem:hover{background:var(--soft)}
-  .refitem .r1{font-weight:700;color:var(--brand)}
-  .refitem .r2{color:var(--muted);margin-top:1px}
-  .refitem .r3{color:var(--ok);font-weight:700;margin-top:2px}
-  .note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4}
-  .status{font-size:12px;color:#cdd8e4}
-  /* print */
-  @media print{
-    .toolbar,.side,.no-print{display:none!important}
-    .wrap{display:block;margin:0;padding:0;max-width:none}
-    #paper{border:0;box-shadow:none;border-radius:0;padding:10mm 12mm}
-    body{background:#fff}
-    [contenteditable]:hover,[contenteditable]:focus{background:transparent}
-    .minibtn,.rowbtns{display:none!important}
-    table.items th:last-child,table.items td:last-child{display:none}
-    @page{size:A4;margin:12mm}
-  }
+/* Design HOD Akaun (Dashboard Jualan & Invois) */
+:root{
+  --navy:#0A2540; --blue:#1E40AF; --royal:#1D4ED8; --light:#EFF6FF; --gold:#FACC15; --amber:#EAB308; --goldDark:#CA8A04;
+  --bg:#F8FAFC; --line:#E2E8F0; --line3:#CBD5E1; --soft:#F1F5F9; --ink:#1E293B; --ink2:#475569; --muted:#64748B;
+  --ok:#047857; --okBg:#ECFDF5; --warn:#A16207; --warnBg:#FEF9C3; --danger:#DC2626; --dangerBg:#FEE2E2;
+  --brand:#1D4ED8; --brand2:#1E40AF; --panel:#fff; --wait:#94A3B8; --hard:#DC2626;
+  --f:'Inter','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--f);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+::selection{background:var(--gold);color:var(--navy)}
+:focus-visible{outline:2px solid var(--royal);outline-offset:2px}
+input,select,textarea{font-family:inherit;font-size:13px;border:1px solid var(--line3);border-radius:12px;padding:9px 12px;width:100%;background:#fff;color:var(--ink);transition:border-color .15s,box-shadow .15s;min-width:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--royal);box-shadow:0 0 0 2px var(--royal)}
+input::placeholder,textarea::placeholder{color:#94A3B8}
+.btn{border:1px solid transparent;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .1s;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+.btn:hover{transform:none}
+.btn:active{transform:scale(.97)}
+.btn-sm{padding:6px 11px;font-size:12px;border-radius:10px}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--blue)}
+.btn-soft{background:#fff;border-color:var(--line3);color:var(--navy)}
+.btn-soft:hover{background:var(--light);border-color:var(--royal)}
+.btn-danger{background:var(--dangerBg);color:#B91C1C}
+.btn-danger:hover{background:#FECACA}
+/* Header = toolbar navy rounded-2xl (sticky) */
+header{background:var(--navy)!important;color:#fff;margin:16px auto 0;max-width:var(--maxw,1200px);width:calc(100% - 32px);border-radius:16px;padding:16px 20px;box-shadow:0 4px 10px -4px rgba(10,37,64,.4);border:0!important}
+header h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.2px;color:#fff}
+header p{margin:4px 0 0;font-size:12.5px;color:#BFDBFE;opacity:1}
+header .btn-primary{background:var(--gold);color:var(--navy)}
+header .btn-primary:hover{background:var(--amber)}
+header .btn-ghost{background:rgba(255,255,255,.1);color:#fff}
+header .btn-ghost:hover{background:rgba(255,255,255,.2)}
+/* Panel / kad */
+.panel,.card,.stat,.modal-card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+/* KPI = kad putih border-top-4; kad utama navy gradient + bulatan gold */
+.stat,.kpi{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-top:4px solid var(--royal);border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.stat .n,.kpi .n{font-size:28px;font-weight:800;color:var(--navy);letter-spacing:-.5px;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat .l,.kpi .l{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
+.stat:nth-child(2),.kpi:nth-child(2){border-top-color:var(--gold)}
+.stat:nth-child(3),.kpi:nth-child(3){border-top-color:var(--ok)}
+.stat:nth-child(4),.kpi:nth-child(4){border-top-color:#334155}
+.jm-hero,.kpi.big{background:linear-gradient(135deg,var(--navy),var(--blue))!important;border:1px solid #1E3A8A!important}
+.jm-hero::after,.kpi.big::after{content:"";position:absolute;right:-16px;top:-16px;width:96px;height:96px;border-radius:50%;background:rgba(250,204,21,.12);pointer-events:none}
+.jm-hero .n,.kpi.big .n{color:#fff}
+.jm-hero .l,.kpi.big .l{color:#BFDBFE}
+.pill,.tag{border-radius:999px;font-weight:600}
+
+body{font-size:14px;line-height:1.45}
+button{font-family:inherit;cursor:pointer}
+/* Toolbar = bar navy rounded-2xl */
+.toolbar{position:sticky;top:12px;z-index:50;background:var(--navy)!important;color:#fff;margin:12px auto 0;max-width:1180px;width:calc(100% - 32px);border-radius:16px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:0 4px 10px -4px rgba(10,37,64,.4);border:0}
+.toolbar h1{font-size:15px;margin:0 12px 0 4px;font-weight:700;color:#fff}
+.toolbar .spacer{flex:1}
+.btn{border:0;border-radius:12px;padding:8px 13px;font-size:13px;font-weight:600;background:rgba(255,255,255,.1);color:#fff;transition:background .15s,transform .1s}
+.btn:hover{background:rgba(255,255,255,.2)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--gold);color:var(--navy)}
+.btn.primary:hover{background:var(--amber);filter:none}
+.btn.green{background:var(--ok);color:#fff}
+.btn.green:hover{background:#065F46}
+.btn.ghost{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.hint,.status{font-size:12px;color:#BFDBFE}
+/* Susun atur */
+.wrap{max-width:1180px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+@media(max-width:1000px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.side{position:sticky;top:84px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(15,23,42,.06);overflow:hidden}
+.card h3{margin:0;padding:12px 16px;font-size:13px;font-weight:700;background:var(--navy);border-bottom:3px solid var(--gold);color:#fff}
+.card .body{padding:14px 16px}
+/* Kertas sebut harga (warna dokumen kekal formal) */
+#paper{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(15,23,42,.06);padding:26px 30px;overflow:hidden}
+[contenteditable]{outline:none}
+[contenteditable]:focus{background:#FEFCE8;border-radius:3px;box-shadow:0 0 0 2px var(--gold)}
+[contenteditable]:hover{background:var(--light);border-radius:3px}
+.lh{display:flex;gap:16px;align-items:flex-start;border-bottom:3px double var(--navy);padding-bottom:12px}
+.lh .logo{width:90px;height:90px;flex:none;border:1px dashed var(--line3);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg);cursor:pointer;text-align:center;font-size:10px;color:var(--muted)}
+.lh .logo img{width:100%;height:100%;object-fit:contain}
+.lh .co{flex:1;min-width:0}
+.lh .co .name{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:.2px}
+.lh .co .reg{font-size:11px;color:var(--muted)}
+.lh .co .role{font-size:12px;font-weight:600;color:var(--blue);margin-top:2px}
+.lh .people{font-size:10.5px;color:var(--ink);margin-top:6px;line-height:1.35}
+.lh .people b{color:var(--navy)}
+.addr{font-size:10.5px;color:var(--ink);margin-top:8px;line-height:1.4;border-top:1px solid var(--line);padding-top:6px;overflow-wrap:anywhere}
+.refrow{display:flex;justify-content:space-between;gap:12px;margin-top:14px;font-size:12.5px}
+.refrow .col{white-space:pre-wrap}
+.clientbox{margin-top:10px;font-size:12.5px;line-height:1.5}
+.title{margin:16px 0 10px;font-weight:800;text-align:center;text-transform:uppercase;font-size:13.5px;line-height:1.5;color:var(--ink)}
+.intro{font-size:12.5px;text-align:justify;margin:8px 0}
+.sub{font-weight:800;font-size:12.5px;margin:14px 0 6px;color:var(--navy)}
+table.items{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+table.items th,table.items td{border:1px solid var(--line3);padding:6px 7px;vertical-align:top}
+table.items th{background:var(--navy);color:#fff;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.04em}
+table.items td.c{text-align:center}
+table.items td.r{text-align:right}
+table.items tfoot td{font-weight:700;background:var(--bg)}
+table.items tfoot tr:last-child td{background:var(--light);color:var(--navy)}
+.rowbtns{display:flex;gap:3px}
+.minibtn{border:1px solid var(--line3);background:#fff;border-radius:8px;width:26px;height:26px;line-height:1;font-size:13px;color:var(--muted);transition:background .15s,color .15s}
+.minibtn:hover{background:var(--dangerBg);color:var(--danger)}
+.minibtn.add:hover{background:var(--okBg);color:var(--ok)}
+table.mini{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+table.mini th,table.mini td{border:1px solid var(--line3);padding:6px 8px}
+table.mini th{background:var(--bg);color:var(--navy)}
+.gantt input{width:16px}
+.signrow{display:flex;justify-content:space-between;gap:30px;margin-top:34px;font-size:12px}
+.signbox{flex:1;text-align:center}
+.signline{border-top:1px solid #333;margin-top:40px;padding-top:4px}
+.bank{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:9px 12px;margin-top:14px;font-size:12px;display:inline-block;max-width:100%}
+.fields{margin-top:12px;font-size:12px;line-height:2.1}
+.dotline{border-bottom:1px dotted #333;display:inline-block;min-width:min(230px,100%)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.field input,.field textarea,.field select{padding:8px 10px;font-size:12.5px}
+.field textarea{resize:vertical;min-height:52px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.refsearch{margin-bottom:8px}
+.reflist{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.refitem{padding:8px 10px;border-bottom:1px solid var(--soft);font-size:11.5px;cursor:pointer;transition:background .15s}
+.refitem:hover{background:var(--light)}
+.refitem .r1{font-weight:700;color:var(--navy)}
+.refitem .r2{color:var(--muted);margin-top:1px}
+.refitem .r3{color:var(--ok);font-weight:700;margin-top:2px}
+.note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4}
+@media(max-width:640px){
+  .toolbar{position:static;width:calc(100% - 24px);padding:10px}
+  .toolbar h1{flex:1 1 100%;margin:2px 4px 4px}
+  .toolbar .btn{flex:1 1 calc(50% - 8px);text-align:center}
+  .toolbar .spacer{display:none}
+  .wrap{padding:0 12px;margin:14px auto}
+  .side{position:static}
+  #paper{padding:16px 14px}
+  .lh{flex-direction:column}
+  .refrow{flex-direction:column}
+  .refrow .col[style*="right"]{text-align:left!important}
+  .signrow{flex-direction:column;gap:10px}
+  .two{grid-template-columns:minmax(0,1fr)}
+  table.items.jm-cards tfoot,table.items.jm-cards tfoot tr{display:block}
+  table.items.jm-cards tfoot td{display:inline-block!important;width:auto!important;border:0!important;background:none!important;padding:4px 0!important}
+  table.items.jm-cards tfoot tr{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin-bottom:8px;display:flex!important;justify-content:space-between;gap:10px}
+  table.items.jm-cards tfoot td:empty{display:none!important}
+}
+@media print{
+  .toolbar,.side,.no-print{display:none!important}
+  .wrap{display:block;margin:0;padding:0;max-width:none}
+  #paper{border:0;box-shadow:none;border-radius:0;padding:10mm 12mm}
+  body{background:#fff}
+  [contenteditable]:hover,[contenteditable]:focus{background:transparent;box-shadow:none}
+  .minibtn,.rowbtns{display:none!important}
+  table.items th:last-child,table.items td:last-child{display:none}
+  @page{size:A4;margin:12mm}
+}
+
+/* ============================================================
+   JM MOBILE — skrin ≤ 640px: tiada scroll ke tepi.
+   Jadual bertukar jadi kad; label lajur diisi oleh skrip jmCards().
+   ============================================================ */
+html,body{max-width:100%;overflow-x:hidden}
+@media (max-width:640px){
+  .tbl,.tw,.table-responsive,.tbl-wrap{overflow:visible!important;border:0!important;background:none!important;margin:0!important;border-radius:0!important;max-height:none!important}
+  table.jm-cards{min-width:0!important;width:100%!important;border:0!important;background:none!important;border-collapse:separate!important}
+  table.jm-cards thead{display:none!important}
+  table.jm-cards,table.jm-cards tbody,table.jm-cards tfoot,table.jm-cards tr,table.jm-cards td{display:block!important;width:100%!important;max-width:none!important}
+  table.jm-cards tr{position:relative;background:#fff;border:1px solid #E2E8F0;border-radius:12px;margin:0 0 10px;padding:4px 14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  table.jm-cards tbody tr:hover td,table.jm-cards tbody tr:hover{background:#fff!important}
+  table.jm-cards td{position:relative;padding:9px 0 9px 40%!important;min-height:36px;border:0!important;border-bottom:1px solid #F1F5F9!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere;background:none!important;box-shadow:none!important}
+  table.jm-cards td:last-child{border-bottom:0!important}
+  table.jm-cards td::before{content:attr(data-label);position:absolute;left:0;top:9px;width:36%;font-size:10.5px;font-weight:600;line-height:1.35;text-transform:uppercase;letter-spacing:.05em;color:#64748B;white-space:normal}
+  /* sel pertama = tajuk kad: label di atas, nilai penuh lebar */
+  table.jm-cards td:first-child:not(.jm-full){padding:10px 0!important;font-size:14px}
+  table.jm-cards td:first-child:not(.jm-full)::before{position:static;display:block;width:auto;margin-bottom:3px}
+  /* sel tanpa label (cth. butang padam) */
+  table.jm-cards td.jm-nolabel{padding-left:0!important;text-align:right!important}
+  table.jm-cards td.jm-nolabel::before{display:none}
+  /* baris colspan (kategori, kosong, memuatkan) */
+  table.jm-cards td.jm-full{padding:12px 0!important;text-align:center!important;border-bottom:0!important}
+  table.jm-cards td.jm-full::before{display:none}
+  table.jm-cards tr:has(> td.jm-full:only-child){padding:0 14px}
+  table.jm-cards td.category-banner,table.jm-cards .category-banner td{text-align:left!important;padding:10px 14px!important;border-radius:10px;margin:0 -14px;width:calc(100% + 28px)!important}
+  table.jm-cards td.category-banner{background:#0A2540!important;color:#fff!important;box-shadow:inset 4px 0 0 #FACC15!important}
+  table.jm-cards tr:has(> td.category-banner){background:none;border:0;box-shadow:none;padding:0}
+  /* kandungan dalam sel */
+  table.jm-cards td .prog,table.jm-cards td .mini{min-width:0;max-width:100%}
+  table.jm-cards td input,table.jm-cards td select,table.jm-cards td textarea{width:100%;max-width:100%}
+  table.jm-cards td .tick-group{flex-wrap:wrap}
+  table.jm-cards td .clip{max-width:100%;white-space:normal}
+  img,video,canvas,svg{max-width:100%}
+}
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"><style id="jm-theme">body{font-family:'IBM Plex Sans','Segoe UI',system-ui,Arial,sans-serif!important}:root{--brand:#13277a;--brand2:#2a4fd6;--accent:#f2b705;--bg:#f5f6fa}
-  .toolbar{background:#0f1f5c!important;border-bottom:3px solid #f2b705}
-  .btn.primary{color:#141a2e}</style></head>
-<body>
-<div class="toolbar no-print">
-  <h1>📄 Quotation Generator</h1>
-  <button class="btn primary" onclick="window.print()">🖨 Print / Save PDF</button>
-  <button class="btn green" onclick="saveLocal()">💾 Save</button>
-  <button class="btn" onclick="newQuote()">➕ New</button>
-  <button class="btn" onclick="exportJSON()">⬇ Backup</button>
-  <label class="btn ghost" style="margin:0">⬆ Restore<input type="file" accept="application/json" style="display:none" onchange="importJSON(this)"></label>
-  <div class="spacer"></div>
-  <span class="status" id="status"></span>
-</div>
-<div class="wrap">
-  <!-- ============ PAPER ============ -->
-  <div id="paper">
-    <!-- Letterhead -->
-    <div class="lh">
-      <div class="logo" id="logoBox" title="Click to upload your company logo">
-        <span id="logoPlaceholder">Click to<br>add logo</span>
-        <input type="file" id="logoInput" accept="image/*" style="display:none">
-      </div>
-      <div class="co">
-        <div class="name" contenteditable="true">JURUKUR MAHABOB & CO. SDN. BHD.</div>
-        <div class="reg" contenteditable="true">(581048-T) &nbsp;|&nbsp; Jurukur Tanah Yang Dilesen Di Bawah Akta 458 (Disemak 1991)</div>
-        <div class="role" contenteditable="true">Licensed Land Surveyors &nbsp;•&nbsp; Land Development Consultant &nbsp;•&nbsp; Perunding Pembangunan Tanah</div>
-        <div class="people" contenteditable="true"><b>Sr. Hj. Alias B. Hj. Ibrahim</b> &ndash; M.Sc.(LAD) UTM, B.Sc.(Hons) Surv. Sc. Newcastle UK, DipLS (UiTM), MISM, MAALS<br><b>Sr Dr. Mohd Yunus Bin Mohd Yusoff, AMN, FRISM, MAALS</b> &ndash; PhD in Eng. Surv. & Space Geodesy (Nottingham UK), MPhil in Geodesy (Newcastle UK), BSc(Hons.) Surv. Sc. (Newcastle UK)</div>
-      </div>
-    </div>
-    <div class="addr" contenteditable="true"><b>PAHANG:</b> No.43, Jalan Sekilau 1, Bukit Sekilau, 25200 Kuantan, Pahang D.M. &nbsp;Tel: 09-5126688 &nbsp;Fax: 09-5145804 &nbsp;Email: jmcsbk@gmail.com<br><b>SELANGOR:</b> No.14A, Jalan SG3/5, Pusat Bandar Sri Gombak, 68100 Batu Caves, Selangor. &nbsp;H/P: 019-9151777 &nbsp;E-mail: jmcsbk@gmail.com</div>
-
-    <!-- Reference row -->
-    <div class="refrow">
-      <div class="col">Bil Kami / Our Ref: <b contenteditable="true" id="ourRef">MC(P) SHE/2026(066)</b><br>Bil Tuan / Your Ref: <span contenteditable="true" id="yourRef">&mdash;</span></div>
-      <div class="col" style="text-align:right">Tarikh / Date: <b contenteditable="true" id="qDate">29 July 2026</b></div>
-    </div>
-
-    <!-- Client -->
-    <div class="clientbox" contenteditable="true" id="clientBox"><b>YP Maintenance Sdn Bhd</b><br>B800, Jalan Bukit Ubi, Taman Sungai Charu, 25200 Kuantan, Pahang<br>U/p (Attn): En. Norman</div>
-
-    <!-- Title -->
-    <div class="title" contenteditable="true" id="qTitle">SEBUTHARGA BAGI KERJA UKUR BAGI CADANGAN MEMBAIK PULIH STRUKTUR CERUN RUNTUH SERTA KERJA-KERJA BERKAITAN DI JALAN SULTAN HAJI AHMAD SHAH (NO MARRIS: 10024) SEKSYEN 1.30, DAERAH CAMERON HIGHLANDS, PAHANG DARUL MAKMUR</div>
-
-    <div class="intro" contenteditable="true" id="qIntro">Adalah dengan hormatnya merujuk kepada perkara di atas, pihak kami mengucapkan ribuan terima kasih kerana telah menjemput kami mengemukakan sebut harga bagi kerja-kerja tersebut.</div>
-
-    <div class="sub">SEBUT HARGA UNTUK KERJA UKUR / QUOTATION FOR SURVEY WORK</div>
-
-    <!-- Items -->
-    <table class="items" id="itemsTable">
-      <thead>
-        <tr>
-          <th style="width:34px">Bil.</th>
-          <th style="width:52px">Ref</th>
-          <th>Butiran / Description</th>
-          <th style="width:58px">Unit</th>
-          <th style="width:62px">Qty</th>
-          <th style="width:84px">Kadar (RM)</th>
-          <th style="width:96px">Jumlah (RM)</th>
-          <th class="no-print" style="width:56px"></th>
-        </tr>
-      </thead>
-      <tbody id="itemsBody"></tbody>
-      <tfoot>
-        <tr><td colspan="6" class="r">Jumlah / Subtotal</td><td class="r" id="subTotal">0.00</td><td class="no-print"></td></tr>
-        <tr><td colspan="5" class="r">Cukai Perkhidmatan / Service Tax</td><td class="c"><span contenteditable="true" id="taxRate">8</span>%</td><td class="r" id="taxAmt">0.00</td><td class="no-print"></td></tr>
-        <tr><td colspan="6" class="r">Jumlah Keseluruhan / Grand Total (RM)</td><td class="r" id="grandTotal">0.00</td><td class="no-print"></td></tr>
-      </tfoot>
-    </table>
-    <button class="minibtn add no-print" onclick="addRow()" style="width:auto;padding:5px 12px;margin-top:
+<!-- ==== TAMPAL skrip ini betul-betul sebelum </body> ==== -->
+<script>
+/* JM MOBILE — isi data-label setiap sel jadual daripada header (sokong rowspan/colspan).
+   Tak sentuh data atau logic; jalan semula bila jadual dirender semula. */
+(function(){
+  'use strict';
+  function txt(el){ return el.textContent.replace(/[▲▼⇅]/g,'').replace(/\s+/g,' ').trim(); }
+  function headLabels(table){
+    const rows = table.tHead ? Array.from(table.tHead.rows) : [];
+    if (!rows.length) return null;
+    const grid = [];
+    rows.forEach(function(tr, r){
+      grid[r] = grid[r] || [];
+      let c = 0;
+      Array.from(tr.cells).forEach(function(cell){
+        while (grid[r][c]) c++;
+        const cs = cell.colSpan || 1, rs = cell.rowSpan || 1, t = txt(cell);
+        for (let i = 0; i < rs; i++) { grid[r+i] = grid[r+i] || []; for (let j = 0; j < cs; j++) grid[r+i][c+j] = { t: t }; }
+        c += cs;
+      });
+    });
+    const n = Math.max.apply(null, grid.map(function(g){ return g.length; }));
+    const out = [];
+    for (let c = 0; c < n; c++) {
+      const parts = [];
+      grid.forEach(function(g){ const x = g[c]; if (x && x.t && parts[parts.length-1] !== x.t) parts.push(x.t); });
+      out.push(parts.join(' · '));
+    }
+    return out;
+  }
+  function label(table){
+    const labels = headLabels(table);
+    if (!labels) return;
+    table.classList.add('jm-cards');
+    const n = labels.length;
+    Array.from(table.tBodies).forEach(function(tb){
+      const occ = [];
+      Array.from(tb.rows).forEach(function(tr, r){
+        occ[r] = occ[r] || [];
+        let c = 0;
+        Array.from(tr.cells).forEach(function(cell){
+          while (occ[r][c]) c++;
+          const cs = cell.colSpan || 1, rs = cell.rowSpan || 1;
+          for (let i = 0; i < rs; i++) { occ[r+i] = occ[r+i] || []; for (let j = 0; j < cs; j++) occ[r+i][c+j] = 1; }
+          const full = cs > 1 && cs >= Math.ceil(n / 2);
+          cell.classList.toggle('jm-full', full);
+          const lab = full ? '' : (labels[c] || '');
+          if (cell.getAttribute('data-label') !== lab) cell.setAttribute('data-label', lab);
+          cell.classList.toggle('jm-nolabel', !full && !lab);
+          c += cs;
+        });
+      });
+    });
+  }
+  let queued = false;
+  function run(){ queued = false; document.querySelectorAll('table').forEach(label); }
+  function schedule(){ if (!queued) { queued = true; requestAnimationFrame(run); } }
+  function start(){
+    run();
+    new MutationObserver(function(muts){
+      for (const m of muts) { if (m.type === 'childList') { schedule(); return; } }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
