@@ -306,7 +306,7 @@ html,body{max-width:100%;overflow-x:hidden}
       <h3>Ringkasan</h3>
       <div class="body">
         <div class="two">
-          <div class="field"><label>Bil. item</label><input id="sumItems" readonly></div>
+          <div class="field"><label for="sumItems">Bil. item</label><input id="sumItems" type="number" min="0" max="300" step="1" inputmode="numeric" title="Taip bilangan item — baris akan ditambah atau dibuang dari bawah"></div>
           <div class="field"><label>SST (%)</label><input id="sideTax" type="number" min="0" step="0.5"></div>
         </div>
         <div class="field"><label>Jumlah sebelum SST (RM)</label><input id="sumSub" readonly></div>
@@ -381,7 +381,7 @@ function recalc(){
   let sub=0;items.forEach(it=>{sub+=num(it.qty)*num(it.rate);});
   const tax=num($('taxRate').textContent),taxAmt=sub*tax/100,total=sub+taxAmt;
   $('subTotal').textContent=money(sub);$('taxAmt').textContent=money(taxAmt);$('grandTotal').textContent=money(total);
-  $('sumItems').value=items.length;$('sumSub').value=money(sub);$('sumTotal').value=money(total);
+  if(document.activeElement!==$('sumItems'))$('sumItems').value=items.length;$('sumSub').value=money(sub);$('sumTotal').value=money(total);
   if(document.activeElement!==$('sideTax'))$('sideTax').value=tax;
 }
 /* Edit dalam jadual: kemas kini model tanpa render semula (supaya kursor tak lari) */
@@ -410,6 +410,28 @@ function moveRow(i,d){const j=i+d;if(j<0||j>=items.length)return;[items[i],items
 $('taxRate').addEventListener('input',()=>{recalc();autosave();});
 $('sideTax').addEventListener('input',function(){$('taxRate').textContent=this.value===''?'0':this.value;recalc();autosave();});
 $('paper').addEventListener('input',e=>{if(!e.target.closest('#itemsBody'))autosave();});
+
+/* Bil. item (panel Ringkasan): taip bilangan → baris ditambah/dibuang dari bawah */
+const MAX_ITEMS=300;
+function setItemCount(){
+  const el=$('sumItems');
+  let n=Math.round(num(el.value));
+  if(!isFinite(n)||n<0)n=0;
+  if(n>MAX_ITEMS){n=MAX_ITEMS;status('Maksimum '+MAX_ITEMS+' item');}
+  if(n===items.length){el.value=n;return;}
+  if(n>items.length){
+    while(items.length<n)items.push(blankItem());
+  }else{
+    const cut=items.slice(n);
+    const filled=cut.filter(it=>String(it.desc).trim()||num(it.rate)>0).length;
+    if(filled&&!confirm('Kurangkan kepada '+n+' item? '+filled+' item di bawah yang sudah diisi akan dipadam.')){el.value=items.length;return;}
+    items=items.slice(0,n);
+  }
+  renderRows();autosave();el.value=items.length;
+  status(items.length+' item');
+}
+$('sumItems').addEventListener('change',setItemCount);
+$('sumItems').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('sumItems').blur();}});
 
 /* ================= LOGO ================= */
 function showLogo(){
