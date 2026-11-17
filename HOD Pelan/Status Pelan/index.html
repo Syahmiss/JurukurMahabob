@@ -39,7 +39,6 @@
   .tabnav span{font-size:12px;color:#BFDBFE;padding:0 4px;white-space:nowrap}
   .sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#D1FAE5;background:rgba(5,150,105,.18);border:1px solid rgba(52,211,153,.35);padding:6px 10px;border-radius:999px;white-space:nowrap}
   .sync::before{content:"";width:8px;height:8px;border-radius:50%;background:#34D399}
-  .sync.ro{color:#FEF9C3;background:rgba(250,204,21,.12);border-color:rgba(250,204,21,.35)}.sync.ro::before{background:var(--gold)}
   .sync.err{color:#FECACA;background:rgba(220,38,38,.18);border-color:rgba(248,113,113,.4)}.sync.err::before{background:#F87171}
   .btn{border:1px solid var(--line3);background:#fff;color:var(--navy);padding:8px 14px;border-radius:12px;cursor:pointer;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
   .btn:hover{border-color:var(--royal);background:var(--light)}
@@ -61,7 +60,6 @@
   .me{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:12px;padding:3px 4px 3px 10px;font-size:12px;color:#BFDBFE;font-weight:600}
   .me select{background:#fff;border:0;border-radius:9px;padding:6px 8px;font-weight:700;color:var(--navy);max-width:150px}
   .me.set{background:rgba(250,204,21,.18)}
-  .admin{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--navy);background:var(--gold);padding:7px 12px;border-radius:12px}
   .scopebar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:16px;font-size:13px}
   .scopebar b{color:var(--navy)}
   .sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--navy);user-select:none}
@@ -167,7 +165,6 @@
   .tfoot span{display:inline-flex;align-items:center;gap:5px;margin-left:12px}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
   .empty{padding:30px;text-align:center;color:var(--muted)}
-  .lock{font-size:11px;color:var(--muted)}
 
   .dcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
   .dc{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;display:grid;gap:8px}
@@ -267,8 +264,7 @@
     <button class="icon" id="btnRefresh" title="Refresh data">↻</button>
     <span class="sync" id="sync">Memuatkan…</span>
     <label class="me" id="failBox">Fail:<select id="failSel" aria-label="Pilih No. Fail"></select></label>
-    <label class="me" id="meBox">Saya:<select id="meSel" aria-label="Pilih nama anda"></select></label>
-    <span class="admin" id="adminTag" style="display:none">★ Admin</span>
+    <label class="me" id="meBox" title="Pilihan — untuk tanda tugasan anda & rekod siapa buat perubahan">Saya:<select id="meSel" aria-label="Pilih nama anda"></select></label>
     <button class="btn ghost" id="btnProj">＋ Projek / Fail Baru</button>
     <button class="btn primary" id="btnAdd">＋ Tambah Lukisan</button>
   </div>
@@ -290,12 +286,10 @@
 
   /* ===================== KONFIGURASI ===================== */
   const CFG = {
-    // URL Web App Apps Script (hujung /exec). Bila diisi, dashboard boleh EDIT walaupun di-host di GitHub Pages.
+    // WAJIB untuk GitHub Pages: URL Web App Apps Script (hujung /exec).
     // Ambil dari: Apps Script > Deploy > Manage deployments > salin "Web app URL".
+    // Bila dibuka terus dari Apps Script, URL ini tak digunakan (terus guna google.script.run).
     API_URL: 'https://script.google.com/macros/s/GANTI_DENGAN_ID_DEPLOYMENT/exec',
-    // Sandaran baca sahaja kalau API_URL belum diisi.
-    PUB_BASE: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRGX1gn5aw6d1n7HR8CmMRHWwbnmrbsBvPW6DeumgL1eb1agr6dLIGljg6Y-3Y_r4JY6bLAzIY2dPiY/pub',
-    GID: { drawing: 1234821951, projek: 108603456 },
     // Senarai lalai — dipakai bila dropdown dalam Sheet tak dapat dibaca
     DEFAULTS: {
       drafter: ['BELLA','HANA','NAIM','ALIF','SYANA','SYAZANA'],
@@ -332,7 +326,7 @@
   // Panggil fungsi server: google.script.run (dalam Apps Script) atau POST ke Web App (GitHub Pages)
   const run = (fn, ...args) => {
     if (IS_GAS) return new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](...args));
-    if (!HAS_API) return Promise.reject(new Error('Mod baca sahaja — API_URL belum diisi.'));
+    if (!HAS_API) return Promise.reject(new Error('API_URL belum diisi. Cari GANTI_DENGAN_ID_DEPLOYMENT dalam fail HTML dan masukkan URL Web App (/exec).'));
     // text/plain = tiada CORS preflight (Apps Script tak sokong OPTIONS)
     return fetch(CFG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }), cache: 'no-store' })
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
@@ -343,20 +337,6 @@
       });
   };
 
-  function parseCsv(text){
-    text = text.replace(/^﻿/, '');
-    const rows = []; let row = [], f = '', q = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (q) { if (c === '"') { if (text[i+1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
-      else if (c === '"') q = true;
-      else if (c === ',') { row.push(f); f = ''; }
-      else if (c === '\n') { row.push(f); rows.push(row); row = []; f = ''; }
-      else if (c !== '\r') f += c;
-    }
-    if (f !== '' || row.length) { row.push(f); rows.push(row); }
-    return rows;
-  }
   function toDate(s){
     s = norm(s); let m;
     if ((m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/))) { const d = new Date(+m[3], +m[2]-1, +m[1]); return d.getMonth() === +m[2]-1 ? d : null; }
@@ -389,9 +369,9 @@
   const avColor = n => AV[[...String(n)].reduce((a, c) => a + c.charCodeAt(0), 0) % AV.length];
 
   /* ===================== STATE ===================== */
-  let REC = [], PRJ = new Map(), ORDER = [], OPT = {}, OPTP = {}, IS_ADMIN = false, DRAFTER_SEMAK = ['Belum Dihantar','Menunggu Semakan'];
-  let READONLY = !IS_GAS && !HAS_API, fetchedAt = null, loading = false;
-  let USER = null;                                // { name, role: 'admin' | 'drafter' }
+  let REC = [], PRJ = new Map(), ORDER = [], OPT = {}, OPTP = {};
+  let fetchedAt = null, loading = false;
+  // Nama pengguna (pilihan): tanda "Tugasan Saya" & rekod siapa buat perubahan. Wajib hanya untuk padam.
   let ME = (() => { try { return localStorage.getItem('jm_me') || ''; } catch (e) { return ''; } })();
   let view = '__P';                               // '__P' = portfolio, selain itu = kod projek
   const UI = { q:'', status:'', drafter:'', semak:'', sort:'sheet', mode:'table', mine:false, perfAll:false, siteCompare:false,
@@ -446,10 +426,7 @@
     };
     const op = raw.optionsP || {};
     OPTP = { skop: op.skop && op.skop.length ? op.skop : ['TOPO','UMAP','TOPO & UMAP'], status: op.status && op.status.length ? op.status : ['Belum Mula','Dalam Proses','Selesai'] };
-    IS_ADMIN = !!raw.isAdmin;
     if (ME && !OPT.drafter.some(d => key(d) === key(ME))) ME = '';
-    USER = IS_ADMIN ? { name: 'Admin', role: 'admin' } : (ME ? { name: ME, role: 'drafter' } : null);
-    if (raw.drafterSemak) DRAFTER_SEMAK = raw.drafterSemak;
     PINFO = new Map(); ORDER.forEach(k => PINFO.set(k, computeInfo(k)));
     FAILS = [...new Set(ORDER.map(k => PINFO.get(k).fail))];
     if (UI.fail && !FAILS.includes(UI.fail)) UI.fail = '';
@@ -470,16 +447,12 @@
       if (!silent) toast('Gagal baca data: ' + (e.message || e), true);
       if (!REC.length) $('main').innerHTML = `<div class="card empty">Data tak dapat dibaca: ${esc(e.message || e)}</div>`;
     };
-    if (IS_GAS || HAS_API) { run('getDashboardData').then(done, fail); return; }
-    const url = gid => `${CFG.PUB_BASE}?gid=${gid}&single=true&output=csv&_=${Date.now()}`;
-    const get = (gid, opt) => fetch(url(gid), { cache:'no-store' }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(t => { if (/^\s*</.test(t)) throw new Error('bukan CSV'); return parseCsv(t); }).catch(e => { if (opt) return null; throw e; });
-    Promise.all([get(CFG.GID.drawing), get(CFG.GID.projek, true)]).then(([drawing, projek]) => done({ drawing, projek })).catch(fail);
+    run('getDashboardData').then(done, fail);
   }
   function setSync(){
     const s = $('sync');
-    s.className = 'sync' + (READONLY ? ' ro' : '');
-    s.textContent = READONLY ? 'Baca sahaja (pratonton)' : `Disegerak dengan Google Sheets · ${fetchedAt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}`;
+    s.className = 'sync';
+    s.textContent = `Disegerak dengan Google Sheets · ${fetchedAt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}`;
   }
 
   /* ===================== METRIK ===================== */
@@ -542,13 +515,8 @@
     $('failSel').innerHTML = (FAILS.length > 1 ? `<option value="">Semua Fail (${FAILS.length})</option>` : '') +
       FAILS.map(f => `<option value="${esc(f)}" ${f === UI.fail ? 'selected' : ''}>${esc(f)} (${ORDER.filter(k => projInfo(k).fail === f && !projInfo(k).archived).length} aktif)</option>`).join('');
     if (!UI.fail && FAILS.length === 1) $('failSel').value = FAILS[0];
-    const admin = USER && USER.role === 'admin';
-    $('meBox').style.display = READONLY || admin ? 'none' : '';
     $('meBox').classList.toggle('set', !!ME);
     $('meSel').innerHTML = '<option value="">— Pilih nama —</option>' + OPT.drafter.map(d => `<option ${key(d) === key(ME) ? 'selected' : ''}>${esc(d)}</option>`).join('');
-    $('adminTag').style.display = admin ? '' : 'none';
-    $('btnAdd').style.display = READONLY ? 'none' : '';
-    $('btnProj').style.display = READONLY ? 'none' : '';
   }
   function renderTabbar(){
     const all = sum(portRec());
@@ -595,14 +563,14 @@
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`;
     return `<section class="card">
       <div class="sechd"><div><h2><span class="tagsec">BAHAGIAN A</span> Senarai Lukisan</h2>
-        <p>${USER ? (USER.role === 'admin' ? 'Admin — boleh kemaskini semua lukisan.' : `Anda: <b>${esc(USER.name)}</b> — kemaskini lukisan anda terus dalam jadual (baris bertanda kuning).`) : (READONLY ? 'Mod baca sahaja.' : 'Pilih nama anda di header <b>"Saya:"</b> untuk kemaskini progres lukisan anda.')}</p></div></div>
+        <p>Semua lukisan boleh dikemaskini terus dalam jadual — disimpan ke Google Sheets serta-merta.${ME ? ` Anda: <b>${esc(ME)}</b> (lukisan anda bertanda kuning).` : ' Pilih nama di header <b>"Saya:"</b> untuk tanda lukisan anda.'}</p></div></div>
       <div class="toolbar">
         <input type="search" id="q" placeholder="Cari no. pelan, pelukis, status atau catatan…" value="${esc(UI.q)}">
         <select id="fStatus">${opt('', 'Semua Status', UI.status)}${OPT.status.map(v => opt(v, v, UI.status)).join('')}</select>
         <select id="fDrafter">${opt('', 'Semua Pelukis', UI.drafter)}${OPT.drafter.map(v => opt(v, v, UI.drafter)).join('')}${opt('__none', 'Belum Assign', UI.drafter)}</select>
         <select id="fSemak">${opt('', 'Semua Semakan', UI.semak)}${OPT.semak.map(v => opt(v, v, UI.semak)).join('')}</select>
         <select id="fSort">${[['sheet','Susun: Pelan (1 - 9)'],['sheetDesc','Susun: Pelan (9 - 1)'],['prog','Susun: Progres (rendah)'],['progDesc','Susun: Progres (tinggi)'],['mula','Susun: Tarikh Mula (terkini)'],['drafter','Susun: Pelukis']].map(([v,l]) => opt(v, l, UI.sort)).join('')}</select>
-        ${USER && USER.role === 'drafter' ? `<button class="btn sm mine ${UI.mine ? 'on' : ''}" id="btnMine">★ Tugasan Saya</button>` : ''}
+        ${ME ? `<button class="btn sm mine ${UI.mine ? 'on' : ''}" id="btnMine">★ Tugasan Saya</button>` : ''}
         <span class="seg"><button data-mode="table" class="${UI.mode === 'table' ? 'on' : ''}">☰ Jadual</button><button data-mode="card" class="${UI.mode === 'card' ? 'on' : ''}">▦ Kad</button></span>
       </div>
       <div id="listBody" data-proj="${withProject ? 1 : 0}"></div>
@@ -614,7 +582,7 @@
       (!UI.status || r.status === UI.status) &&
       (!UI.drafter || (UI.drafter === '__none' ? !r.assigned : key(r.drafter) === key(UI.drafter))) &&
       (!UI.semak || (UI.semak === '__none' ? !r.semak : r.semak === UI.semak)) &&
-      (!UI.mine || !USER || USER.role !== 'drafter' || key(r.drafter) === key(USER.name)) &&
+      (!UI.mine || !ME || key(r.drafter) === key(ME)) &&
       (!q || [r.kod, r.nama, r.sheet, r.dwg, r.tajuk, r.drafter, r.status, r.semak, r.catatan].join(' ').toLowerCase().includes(q)));
     const by = {
       sheet: (a, b) => cmp(a.kod, b.kod) || (toNum(a.sheet) || 0) - (toNum(b.sheet) || 0),
@@ -625,42 +593,35 @@
     }[UI.sort];
     return rs.sort((a, b) => by(a, b) || cmp(a.dwg, b.dwg));
   }
-  const canEdit = r => !READONLY && USER && (USER.role === 'admin' || (r.assigned && key(r.drafter) === key(USER.name)));
-  const canAssign = () => !READONLY && !!USER;   // tukar pelukis: semua pengguna bernama, mana-mana baris
   function selectHtml(r, f, list, cur, color){
     const vals = list.includes(cur) || !cur ? list : [cur, ...list];
     return `<select class="ed" data-row="${r.row}" data-f="${f}" style="color:${color || 'var(--text)'};border-color:${color || 'var(--line3)'};background:#fff">
       ${!cur ? '<option value="">— Pilih —</option>' : ''}${vals.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>`;
   }
-  function cell(r, f, ed){
-    const isAdmin = USER && USER.role === 'admin';
+  // Semua medan boleh diedit terus oleh semua pengguna
+  function cell(r, f){
     switch (f) {
       case 'drafter':
-        if (canAssign()) return selectHtml(r, 'drafter', OPT.drafter, r.drafter, r.assigned ? 'var(--navy)' : 'var(--bad)');
-        return r.assigned ? `<b style="color:var(--navy)">${esc(r.drafter)}</b>` : '<span class="late">Belum Assign</span>';
+        return selectHtml(r, 'drafter', OPT.drafter, r.drafter, r.assigned ? 'var(--navy)' : 'var(--bad)');
       case 'status':
-        return ed ? selectHtml(r, 'status', OPT.status, r.status, ST[r.sk].c) : `<span class="pill" style="color:${ST[r.sk].c}">${esc(r.status)}</span>`;
+        return selectHtml(r, 'status', OPT.status, r.status, ST[r.sk].c);
       case 'prog': {
         const bar = `<span class="b"><i style="width:${r.prog}%;background:${r.prog === 100 ? 'var(--ok)' : 'var(--royal)'}"></i></span>`;
-        if (!ed) return `<div class="pg"><b style="min-width:40px">${r.prog}%</b>${bar}</div>`;
         const vals = OPT.prog.includes(r.prog) ? OPT.prog : [...OPT.prog, r.prog].sort((a, b) => a - b);
         return `<div class="pg"><select class="ed" data-row="${r.row}" data-f="prog">${vals.map(v => `<option value="${v}" ${v === r.prog ? 'selected' : ''}>${v}%</option>`).join('')}</select>${bar}</div>`;
       }
       case 'tempoh':
         return `${r.tempoh !== null ? r.tempoh + ' Hari' : (r.tempohRaw ? esc(r.tempohRaw) : '—')}<span class="auto" title="Dikira oleh formula dalam Sheet">⏱ Auto</span>`;
       case 'mula': case 'siap': {
-        const d = r[f];
-        if (ed) return `<input type="date" class="ed date" data-row="${r.row}" data-f="${f}" value="${iso(d)}">`;
-        return `<span class="${f === 'mula' && r.late ? 'late' : ''}">${fmt(d)}${f === 'mula' && r.late ? ' ⚠' : ''}</span>`;
+        const late = f === 'mula' && r.late;
+        return `<input type="date" class="ed date" data-row="${r.row}" data-f="${f}" value="${iso(r[f])}"${late ? ` style="color:var(--bad);border-color:var(--bad)" title="Lewat — ${r.age} hari sejak Tarikh Mula"` : ''}>`;
       }
       case 'semak': {
         const c = r.semak ? semakColor(r.semak) : 'var(--wait)';
-        if (!ed) return r.semak ? `<span class="pill" style="color:${c}">${esc(r.semak)}</span>` : '<span class="muted">—</span>';
-        const list = isAdmin ? OPT.semak : OPT.semak.filter(v => DRAFTER_SEMAK.includes(v) || v === r.semak);
-        return selectHtml(r, 'semak', list, r.semak, c);
+        return selectHtml(r, 'semak', OPT.semak, r.semak, c);
       }
       case 'catatan':
-        return ed ? `<input class="ed txt" data-row="${r.row}" data-f="catatan" value="${esc(r.catatan)}" maxlength="1000" placeholder="Tambah catatan…">` : esc(r.catatan);
+        return `<input class="ed txt" data-row="${r.row}" data-f="catatan" value="${esc(r.catatan)}" maxlength="1000" placeholder="Tambah catatan…">`;
     }
     return '';
   }
@@ -673,27 +634,26 @@
       <span><i class="dot" style="background:var(--ok)"></i>${s.done} Selesai</span><span><i class="dot" style="background:var(--prog)"></i>${s.prog} Sedang Berjalan</span>
       <span><i class="dot" style="background:var(--warn)"></i>${s.wait} Belum Mula</span>${s.hold ? `<span><i class="dot" style="background:var(--hold)"></i>${s.hold} Ditangguh</span>` : ''}</span></div>`;
     if (!rs.length) { host.innerHTML = `<div class="tbl"><div class="empty">Tiada lukisan sepadan dengan tapisan.</div></div>` + foot; return; }
-    const mineCls = r => USER && USER.role !== 'admin' && key(r.drafter) === key(USER.name) ? 'mine' : '';
-    const isAdm = !READONLY;   // semua pengguna boleh padam (perlu pilih nama)
+    const mineCls = r => ME && key(r.drafter) === key(ME) ? 'mine' : '';
     const delBtn = r => `<button class="del" data-del="${r.row}" title="Padam ${esc(r.dwg)}" aria-label="Padam ${esc(r.dwg)}">🗑</button>`;
     if (UI.mode === 'card') {
-      host.innerHTML = `<div class="dcards">${rs.map(r => { const ed = canEdit(r); return `<div class="dc ${mineCls(r)}" data-rowbox="${r.row}">
-        <div class="hd"><div><span class="no">${esc(r.sheet || '—')}</span> <b>${esc(r.dwg)}</b><div class="muted" style="font-size:12px">${withProject ? esc(r.kod) + ' · ' : ''}${esc(r.tajuk)}</div></div>${isAdm ? delBtn(r) : (ed ? '' : '<span class="lock">🔒</span>')}</div>
-        <div class="row"><span>Pelukis</span><span>${cell(r, 'drafter', ed)}</span></div>
-        <div class="row"><span>Status</span><span>${cell(r, 'status', ed)}</span></div>
-        <div class="row"><span>Peratus</span><span>${cell(r, 'prog', ed)}</span></div>
-        <div class="row"><span>Tempoh</span><span>${cell(r, 'tempoh', ed)}</span></div>
-        <div class="row"><span>Tarikh Mula</span><span>${cell(r, 'mula', ed)}</span></div>
-        <div class="row"><span>Tarikh Siap</span><span>${cell(r, 'siap', ed)}</span></div>
-        <div class="row"><span>Semakan</span><span>${cell(r, 'semak', ed)}</span></div>
-        <div class="row"><span>Catatan</span><span>${cell(r, 'catatan', ed)}</span></div></div>`; }).join('')}</div>` + foot;
+      host.innerHTML = `<div class="dcards">${rs.map(r => { return `<div class="dc ${mineCls(r)}" data-rowbox="${r.row}">
+        <div class="hd"><div><span class="no">${esc(r.sheet || '—')}</span> <b>${esc(r.dwg)}</b><div class="muted" style="font-size:12px">${withProject ? esc(r.kod) + ' · ' : ''}${esc(r.tajuk)}</div></div>${delBtn(r)}</div>
+        <div class="row"><span>Pelukis</span><span>${cell(r, 'drafter')}</span></div>
+        <div class="row"><span>Status</span><span>${cell(r, 'status')}</span></div>
+        <div class="row"><span>Peratus</span><span>${cell(r, 'prog')}</span></div>
+        <div class="row"><span>Tempoh</span><span>${cell(r, 'tempoh')}</span></div>
+        <div class="row"><span>Tarikh Mula</span><span>${cell(r, 'mula')}</span></div>
+        <div class="row"><span>Tarikh Siap</span><span>${cell(r, 'siap')}</span></div>
+        <div class="row"><span>Semakan</span><span>${cell(r, 'semak')}</span></div>
+        <div class="row"><span>Catatan</span><span>${cell(r, 'catatan')}</span></div></div>`; }).join('')}</div>` + foot;
       return;
     }
-    host.innerHTML = `<div class="tbl"><table><thead><tr>${withProject ? '<th>Projek</th>' : ''}<th># Pelan</th><th>No. Drawing</th><th>Tajuk</th><th>Pelukis Pelan</th><th>Status Kemajuan</th><th>Peratus Siap (%)</th><th>Tempoh Masa</th><th>Tarikh Mula</th><th>Tarikh Siap</th><th>Status Semakan</th><th>Catatan</th>${isAdm ? '<th class="act"></th>' : ''}</tr></thead>
-      <tbody>${rs.map(r => { const ed = canEdit(r); return `<tr class="${mineCls(r)}" data-rowbox="${r.row}">
+    host.innerHTML = `<div class="tbl"><table><thead><tr>${withProject ? '<th>Projek</th>' : ''}<th># Pelan</th><th>No. Drawing</th><th>Tajuk</th><th>Pelukis Pelan</th><th>Status Kemajuan</th><th>Peratus Siap (%)</th><th>Tempoh Masa</th><th>Tarikh Mula</th><th>Tarikh Siap</th><th>Status Semakan</th><th>Catatan</th><th class="act"></th></tr></thead>
+      <tbody>${rs.map(r => { return `<tr class="${mineCls(r)}" data-rowbox="${r.row}">
         ${withProject ? `<td><b>${esc(r.kod)}</b></td>` : ''}<td><span class="no">${esc(r.sheet || '—')}</span></td><td>${esc(r.dwg)}</td><td>${esc(r.tajuk)}</td>
-        <td>${cell(r, 'drafter', ed)}</td><td>${cell(r, 'status', ed)}</td><td>${cell(r, 'prog', ed)}</td><td>${cell(r, 'tempoh', ed)}</td>
-        <td>${cell(r, 'mula', ed)}</td><td>${cell(r, 'siap', ed)}</td><td>${cell(r, 'semak', ed)}</td><td class="${ed ? '' : 'wrap'}">${cell(r, 'catatan', ed)}</td>${isAdm ? `<td class="act">${delBtn(r)}</td>` : ''}</tr>`; }).join('')}</tbody></table></div>` + foot;
+        <td>${cell(r, 'drafter')}</td><td>${cell(r, 'status')}</td><td>${cell(r, 'prog')}</td><td>${cell(r, 'tempoh')}</td>
+        <td>${cell(r, 'mula')}</td><td>${cell(r, 'siap')}</td><td>${cell(r, 'semak')}</td><td>${cell(r, 'catatan')}</td><td class="act">${delBtn(r)}</td></tr>`; }).join('')}</tbody></table></div>` + foot;
   }
 
   /* ---------- Prestasi pelukis (Bahagian B) ---------- */
@@ -764,18 +724,18 @@
         <td><div class="pn">${esc(p.nama || p.kod)}${p.isNew ? ' <span class="pct" style="background:var(--gold);color:var(--navy)">BARU</span>' : ''}</div><div class="sk">${esc(p.kod)}${p.skop ? ' · ' + esc(p.skop) : ''}</div></td>
         <td class="sp"><div class="r"><span style="color:${pc}">${esc(p.status || pl)}</span><span>${p.s.done}/${p.s.n} (${p.pct}%)</span></div><div class="bar"><i style="width:${p.pct}%;background:${p.pct === 100 ? 'var(--ok)' : 'var(--royal)'}"></i></div></td>
         <td style="white-space:normal;min-width:200px">${p.isu ? `<span class="isu bad">⚠ Ada Isu</span> ${editIsuBtn(p.kod, 'Kemaskini')}<div class="muted" style="font-size:12px;margin-top:4px">${esc(p.isu)}</div>` : `<span class="isu ok">✓ Tiada Isu</span> ${editIsuBtn(p.kod, '+ Catat Isu')}`}</td>
-        <td class="num" style="white-space:nowrap"><button class="btn sm" data-tab="${esc(p.kod)}">Buka Tab →</button>${READONLY ? '' : ` <button class="del" data-delproj="${esc(p.kod)}" title="Padam projek ${esc(p.kod)}">🗑</button>`}</td></tr>`; };
+        <td class="num" style="white-space:nowrap"><button class="btn sm" data-tab="${esc(p.kod)}">Buka Tab →</button> <button class="del" data-delproj="${esc(p.kod)}" title="Padam projek ${esc(p.kod)}">🗑</button></td></tr>`; };
     const archRow = (p, i) => `<tr><td class="muted">${i + 1}</td><td><div class="pn">${esc(p.nama || p.kod)}</div><div class="sk">${esc(p.kod)}${p.skop ? ' · ' + esc(p.skop) : ''}</div></td>
         <td class="sp"><div class="r"><span style="color:${(PHASE[p.phase] || PHASE.done)[1]}">${esc(p.status || (PHASE[p.phase] || PHASE.done)[0])}</span><span>${p.s.done}/${p.s.n} (${p.pct}%)</span></div><div class="bar"><i style="width:${p.pct}%"></i></div></td>
-        <td>${p.s.approved}/${p.s.n} diluluskan</td><td class="num" style="white-space:nowrap"><button class="btn sm" data-tab="${esc(p.kod)}">Lihat →</button>${READONLY ? '' : ` <button class="del" data-delproj="${esc(p.kod)}" title="Padam projek ${esc(p.kod)}">🗑</button>`}</td></tr>`;
+        <td>${p.s.approved}/${p.s.n} diluluskan</td><td class="num" style="white-space:nowrap"><button class="btn sm" data-tab="${esc(p.kod)}">Lihat →</button> <button class="del" data-delproj="${esc(p.kod)}" title="Padam projek ${esc(p.kod)}">🗑</button></td></tr>`;
     // Ringkasan setiap No. Fail (bila "Semua Fail" & ada lebih dari satu fail)
     const fileCards = !UI.fail && FAILS.length > 1 ? `<section class="card"><div class="sechd"><div><h2>🗂 Ringkasan ikut No. Fail</h2><p>Klik kad untuk tapis seluruh dashboard ikut fail tersebut.</p></div></div>
       <div class="fgrid">${FAILS.map(f => { const ks = ORDER.filter(k => projInfo(k).fail === f), act = ks.filter(k => !projInfo(k).archived), rs = REC.filter(r => ks.includes(r.kod)), s = sum(rs), isu = ks.filter(k => projInfo(k).isu).length;
         return `<button class="fcard" data-fail="${esc(f)}"><div class="fn">${esc(f)}</div><div class="fm"><span>${act.length} aktif · ${ks.length - act.length} selesai</span><span>${isu ? `<span class="late">${isu} isu</span>` : 'Tiada isu'}</span></div>
-          <div class="fm"><span>Lukisan siap</span><b style="color:var(--navy)">${s.done}/${s.n} (${pctOf(s.done, s.n)}%)</b></div><div class="bar" style="margin:0"><i style="width:${pctOf(s.done, s.n)}%"></i></div></button>`; }).join('')}${READONLY ? '' : '<button class="fcard new" data-newproj="">＋ Fail Baru</button>'}</div></section>` : '';
+          <div class="fm"><span>Lukisan siap</span><b style="color:var(--navy)">${s.done}/${s.n} (${pctOf(s.done, s.n)}%)</b></div><div class="bar" style="margin:0"><i style="width:${pctOf(s.done, s.n)}%"></i></div></button>`; }).join('')}<button class="fcard new" data-newproj="">＋ Fail Baru</button></div></section>` : '';
     const scopebar = `<div class="scopebar"><span>Paparan: <b>${esc(failLabel())}</b> · ${P.length} projek aktif${A.length ? ` · ${A.length} selesai (dalam Arkib)` : ''}</span>
       <span style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">${A.length ? `<label class="sw"><input type="checkbox" id="incDone" ${UI.incDone ? 'checked' : ''}> Termasuk projek selesai dalam KPI & senarai</label>` : ''}
-      ${READONLY ? '' : `<button class="btn sm" data-newproj="${esc(UI.fail)}">＋ Projek / Fail Baru</button>`}</span></div>`;
+      <button class="btn sm" data-newproj="${esc(UI.fail)}">＋ Projek / Fail Baru</button></span></div>`;
     const archive = A.length ? `<section class="card arch"><div class="sechd"><div><h2>📁 Arkib Projek Selesai (${A.length})</h2><p>Projek dengan Status Projek "Selesai" / "Dibatalkan". Disembunyikan dari tab bar — data dalam Sheet tidak diubah.</p></div>
         <button class="btn sm" id="btnArch">${UI.showArchive ? 'Sembunyi ▲' : 'Tunjuk ▼'}</button></div>
         ${UI.showArchive ? `<div class="tbl" style="max-height:none"><table class="ptable"><thead><tr><th>#</th><th>Nama Projek / Tapak</th><th>Status & Kemajuan</th><th>Semakan</th><th class="num">Tindakan</th></tr></thead><tbody>${A.map(archRow).join('')}</tbody></table></div>` : ''}</section>` : '';
@@ -793,7 +753,7 @@
       <div style="height:18px"></div>` + listBlock(true) + perfBlock() + archive;
     renderList();
   }
-  const editIsuBtn = (kod, label, solid) => READONLY ? '' : `<button class="btn ${solid ? 'sm primary' : 'link'}" data-isu="${esc(kod)}">${label}</button>`;
+  const editIsuBtn = (kod, label, solid) => `<button class="btn ${solid ? 'sm primary' : 'link'}" data-isu="${esc(kod)}">${label}</button>`;
 
   /* ---------- PROJEK (TAB) ---------- */
   function renderProject(kod){
@@ -806,7 +766,7 @@
           <div class="meta" style="margin:4px 0 10px">${p.s.done} daripada ${p.s.n} lukisan telah siap sepenuhnya (${p.pct}%)</div>
           ${p.isu ? `<span class="isu bad">⚠ Ada Isu: ${esc(p.isu)}</span> ${editIsuBtn(kod, 'Kemaskini')}` : `<span class="isu ok">✓ Tiada Isu</span> ${editIsuBtn(kod, '+ Catat Isu')}`}
         </div>
-        <div style="display:grid;gap:10px;justify-items:end">${READONLY ? '' : `<button class="btn sm" data-delproj="${esc(kod)}" style="color:var(--bad);border-color:#FECACA">🗑 Padam Projek</button>`}
+        <div style="display:grid;gap:10px;justify-items:end"><button class="btn sm" data-delproj="${esc(kod)}" style="color:var(--bad);border-color:#FECACA">🗑 Padam Projek</button>
         <div class="pick"><label for="pickProj">Pilih Projek:</label><select id="pickProj">${(() => { const o = (k, i) => { const q = projInfo(k); return `<option value="${esc(k)}" ${k === kod ? 'selected' : ''}>${i + 1}. ${esc(q.nama || k)} (${q.s.done}/${q.s.n} Siap)</option>`; };
           const ar = archOrder(); return `<optgroup label="Projek Aktif">${activeOrder().map(o).join('')}</optgroup>${ar.length ? `<optgroup label="Arkib (Selesai)">${ar.map(o).join('')}</optgroup>` : ''}`; })()}</select></div></div>
       </div></section>` + kpiBlock(p.rs) + semakBlock(p.rs) + listBlock(false) + perfBlock();
@@ -817,8 +777,6 @@
   function saveField(rowNo, f, value){
     const r = REC.find(x => x.row === rowNo);
     if (!r) return;
-    if (!USER) { renderList(); return askName(); }
-    if (!(canEdit(r) || (f === 'drafter' && canAssign()))) { toast('Anda tidak dibenarkan ubah lukisan ini.', true); renderList(); return; }
     const box = document.querySelector(`[data-rowbox="${rowNo}"]`); if (box) box.classList.add('saving');
     run('updateDrawing', { row: r.row, dwg: r.dwg, as: ME, changes: { [f]: value } })
       .then(res => {
@@ -833,10 +791,9 @@
   function setMe(name){
     ME = name || '';
     try { if (ME) localStorage.setItem('jm_me', ME); else localStorage.removeItem('jm_me'); } catch (e) {}
-    USER = IS_ADMIN ? { name: 'Admin', role: 'admin' } : (ME ? { name: ME, role: 'drafter' } : null);
-    UI.mine = !!(USER && USER.role === 'drafter');
+    UI.mine = !!ME;
     if (REC.length) render();
-    if (ME) toast(`Hai ${ME} — lukisan anda boleh dikemaskini sekarang.`);
+    if (ME) toast(`Hai ${ME} — lukisan anda ditanda kuning.`);
   }
   const askName = msg => { toast(msg || 'Pilih nama anda di header "Saya:" dahulu.', true); const s = $('meSel'); if (s) { s.focus(); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
   function openModal(title, body, foot){
@@ -847,7 +804,6 @@
   const closeModal = () => $('modalBg').classList.remove('open');
 
   function openIsu(kod){
-    if (!USER) return askName('Pilih nama anda dahulu untuk catat isu.');
     const p = projInfo(kod);
     openModal('Isu Projek', `<div><b>${esc(p.nama || kod)}</b><div class="hint">${esc(kod)}</div></div>
       <div><label for="isuTxt">Isu Tapak</label><textarea id="isuTxt" rows="4" maxlength="1000" placeholder="cth: 1. Heighting baru • 2. Contour baru">${esc(p.isu)}</textarea></div>
@@ -861,7 +817,6 @@
       .catch(e => toast(e.message || String(e), true));
   }
   function openAdd(){
-    if (!USER) return askName('Pilih nama anda di header "Saya:" dahulu sebelum tambah lukisan.');
     const kods = [...activeOrder(), ...archOrder()].filter(k => PRJ.has(k));
     if (!kods.length) { toast('Daftar projek dalam tab PROJEK dahulu.', true); return; }
     const tajuks = [...new Set(REC.map(r => r.tajuk).filter(Boolean))];
@@ -890,7 +845,6 @@
   }
 
   function openProject(prefFail){
-    if (!USER) return askName('Pilih nama anda di header "Saya:" dahulu sebelum daftar projek.');
     const fail = prefFail != null ? prefFail : (UI.fail || '');
     const tajuks = [...new Set(REC.map(r => r.tajuk).filter(Boolean))];
     openModal('Projek / Fail Baru', `
@@ -936,7 +890,7 @@
       .catch(e => { b.disabled = false; toast(e.message || String(e), true); load(true); });
   }
   function openDelProject(kod){
-    if (!USER) return askName('Pilih nama anda di header "Saya:" dahulu sebelum padam projek.');
+    if (!ME) return askName('Pilih nama anda di header "Saya:" dahulu sebelum padam projek (untuk rekod LOG PADAM).');
     const p = projInfo(kod), n = p.s.n;
     const risky = p.rs.some(r => r.prog > 0 || r.sk === 'done' || isApproved(r.semak));
     const list = p.rs.slice(0, 6).map(r => `<span>${esc(r.dwg)}</span>`).join('') + (n > 6 ? `<span>+${n - 6} lagi</span>` : '');
@@ -946,7 +900,7 @@
         <label class="sw" style="text-transform:none;letter-spacing:0;font-size:13px"><input type="checkbox" id="dpAll"> Saya faham <b>${n} lukisan</b> projek ini juga akan dipadam</label>` : '<div class="hint">Projek ini belum ada lukisan.</div>'}
       ${risky ? `<div class="attn" style="margin:0;background:var(--badTint);border-color:#FECACA"><span>⚠ Projek ini dah ada progres (${p.s.done} siap, ${p.s.prog} dalam proses). Taip <b>${esc(kod)}</b> untuk sahkan.</span></div>
         <input id="dpType" autocomplete="off" placeholder="${esc(kod)}">` : ''}
-      <div class="hint">Dipadam oleh: <b>${esc(USER.name)}</b>. Salinan baris PROJEK & DRAWING disimpan dalam tab <b>LOG PADAM</b>.</div>`,
+      <div class="hint">Dipadam oleh: <b>${esc(ME)}</b>. Salinan baris PROJEK & DRAWING disimpan dalam tab <b>LOG PADAM</b>.</div>`,
       `<button class="btn" data-m="close">Batal</button><button class="btn danger" data-m="delproj">🗑 Padam Projek</button>`);
     $('mFoot').dataset.kod = kod;
   }
@@ -962,12 +916,12 @@
   function openDelete(rowNo){
     const r = REC.find(x => x.row === rowNo);
     if (!r) return;
-    if (!USER) return askName('Pilih nama anda di header "Saya:" dahulu sebelum padam lukisan.');
+    if (!ME) return askName('Pilih nama anda di header "Saya:" dahulu sebelum padam lukisan (untuk rekod LOG PADAM).');
     const risky = r.sk === 'done' || isApproved(r.semak) || r.prog > 0;
     openModal('Padam Lukisan', `<div>Padam <b>${esc(r.dwg)}</b>${r.tajuk ? ' (' + esc(r.tajuk) + ')' : ''} dari tab DRAWING?</div>
       <div class="hint">${esc(r.kod)} · Sheet ${esc(r.sheet || '—')} · ${esc(r.drafter || 'Belum Assign')} · ${esc(r.status)} · ${r.prog}%</div>
       ${risky ? `<div class="attn" style="margin:0;background:var(--badTint);border-color:#FECACA"><span>⚠ Lukisan ini dah ada progres (${esc(r.status)}${r.semak ? ' · ' + esc(r.semak) : ''}). Pastikan memang tersalah masuk.</span></div>` : ''}
-      <div class="hint">Dipadam oleh: <b>${esc(USER.name)}</b>. Salinan baris disimpan dalam tab <b>LOG PADAM</b> — boleh disalin semula ke DRAWING kalau tersilap.</div>`,
+      <div class="hint">Dipadam oleh: <b>${esc(ME)}</b>. Salinan baris disimpan dalam tab <b>LOG PADAM</b> — boleh disalin semula ke DRAWING kalau tersilap.</div>`,
       `<button class="btn" data-m="close">Batal</button><button class="btn danger" data-m="del">🗑 Padam</button>`);
     $('mFoot').dataset.row = rowNo;
   }
