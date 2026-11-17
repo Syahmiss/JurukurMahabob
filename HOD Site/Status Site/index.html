@@ -1951,7 +1951,10 @@ html,body{max-width:100%;overflow-x:hidden}
                     container.innerHTML = `<div class="empty">Tiada data dijumpai dalam pautan CSV ini.</div>`;
                     return;
                 }
-                const headers = rows[0].__headers || Object.keys(rows[0]).filter(k => !k.startsWith('__'));
+                // Lajur ID (UUID) hanya untuk butang Edit; masih dibaca parser, cuma tak dipaparkan
+                const HIDDEN_HEADERS = ['id', 'id rekod'];
+                const headers = (rows[0].__headers || Object.keys(rows[0]).filter(k => !k.startsWith('__')))
+                    .filter(h => !HIDDEN_HEADERS.includes(String(h).trim().toLowerCase().replace(/\s+/g, ' ')));
                 let html = `<table><thead><tr>`;
                 headers.forEach(h => {
                     html += `<th>${escapeHtml(h)}</th>`;
