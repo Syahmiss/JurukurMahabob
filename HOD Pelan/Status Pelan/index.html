@@ -290,7 +290,10 @@
 
   /* ===================== KONFIGURASI ===================== */
   const CFG = {
-    // Hanya untuk pratonton di luar Web App (baca sahaja). Dalam Web App data dibaca terus dari Sheet.
+    // URL Web App Apps Script (hujung /exec). Bila diisi, dashboard boleh EDIT walaupun di-host di GitHub Pages.
+    // Ambil dari: Apps Script > Deploy > Manage deployments > salin "Web app URL".
+    API_URL: 'https://script.google.com/macros/s/GANTI_DENGAN_ID_DEPLOYMENT/exec',
+    // Sandaran baca sahaja kalau API_URL belum diisi.
     PUB_BASE: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRGX1gn5aw6d1n7HR8CmMRHWwbnmrbsBvPW6DeumgL1eb1agr6dLIGljg6Y-3Y_r4JY6bLAzIY2dPiY/pub',
     GID: { drawing: 1234821951, projek: 108603456 },
     // Senarai lalai — dipakai bila dropdown dalam Sheet tak dapat dibaca
@@ -313,7 +316,9 @@
   /* ===================== UTIL ===================== */
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const IS_GAS = typeof google !== 'undefined' && google.script && google.script.run;
+  const IS_GAS = !!(typeof google !== 'undefined' && google.script && google.script.run);
+  // Mod API: di luar Apps Script (cth. GitHub Pages) tapi API_URL dah diisi
+  const HAS_API = !IS_GAS && /^https:\/\/script\.google\.com\/macros\/s\/[^\/]+\/exec$/.test(CFG.API_URL) && !/GANTI_DENGAN/.test(CFG.API_URL);
   const DAY = 864e5;
   const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
   const p2 = n => String(n).padStart(2, '0');
@@ -324,7 +329,19 @@
   const key = s => norm(s).toUpperCase().replace(/[^A-Z0-9]/g, '_');
   const pctOf = (a, b) => b ? Math.round(a / b * 100) : 0;
   const f2 = n => (Math.round(n * 100) / 100).toFixed(2);
-  const run = (fn, ...args) => new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](...args));
+  // Panggil fungsi server: google.script.run (dalam Apps Script) atau POST ke Web App (GitHub Pages)
+  const run = (fn, ...args) => {
+    if (IS_GAS) return new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](...args));
+    if (!HAS_API) return Promise.reject(new Error('Mod baca sahaja — API_URL belum diisi.'));
+    // text/plain = tiada CORS preflight (Apps Script tak sokong OPTIONS)
+    return fetch(CFG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }), cache: 'no-store' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(t => {
+        let j; try { j = JSON.parse(t); } catch (e) { throw new Error('Respons pelayan tidak sah. Semak deploy Web App (access: Anyone) & doPost.'); }
+        if (!j || !j.ok) throw new Error((j && j.error) || 'Ralat pelayan.');
+        return j.data;
+      });
+  };
 
   function parseCsv(text){
     text = text.replace(/^﻿/, '');
@@ -373,7 +390,7 @@
 
   /* ===================== STATE ===================== */
   let REC = [], PRJ = new Map(), ORDER = [], OPT = {}, OPTP = {}, IS_ADMIN = false, DRAFTER_SEMAK = ['Belum Dihantar','Menunggu Semakan'];
-  let READONLY = !IS_GAS, fetchedAt = null, loading = false;
+  let READONLY = !IS_GAS && !HAS_API, fetchedAt = null, loading = false;
   let USER = null;                                // { name, role: 'admin' | 'drafter' }
   let ME = (() => { try { return localStorage.getItem('jm_me') || ''; } catch (e) { return ''; } })();
   let view = '__P';                               // '__P' = portfolio, selain itu = kod projek
@@ -453,7 +470,7 @@
       if (!silent) toast('Gagal baca data: ' + (e.message || e), true);
       if (!REC.length) $('main').innerHTML = `<div class="card empty">Data tak dapat dibaca: ${esc(e.message || e)}</div>`;
     };
-    if (IS_GAS) { run('getDashboardData').then(done, fail); return; }
+    if (IS_GAS || HAS_API) { run('getDashboardData').then(done, fail); return; }
     const url = gid => `${CFG.PUB_BASE}?gid=${gid}&single=true&output=csv&_=${Date.now()}`;
     const get = (gid, opt) => fetch(url(gid), { cache:'no-store' }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(t => { if (/^\s*</.test(t)) throw new Error('bukan CSV'); return parseCsv(t); }).catch(e => { if (opt) return null; throw e; });
