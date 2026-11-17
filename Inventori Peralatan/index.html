@@ -375,6 +375,21 @@ tbody tr:hover td{background:rgba(239,246,255,.6)}
 .rn-form{background:var(--ind-50)}
 .new-h{color:var(--ind-950)}
 .foot{border-top:1px solid var(--line);padding-top:16px;justify-content:center;text-align:center}
+/* Padam alat */
+.btn.danger{color:var(--bad);border-color:var(--bad-line);background:var(--surface)}
+.btn.danger:hover{background:var(--bad-50);border-color:var(--bad);color:var(--bad)}
+.btn.danger.solid{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.danger.solid:hover{background:#B91C1C;border-color:#B91C1C;color:#fff}
+.item.is-del{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-50)}
+.del-box{margin:0 14px 14px;padding:12px 14px;border-radius:12px;background:var(--bad-50);border:1px solid var(--bad-line);display:flex;flex-direction:column;gap:10px}
+.del-box p{margin:0;font-size:13px;color:var(--ink)}
+.del-box p.s{font-size:12px;color:var(--ink2)}
+.del-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.del-row input{flex:1 1 180px;max-width:240px;min-width:0;background:var(--surface);border:1px solid #CBD5E1;border-radius:12px;padding:8px 10px;font-size:13px;color:var(--ink)}
+.del-row input:focus{outline:none;border-color:var(--bad);box-shadow:0 0 0 2px var(--bad-line)}
+.del-row .spacer{flex:1 1 0}
+.del-box .msg{margin:0}.del-box .msg:empty{display:none}
+@media (max-width:620px){.del-row input{max-width:none;flex-basis:100%}.del-row .spacer{display:none}.del-row .btn{flex:1}}
 @media (max-width:1320px){.hero .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.hero .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
@@ -1116,7 +1131,7 @@ const CHEV='<svg class="chev" viewBox="0 0 20 20" fill="none" stroke="currentCol
 function renderList(){
   let keep=null;
   if(EDITING!==null){ keep=$('#list .edit.full'); if(keep) keep.remove(); }
-  const shown=ITEMS.filter(it=>matches(it)||it.key===EDITING);
+  const shown=ITEMS.filter(it=>matches(it)||it.key===EDITING||it.key===DELETING);
   $('#regCount').textContent=`${shown.length} daripada ${ITEMS.length} unit`;
   $('#cols').hidden = VIEW==='jadual' || !shown.length; $('#toggleAll').hidden = VIEW==='jadual';
   const EMPTY='<div class="empty">Tiada peralatan sepadan dengan tapisan ini. Cuba kosongkan carian atau tukar status.</div>';
@@ -1128,9 +1143,9 @@ function renderList(){
   const openAll=$('#toggleAll').dataset.open==='1';
   html+=shown.map(it=>{
     const n=it.komponen.length||1;
-    const isEdit=EDITING===it.key;
-    const open=isEdit||openAll||OPEN.has(it.key)||(F.q&&it.komponen.some(c=>(c.detail+' '+c.catatan).toLowerCase().includes(F.q)));
-    return `<details class="item${isEdit?' is-edit':''}" data-id="${it.id}" ${open?'open':''}>
+    const isEdit=EDITING===it.key, isDel=DELETING===it.key;
+    const open=isEdit||isDel||openAll||OPEN.has(it.key)||(F.q&&it.komponen.some(c=>(c.detail+' '+c.catatan).toLowerCase().includes(F.q)));
+    return `<details class="item${isEdit?' is-edit':''}${isDel?' is-del':''}" data-id="${it.id}" ${open?'open':''}>
       <summary>
         <div class="c-eq"><div class="eq">${esc(it.peralatan)}</div><div class="kt">${esc(it.kategori)}</div></div>
         <div class="c-sv">${esc(it.nama)}</div>
@@ -1141,9 +1156,9 @@ function renderList(){
         ${CHEV}
       </summary>
       ${isEdit ? slot(()=>editorView(it)) : `<ul class="comps">${it.komponen.map(compView).join('')}</ul>
-      <div class="item-act">${SCRIPT_URL
-        ? `<button type="button" class="btn sm" data-act="edit">Edit alat</button>`
-        : `<span class="hint">Edit belum aktif. Isi SCRIPT_URL dalam index.html selepas deploy Apps Script.</span>`}</div>`}
+      ${isDel ? deleteBox(it) : `<div class="item-act">${SCRIPT_URL
+        ? `<button type="button" class="btn sm danger" data-act="del">Padam alat</button><button type="button" class="btn sm" data-act="edit">Edit alat</button>`
+        : `<span class="hint">Edit belum aktif. Isi SCRIPT_URL dalam index.html selepas deploy Apps Script.</span>`}</div>`}`}
     </details>`;
   }).join('');
   $('#list').innerHTML=html;
@@ -1211,10 +1226,10 @@ async function load(){
 }
 
 /* ===== Editor alat (edit penuh & tambah baru) ===== */
-let RENAMING=null, NEW_PRESET=null, UID=0;
+let RENAMING=null, DELETING=null, NEW_PRESET=null, UID=0;
 const EDIT_INIT=new Map();
 const personNames = () => [...new Set(ITEMS.map(i=>i.nama))];
-const isBusy = () => EDITING!==null || RENAMING!==null;
+const isBusy = () => EDITING!==null || RENAMING!==null || DELETING!==null;
 
 function compRow(c){
   const u=++UID;
@@ -1380,6 +1395,46 @@ async function renamePerson(form, btn){
     toast(`${from} ditukar kepada ${to}.`);
     await load();
   }catch(err){ say(errMsg(err), true); btn.disabled=false; }
+}
+
+/* ===== Padam alat ===== */
+function deleteBox(it){
+  const u=++UID, nRows=it.lastRow-it.firstRow+1;
+  const solo=ITEMS.filter(i=>i.nama===it.nama).length===1;
+  return `<div class="del-box" role="alertdialog" aria-labelledby="dt-${u}">
+    <p id="dt-${u}"><b>Padam ${esc(it.peralatan)}${it.sn?` (S/N <span class="mono">${esc(it.sn)}</span>)`:''} milik ${esc(it.nama)}?</b></p>
+    <p class="s">${nRows} baris (${it.komponen.length} komponen) akan dibuang dari sheet, baris ${it.firstRow}${nRows>1?'–'+it.lastRow:''}. Setiap komponen direkod dalam tab "Log Status" kalau perlu pulihkan.${solo?` Ni alat terakhir ${esc(it.nama)}, jadi nama dia akan hilang dari dashboard.`:''}</p>
+    <div class="del-row">
+      <input id="do-${u}" class="d-oleh" maxlength="60" placeholder="Nama anda" value="${esc(store.get('inv_oleh'))}" aria-label="Nama anda">
+      <span class="spacer"></span>
+      <button type="button" class="btn sm" data-act="delcancel">Batal</button>
+      <button type="button" class="btn sm danger solid" data-act="delok">Ya, padam</button>
+    </div>
+    <p class="msg" role="status" aria-live="polite"></p>
+  </div>`;
+}
+
+async function deleteItem(box, btn){
+  const msg=box.querySelector('.msg');
+  const say=(t,bad)=>{ msg.textContent=t; msg.className='msg'+(bad?' bad':''); };
+  const it=ITEMS.find(i=>i.key===DELETING);
+  if(!it) return say('Alat ni tak dijumpai lagi. Muat semula dashboard.', true);
+  const oleh=box.querySelector('.d-oleh').value.trim();
+  if(!oleh) return say('Isi nama anda dulu supaya rekod audit lengkap.', true);
+  // Server semak semua ni sebelum padam. Kalau sheet dah berubah, dia tolak (elak tersalah padam alat lain).
+  const expect={firstRow:it.firstRow, lastRow:it.lastRow, nama:it.nama, peralatan:it.peralatan, sn:it.sn,
+    rows:it.komponen.map(c=>({row:c.row, detail:c.detailRaw}))};
+  box.querySelectorAll('button').forEach(b=>b.disabled=true); say('Memadam…');
+  try{
+    await postScript({oleh, action:'deleteItem', expect});
+    store.set('inv_oleh',oleh);
+    DELETING=null; OPEN.delete(it.key);
+    if(F.surv===it.nama && !ITEMS.some(i=>i!==it && i.nama===it.nama)) F.surv='';
+    toast(`${it.peralatan}${it.sn?' ('+it.sn+')':''} milik ${it.nama} dipadam.`);
+    await load();
+  }catch(err){
+    say(errMsg(err), true); box.querySelectorAll('button').forEach(b=>b.disabled=false);
+  }
 }
 
 /* ===== Paparan jadual & Export PDF ===== */
@@ -1609,6 +1664,16 @@ $('#list').addEventListener('click',e=>{
       document.querySelector(`.item[data-id="${it.id}"] .f-per`)?.focus();
       break;
     }
+    case 'del': {
+      const it=item&&ITEMS[+item.dataset.id]; if(!it) return;
+      if(isBusy()){ toast('Simpan atau batal edit yang sedang dibuka dulu.'); return; }
+      DELETING=it.key; OPEN.add(it.key); renderList();
+      const db=document.querySelector(`.item[data-id="${it.id}"] .del-box`);
+      if(db){ const o=db.querySelector('.d-oleh'); (o.value?db.querySelector('[data-act="delcancel"]'):o).focus(); }
+      break;
+    }
+    case 'delcancel': DELETING=null; renderList(); break;
+    case 'delok': deleteItem(b.closest('.del-box'), b); break;
     case 'cancel': EDITING=null; NEW_PRESET=null; EDIT_INIT.clear(); renderList(); break;
     case 'allbaik': box.querySelectorAll('.crow').forEach(r=>{ if(r.querySelector('.c-det').value.trim()) r.querySelector('.c-st').value='Baik'; }); break;
     case 'addcomp': box.querySelector('.ed-comps').insertAdjacentHTML('beforeend',compRow()); box.querySelector('.ed-comps .crow:last-child .c-det').focus(); break;
@@ -1631,6 +1696,10 @@ $('#list').addEventListener('change',e=>{
   }
 });
 $('#list').addEventListener('input',e=>{ if(e.target.classList.contains('f-sn')) snWarn(e.target.closest('.edit.full')); });
+$('#list').addEventListener('keydown',e=>{
+  if(e.key==='Escape' && DELETING!==null && e.target.closest('.del-box')){ DELETING=null; renderList(); }
+  if(e.key==='Enter' && e.target.classList.contains('d-oleh')){ e.preventDefault(); e.target.closest('.del-box').querySelector('[data-act="delok"]').click(); }
+});
 
 document.querySelectorAll('[data-view]').forEach(b=>{
   b.setAttribute('aria-pressed',String(b.dataset.view===VIEW));
