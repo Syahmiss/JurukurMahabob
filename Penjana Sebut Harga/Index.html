@@ -1,7 +1,12 @@
-<!-- ==== GANTI dari <style> pertama hingga sebelum </head> dalam Quotation Generator dengan blok ini ==== -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quotation Generator – Jurukur Mahabob & Co. Sdn. Bhd.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
 <style>
-/* Design HOD Akaun (Dashboard Jualan & Invois) */
+/* Quotation Generator — design HOD Akaun (Dashboard Jualan & Invois) */
 :root{
   --navy:#0A2540; --blue:#1E40AF; --royal:#1D4ED8; --light:#EFF6FF; --gold:#FACC15; --amber:#EAB308; --goldDark:#CA8A04;
   --bg:#F8FAFC; --line:#E2E8F0; --line3:#CBD5E1; --soft:#F1F5F9; --ink:#1E293B; --ink2:#475569; --muted:#64748B;
@@ -139,10 +144,15 @@ table.mini th{background:var(--bg);color:var(--navy)}
   .refrow .col[style*="right"]{text-align:left!important}
   .signrow{flex-direction:column;gap:10px}
   .two{grid-template-columns:minmax(0,1fr)}
-  table.items.jm-cards tfoot,table.items.jm-cards tfoot tr{display:block}
-  table.items.jm-cards tfoot td{display:inline-block!important;width:auto!important;border:0!important;background:none!important;padding:4px 0!important}
-  table.items.jm-cards tfoot tr{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin-bottom:8px;display:flex!important;justify-content:space-between;gap:10px}
-  table.items.jm-cards tfoot td:empty{display:none!important}
+  .intro{text-align:left}
+  #itemsTable.jm-cards tfoot{display:block}
+  #itemsTable.jm-cards tfoot tr{display:flex!important;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px}
+  #itemsTable.jm-cards tfoot tr:last-child{background:linear-gradient(135deg,var(--navy),var(--blue));border-color:#1E3A8A}
+  #itemsTable.jm-cards tfoot tr:last-child td{color:#fff!important}
+  #itemsTable.jm-cards tfoot td{display:block!important;width:auto!important;border:0!important;background:none!important;padding:0!important;font-size:13px;white-space:nowrap!important;text-align:right!important;min-height:0}
+  #itemsTable.jm-cards tfoot td::before{display:none}
+  #itemsTable.jm-cards tfoot td:first-child{flex:1;white-space:normal!important;text-align:left!important;font-size:12px;font-weight:600;color:var(--ink2)}
+  #itemsTable.jm-cards tfoot td:empty{display:none!important}
 }
 @media print{
   .toolbar,.side,.no-print{display:none!important}
@@ -154,6 +164,21 @@ table.mini th{background:var(--bg);color:var(--navy)}
   table.items th:last-child,table.items td:last-child{display:none}
   @page{size:A4;margin:12mm}
 }
+
+.sum-grid{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:12.5px}
+.sum-k{color:var(--muted)}.sum-v{text-align:right;font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums}
+.sum-total{margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;background:linear-gradient(135deg,var(--navy),var(--blue));color:#BFDBFE;border-radius:12px;padding:12px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.sum-total b{color:#fff;font-size:18px;letter-spacing:-.3px;text-transform:none;font-variant-numeric:tabular-nums}
+.refitem.on{background:var(--light);box-shadow:inset 3px 0 0 var(--gold)}
+.refitem .r3{display:flex;justify-content:space-between;align-items:center}
+.ref-del{border:0;background:none;color:#94A3B8;font-size:12px;padding:2px 6px;border-radius:6px}
+.ref-del:hover{background:var(--dangerBg);color:var(--danger)}
+#itemsBody td[data-ph]:empty::before{content:attr(data-ph);color:#94A3B8}
+#itemsBody td[data-amt]{font-weight:600;color:var(--navy)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:var(--navy);color:#fff;border-left:4px solid var(--gold);padding:12px 18px;border-radius:12px;z-index:200;max-width:90vw;box-shadow:0 12px 30px -10px rgba(10,37,64,.5);font-weight:500;font-size:13px;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.toast.err{border-left-color:#F87171}
+@media print{.toast{display:none}}
 
 /* ============================================================
    JM MOBILE — skrin ≤ 640px: tiada scroll ke tepi.
@@ -191,7 +216,319 @@ html,body{max-width:100%;overflow-x:hidden}
   img,video,canvas,svg{max-width:100%}
 }
 </style>
-<!-- ==== TAMPAL skrip ini betul-betul sebelum </body> ==== -->
+</head>
+<body>
+<div class="toolbar no-print">
+  <h1>📄 Quotation Generator</h1>
+  <button class="btn primary" onclick="window.print()">🖨 Print / Save PDF</button>
+  <button class="btn green" onclick="saveLocal()">💾 Save</button>
+  <button class="btn" onclick="newQuote()">➕ New</button>
+  <button class="btn" onclick="exportJSON()">⬇ Backup</button>
+  <label class="btn ghost" style="margin:0">⬆ Restore<input type="file" accept="application/json" style="display:none" onchange="importJSON(this)"></label>
+  <div class="spacer"></div>
+  <span class="status" id="status"></span>
+</div>
+<div class="wrap">
+  <!-- ============ PAPER ============ -->
+  <div id="paper">
+    <!-- Letterhead -->
+    <div class="lh">
+      <div class="logo" id="logoBox" title="Click to upload your company logo">
+        <span id="logoPlaceholder">Click to<br>add logo</span>
+        <input type="file" id="logoInput" accept="image/*" style="display:none">
+      </div>
+      <div class="co">
+        <div class="name" contenteditable="true">JURUKUR MAHABOB & CO. SDN. BHD.</div>
+        <div class="reg" contenteditable="true">(581048-T) &nbsp;|&nbsp; Jurukur Tanah Yang Dilesen Di Bawah Akta 458 (Disemak 1991)</div>
+        <div class="role" contenteditable="true">Licensed Land Surveyors &nbsp;•&nbsp; Land Development Consultant &nbsp;•&nbsp; Perunding Pembangunan Tanah</div>
+        <div class="people" contenteditable="true"><b>Sr. Hj. Alias B. Hj. Ibrahim</b> &ndash; M.Sc.(LAD) UTM, B.Sc.(Hons) Surv. Sc. Newcastle UK, DipLS (UiTM), MISM, MAALS<br><b>Sr Dr. Mohd Yunus Bin Mohd Yusoff, AMN, FRISM, MAALS</b> &ndash; PhD in Eng. Surv. & Space Geodesy (Nottingham UK), MPhil in Geodesy (Newcastle UK), BSc(Hons.) Surv. Sc. (Newcastle UK)</div>
+      </div>
+    </div>
+    <div class="addr" contenteditable="true"><b>PAHANG:</b> No.43, Jalan Sekilau 1, Bukit Sekilau, 25200 Kuantan, Pahang D.M. &nbsp;Tel: 09-5126688 &nbsp;Fax: 09-5145804 &nbsp;Email: jmcsbk@gmail.com<br><b>SELANGOR:</b> No.14A, Jalan SG3/5, Pusat Bandar Sri Gombak, 68100 Batu Caves, Selangor. &nbsp;H/P: 019-9151777 &nbsp;E-mail: jmcsbk@gmail.com</div>
+
+    <!-- Reference row -->
+    <div class="refrow">
+      <div class="col">Bil Kami / Our Ref: <b contenteditable="true" id="ourRef">MC(P) SHE/2026(066)</b><br>Bil Tuan / Your Ref: <span contenteditable="true" id="yourRef">&mdash;</span></div>
+      <div class="col" style="text-align:right">Tarikh / Date: <b contenteditable="true" id="qDate">29 July 2026</b></div>
+    </div>
+
+    <!-- Client -->
+    <div class="clientbox" contenteditable="true" id="clientBox"><b>YP Maintenance Sdn Bhd</b><br>B800, Jalan Bukit Ubi, Taman Sungai Charu, 25200 Kuantan, Pahang<br>U/p (Attn): En. Norman</div>
+
+    <!-- Title -->
+    <div class="title" contenteditable="true" id="qTitle">SEBUTHARGA BAGI KERJA UKUR BAGI CADANGAN MEMBAIK PULIH STRUKTUR CERUN RUNTUH SERTA KERJA-KERJA BERKAITAN DI JALAN SULTAN HAJI AHMAD SHAH (NO MARRIS: 10024) SEKSYEN 1.30, DAERAH CAMERON HIGHLANDS, PAHANG DARUL MAKMUR</div>
+
+    <div class="intro" contenteditable="true" id="qIntro">Adalah dengan hormatnya merujuk kepada perkara di atas, pihak kami mengucapkan ribuan terima kasih kerana telah menjemput kami mengemukakan sebut harga bagi kerja-kerja tersebut.</div>
+
+    <div class="sub">SEBUT HARGA UNTUK KERJA UKUR / QUOTATION FOR SURVEY WORK</div>
+
+    <!-- Items -->
+    <table class="items" id="itemsTable">
+      <thead>
+        <tr>
+          <th style="width:34px">Bil.</th>
+          <th style="width:52px">Ref</th>
+          <th>Butiran / Description</th>
+          <th style="width:58px">Unit</th>
+          <th style="width:62px">Qty</th>
+          <th style="width:84px">Kadar (RM)</th>
+          <th style="width:96px">Jumlah (RM)</th>
+          <th class="no-print" style="width:56px"></th>
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+      <tfoot>
+        <tr><td colspan="6" class="r">Jumlah / Subtotal</td><td class="r" id="subTotal">0.00</td><td class="no-print"></td></tr>
+        <tr><td colspan="5" class="r">Cukai Perkhidmatan / Service Tax</td><td class="c"><span contenteditable="true" id="taxRate">8</span>%</td><td class="r" id="taxAmt">0.00</td><td class="no-print"></td></tr>
+        <tr><td colspan="6" class="r">Jumlah Keseluruhan / Grand Total (RM)</td><td class="r" id="grandTotal">0.00</td><td class="no-print"></td></tr>
+      </tfoot>
+    </table>
+        <button class="minibtn add no-print" onclick="addRow()" style="width:auto;height:auto;padding:6px 14px;margin-top:8px;font-weight:600">➕ Tambah item</button>
+
+    <div class="sub">TERMA &amp; SYARAT / TERMS &amp; CONDITIONS</div>
+    <div class="intro" contenteditable="true" id="qTerms">1. Sebut harga ini sah selama 30 hari dari tarikh di atas.<br>2. Bayaran pendahuluan sebanyak 50% hendaklah dijelaskan sebelum kerja dimulakan dan baki selepas pelan diserahkan.<br>3. Harga tidak termasuk fi pejabat tanah / JUPEM dan kerja tambahan di luar skop di atas.<br>4. Tempoh kerja dikira dari tarikh penerimaan surat setuju terima.</div>
+
+    <div class="bank" contenteditable="true" id="qBank"><b>Butiran Bank / Bank Details</b><br>Nama Akaun: JURUKUR MAHABOB &amp; CO. SDN. BHD.<br>Bank: —<br>No. Akaun: —</div>
+
+    <div class="intro" contenteditable="true" id="qClosing" style="margin-top:14px">Kami berharap sebut harga ini mendapat pertimbangan pihak tuan. Sekiranya terdapat sebarang pertanyaan, sila hubungi pihak kami. Sekian, terima kasih.</div>
+
+    <div class="signrow">
+      <div class="signbox">
+        <div style="text-align:left">Yang benar,</div>
+        <div class="signline" contenteditable="true" id="qSignBy"><b>Sr. Hj. Alias B. Hj. Ibrahim</b><br>Jurukur Tanah Berlesen<br>JURUKUR MAHABOB &amp; CO. SDN. BHD.</div>
+      </div>
+      <div class="signbox">
+        <div style="text-align:left">Disahkan &amp; diterima oleh / Accepted by:</div>
+        <div class="fields">
+          Nama / Name: <span class="dotline">&nbsp;</span><br>
+          Jawatan / Designation: <span class="dotline">&nbsp;</span><br>
+          Tarikh / Date: <span class="dotline">&nbsp;</span><br>
+          Cop Syarikat / Company Stamp: <span class="dotline">&nbsp;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SIDE PANEL ============ -->
+  <aside class="side no-print">
+    <div class="card">
+      <h3>Ringkasan</h3>
+      <div class="body">
+        <div class="sum-grid">
+          <div class="sum-k">Jumlah item</div><div class="sum-v" id="sumCount">0</div>
+          <div class="sum-k">Subtotal</div><div class="sum-v" id="sumSub">RM 0.00</div>
+          <div class="sum-k">Cukai</div><div class="sum-v" id="sumTax">RM 0.00</div>
+        </div>
+        <div class="sum-total"><span>Grand Total</span><b id="sumGrand">RM 0.00</b></div>
+        <div class="field" style="margin-top:12px"><label for="taxInput">Kadar cukai perkhidmatan (%)</label>
+          <input type="number" id="taxInput" min="0" max="100" step="0.5"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Sebut Harga Tersimpan</h3>
+      <div class="body">
+        <input class="refsearch" id="refSearch" placeholder="Cari no. rujukan / klien…">
+        <div class="reflist" id="refList"></div>
+        <div class="note">Tekan satu rekod untuk buka semula. Data disimpan dalam browser ni — buat Backup selalu.</div>
+      </div>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+'use strict';
+const KEY = 'jm_quotation_v1';            // senarai sebut harga tersimpan
+const CUR = 'jm_quotation_current';       // draf semasa (auto-save)
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
+const fmt = n => (Math.round(n * 100) / 100).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ toast('Storan browser penuh — buat Backup & buang rekod lama.', true); return false; } }
+};
+
+/* Medan dokumen yang boleh diedit (bukan dalam jadual item) */
+const DOC_IDS = ['ourRef','yourRef','qDate','clientBox','qTitle','qIntro','qTerms','qBank','qClosing','qSignBy'];
+const lhEls = () => Array.from(document.querySelectorAll('.lh [contenteditable], .addr[contenteditable]'));
+const blankItem = () => ({ ref:'', desc:'', unit:'LS', qty:1, rate:0 });
+
+let items = [];
+let logo = '';
+let currentId = null;
+
+/* ---------- Jadual item ---------- */
+function rowHtml(it, i){
+  return `<tr data-i="${i}">
+    <td class="c">${i + 1}</td>
+    <td class="c" contenteditable="true" data-f="ref">${esc(it.ref)}</td>
+    <td contenteditable="true" data-f="desc" data-ph="Butiran kerja…">${esc(it.desc).replace(/\n/g,'<br>')}</td>
+    <td class="c" contenteditable="true" data-f="unit">${esc(it.unit)}</td>
+    <td class="c" contenteditable="true" data-f="qty" inputmode="decimal">${esc(it.qty)}</td>
+    <td class="r" contenteditable="true" data-f="rate" inputmode="decimal">${fmt(num(it.rate))}</td>
+    <td class="r" data-amt>${fmt(num(it.qty) * num(it.rate))}</td>
+    <td class="no-print"><div class="rowbtns">
+      <button type="button" class="minibtn" data-act="up" title="Naik">↑</button>
+      <button type="button" class="minibtn" data-act="del" title="Padam">✕</button>
+    </div></td>
+  </tr>`;
+}
+function renderItems(){
+  $('itemsBody').innerHTML = items.length ? items.map(rowHtml).join('')
+    : '<tr><td colspan="8" class="c" style="color:#64748B;padding:14px">Tiada item. Tekan “Tambah item”.</td></tr>';
+  calc();
+}
+function calc(){
+  let sub = 0;
+  items.forEach((it, i) => {
+    const amt = num(it.qty) * num(it.rate); sub += amt;
+    const cell = document.querySelector(`#itemsBody tr[data-i="${i}"] [data-amt]`);
+    if (cell) cell.textContent = fmt(amt);
+  });
+  const rate = num($('taxRate').textContent);
+  const tax = sub * rate / 100, grand = sub + tax;
+  $('subTotal').textContent = fmt(sub); $('taxAmt').textContent = fmt(tax); $('grandTotal').textContent = fmt(grand);
+  $('sumCount').textContent = items.length; $('sumSub').textContent = 'RM ' + fmt(sub);
+  $('sumTax').textContent = 'RM ' + fmt(tax) + ' (' + rate + '%)'; $('sumGrand').textContent = 'RM ' + fmt(grand);
+  if (document.activeElement !== $('taxInput')) $('taxInput').value = rate;
+  return { sub, tax, grand };
+}
+window.addRow = function(){ items.push(blankItem()); renderItems(); autosave();
+  const last = document.querySelector('#itemsBody tr:last-child [data-f="desc"]'); if (last) last.focus(); };
+
+$('itemsBody').addEventListener('input', e => {
+  const td = e.target.closest('[data-f]'); if (!td) return;
+  const i = +td.closest('tr').dataset.i, f = td.dataset.f;
+  items[i][f] = (f === 'qty' || f === 'rate') ? num(td.textContent) : td.innerText.trim();
+  calc(); autosave();
+});
+$('itemsBody').addEventListener('focusout', e => {
+  const td = e.target.closest('[data-f="rate"]'); if (td) td.textContent = fmt(num(td.textContent));
+});
+$('itemsBody').addEventListener('keydown', e => {
+  const td = e.target.closest('[data-f="qty"],[data-f="rate"],[data-f="ref"],[data-f="unit"]');
+  if (td && e.key === 'Enter') { e.preventDefault(); td.blur(); }
+});
+$('itemsBody').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const i = +b.closest('tr').dataset.i;
+  if (b.dataset.act === 'del') { if (items[i].desc && !confirm('Padam item ' + (i + 1) + '?')) return; items.splice(i, 1); }
+  if (b.dataset.act === 'up' && i > 0) [items[i-1], items[i]] = [items[i], items[i-1]];
+  renderItems(); autosave();
+});
+$('taxRate').addEventListener('input', () => { calc(); autosave(); });
+$('taxInput').addEventListener('input', () => { $('taxRate').textContent = $('taxInput').value || '0'; calc(); autosave(); });
+
+/* ---------- Logo ---------- */
+$('logoBox').addEventListener('click', e => { if (e.target.id !== 'logoInput') $('logoInput').click(); });
+$('logoInput').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (f.size > 1.5 * 1024 * 1024) { toast('Logo melebihi 1.5MB — guna fail lebih kecil.', true); return; }
+  const r = new FileReader();
+  r.onload = ev => { logo = ev.target.result; showLogo(); autosave(); };
+  r.readAsDataURL(f); e.target.value = '';
+});
+function showLogo(){
+  const box = $('logoBox'); const old = box.querySelector('img'); if (old) old.remove();
+  $('logoPlaceholder').style.display = logo ? 'none' : '';
+  if (logo) { const img = document.createElement('img'); img.src = logo; img.alt = 'Logo syarikat'; box.insertBefore(img, box.firstChild); }
+}
+
+/* ---------- Simpan / buka ---------- */
+function snapshot(){
+  const doc = {}; DOC_IDS.forEach(id => { if ($(id)) doc[id] = $(id).innerHTML; });
+  return { id: currentId, doc, lh: lhEls().map(el => el.innerHTML), items: items.map(x => Object.assign({}, x)),
+    tax: num($('taxRate').textContent), logo, savedAt: new Date().toISOString() };
+}
+function apply(q){
+  currentId = q.id || null;
+  Object.keys(q.doc || {}).forEach(id => { if ($(id)) $(id).innerHTML = q.doc[id]; });
+  if (Array.isArray(q.lh)) lhEls().forEach((el, i) => { if (q.lh[i] != null) el.innerHTML = q.lh[i]; });
+  items = Array.isArray(q.items) ? q.items.map(x => Object.assign(blankItem(), x)) : [];
+  $('taxRate').textContent = q.tax != null ? q.tax : 8;
+  logo = q.logo || ''; showLogo(); renderItems();
+}
+let saveTimer;
+function autosave(){ clearTimeout(saveTimer); saveTimer = setTimeout(() => store.set(CUR, snapshot()), 400); }
+document.getElementById('paper').addEventListener('input', e => { if (!e.target.closest('#itemsBody')) autosave(); });
+
+window.saveLocal = function(){
+  const list = store.get(KEY, []);
+  if (!currentId) currentId = 'q' + Date.now();
+  const snap = snapshot(); snap.id = currentId;
+  snap.ref = $('ourRef').innerText.trim(); snap.client = $('clientBox').innerText.split('\n')[0].trim();
+  snap.total = calc().grand;
+  const i = list.findIndex(x => x.id === currentId);
+  if (i >= 0) list[i] = snap; else list.unshift(snap);
+  if (store.set(KEY, list)) { store.set(CUR, snap); renderRefs(); status('Disimpan ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })); toast('Sebut harga disimpan.'); }
+};
+window.newQuote = function(){
+  if (!confirm('Mula sebut harga baru? Draf semasa yang belum disimpan akan hilang.')) return;
+  currentId = null;
+  ['yourRef'].forEach(id => $(id).innerHTML = '&mdash;');
+  $('clientBox').innerHTML = '<b>Nama Klien</b><br>Alamat klien<br>U/p (Attn): ';
+  $('qTitle').innerHTML = 'SEBUTHARGA BAGI KERJA UKUR …';
+  $('qDate').textContent = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+  items = [blankItem()]; renderItems(); autosave(); status('Sebut harga baru'); renderRefs();
+};
+window.exportJSON = function(){
+  const data = { exportedAt: new Date().toISOString(), current: snapshot(), saved: store.get(KEY, []) };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }));
+  a.download = 'quotation-backup-' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+window.importJSON = function(input){
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d || (!d.current && !Array.isArray(d.saved))) throw new Error('format');
+      if (!confirm('Restore akan ganti senarai sebut harga tersimpan dalam browser ni. Teruskan?')) return;
+      if (Array.isArray(d.saved)) store.set(KEY, d.saved);
+      if (d.current) { apply(d.current); store.set(CUR, d.current); }
+      renderRefs(); toast('Backup dipulihkan.');
+    } catch(err) { toast('Fail backup tak sah.', true); }
+  };
+  r.readAsText(f); input.value = '';
+};
+
+/* ---------- Senarai tersimpan ---------- */
+function renderRefs(){
+  const q = $('refSearch').value.trim().toLowerCase();
+  const list = store.get(KEY, []).filter(x => !q || ((x.ref || '') + ' ' + (x.client || '')).toLowerCase().includes(q));
+  $('refList').innerHTML = list.length ? list.map(x => `<div class="refitem ${x.id === currentId ? 'on' : ''}" data-id="${esc(x.id)}">
+      <div class="r1">${esc(x.ref || '(tiada rujukan)')}</div>
+      <div class="r2">${esc(x.client || '')} · ${esc(new Date(x.savedAt).toLocaleDateString('en-GB'))}</div>
+      <div class="r3">RM ${fmt(num(x.total))} <button type="button" class="ref-del" data-del="${esc(x.id)}" title="Padam rekod">✕</button></div>
+    </div>`).join('') : '<div class="refitem" style="cursor:default;color:#64748B">Belum ada rekod disimpan.</div>';
+}
+$('refSearch').addEventListener('input', renderRefs);
+$('refList').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del) { e.stopPropagation(); if (!confirm('Padam rekod ini dari senarai?')) return;
+    store.set(KEY, store.get(KEY, []).filter(x => x.id !== del.dataset.del)); if (currentId === del.dataset.del) currentId = null; renderRefs(); return; }
+  const it = e.target.closest('[data-id]'); if (!it) return;
+  const rec = store.get(KEY, []).find(x => x.id === it.dataset.id); if (!rec) return;
+  apply(rec); store.set(CUR, rec); renderRefs(); status('Dibuka: ' + (rec.ref || ''));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+/* ---------- UI kecil ---------- */
+function status(t){ $('status').textContent = t; }
+let tt; function toast(m, err){ const t = $('toast'); t.textContent = m; t.className = 'toast show' + (err ? ' err' : ''); clearTimeout(tt); tt = setTimeout(() => t.className = 'toast', 3500); }
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); window.saveLocal(); } });
+
+/* ---------- Mula ---------- */
+const draft = store.get(CUR, null);
+if (draft) apply(draft);
+else { items = [{ ref:'A1', desc:'Kerja ukur topografi kawasan cerun runtuh termasuk butiran sedia ada', unit:'LS', qty:1, rate:0 }]; renderItems(); }
+renderRefs();
+})();
+</script>
+
 <script>
 /* JM MOBILE — isi data-label setiap sel jadual daripada header (sokong rowspan/colspan).
    Tak sentuh data atau logic; jalan semula bila jadual dirender semula. */
@@ -257,3 +594,5 @@ html,body{max-width:100%;overflow-x:hidden}
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
+</body>
+</html>
