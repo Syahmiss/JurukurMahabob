@@ -534,7 +534,13 @@ function makeApp(k){
   f.addEventListener('load',()=>{
     ready[key]=true;
     if(current===key)$('#loading').classList.remove('on');
-    if(k==='pelan-status'){scheduleRender();setTimeout(scheduleRender,1800);setTimeout(scheduleRender,4500);}
+    if(k==='pelan-status'){
+      let tries=0;
+      const pollPelan=setInterval(()=>{
+        scheduleRender();
+        if(++tries>=12)clearInterval(pollPelan);
+      },1000);
+    }
     if(k==='bim'){scheduleRender();setTimeout(scheduleRender,900);setTimeout(scheduleRender,2200);setTimeout(scheduleRender,4500);}
     if(k==='akaun'){setTimeout(()=>collectAkaun(false),900);}
   });
@@ -618,32 +624,20 @@ function normDrStatus(st){
 }
 function readDrafter(){
   const p=lsGet('drafter_projects_data');const projName={};(Array.isArray(p)?p:[]).forEach(x=>{projName[x.id]=x.name;});
-  // 1. Semak kunci localStorage lama & kunci baharu berkaitan pelan/drafter
-  const d=lsGet('drafter_drawings_data');
-  if(Array.isArray(d)&&d.length)return {drawings:d,projName:projName};
-  try{
-    for(let i=0;i<localStorage.length;i++){
-      const k=localStorage.key(i);
-      if(!k||k==='jm_nav_open'||!/drafter|pelan/i.test(k))continue;
-      const v=lsGet(k);
-      if(Array.isArray(v)&&v.length&&v[0]&&(v[0].status||v[0].dwgNo||v[0].title))return {drawings:v,projName:projName};
-      if(v&&typeof v==='object'){
-        const arr=v.drawings||v.items||v.list;
-        if(Array.isArray(arr)&&arr.length)return {drawings:arr,projName:projName};
-      }
-    }
-  }catch(e){}
-  // 2. Baca terus dari iframe Status Pelan yang disegerak dengan Google Sheets
+  // 1. Baca terus dari iframe Status Pelan yang disegerak dengan Google Sheets (keutamaan tertinggi)
   const w=win('app:pelan-status');
   if(w){
     try{
       const cand=w.drawings||(w.state&&w.state.drawings)||(w.APP_STATE&&w.APP_STATE.drawings)||(w.data&&w.data.drawings);
-      if(Array.isArray(cand)&&cand.length)return {drawings:cand,projName:projName};
+      if(Array.isArray(cand)&&cand.length){
+        try{localStorage.setItem('jm_pelan_status_cache_v1',JSON.stringify(cand));}catch(e){}
+        return {drawings:cand,projName:projName};
+      }
     }catch(e){}
     try{
       const txt=(w.document&&w.document.body&&w.document.body.innerText)||'';
-      const mTot=txt.match(/Jumlah\s+Lukisan[\s\S]{0,30}?(\d+)/i);
-      const mSiap=txt.match(/\bSiap[\s\S]{0,20}?(\d+)\s*\/\s*(\d+)/i);
+      const mTot=txt.match(/Jumlah\s+Lukisan[\s\S]{0,40}?(\d+)/i);
+      const mSiap=txt.match(/\bSiap[\s\S]{0,30}?(\d+)\s*\/\s*(\d+)/i);
       if(mTot||mSiap){
         const tot=mSiap?+mSiap[2]:+mTot[1];
         const done=mSiap?+mSiap[1]:0;
@@ -662,10 +656,19 @@ function readDrafter(){
         while(out.length<tot)out.push({status:'Penyediaan Plan',progress:50});
         const isuCnt=mIsu?+mIsu[1]:0;
         if(isuCnt>0&&out.length>done)out[done].targetDate='2000-01-01';
-        if(out.length)return {drawings:out,projName:projName};
+        if(out.length){
+          try{localStorage.setItem('jm_pelan_status_cache_v1',JSON.stringify(out));}catch(e){}
+          return {drawings:out,projName:projName};
+        }
       }
     }catch(e){}
   }
+  // 2. Fallback cache terakhir dari Status Pelan (elak papar data lama 9 lukisan semasa iframe sedang memuatkan)
+  const cached=lsGet('jm_pelan_status_cache_v1');
+  if(Array.isArray(cached)&&cached.length)return {drawings:cached,projName:projName};
+  // 3. Fallback kunci localStorage lama jika belum pernah segerak dengan Google Sheets
+  const d=lsGet('drafter_drawings_data');
+  if(Array.isArray(d)&&d.length)return {drawings:d,projName:projName};
   return null;
 }
 function readTrack(){const d=lsGet(KEYS.tracking);return Array.isArray(d)?d:[];}
@@ -918,28 +921,39 @@ window.addEventListener('message',e=>{
 const AK_DIVS=[['1','Engineering'],['2','Utility'],['3','Laser Scanning'],['4','Cadastral']];
 function parseAkaunText(txt){
   const mDiv=txt.match(/PAPARAN BAHAGIAN SEMASA:\s*([^\n\r]+)/i);
-  const mSales=txt.match(/JUMLAH JUALAN KESELURUHAN[\s\S]{0,80}?RM\s*([\d,]+(?:\.\d+)?)/i);
-  const mFiles=txt.match(/Jumlah Rekod Fail\s*\/\s*Projek[\s\S]{0,40}?(\d+)\s*Fail/i);
-  const mPaid=txt.match(/INVOIS DITUNTUT\s*\(DIBAYAR\)[\s\S]{0,80}?RM\s*([\d,]+(?:\.\d+)?)/i);
-  const mPaidInv=txt.match(/INVOIS DITUNTUT\s*\(DIBAYAR\)[\s\S]{0,140}?Bilangan No\. Invois:[\s\S]{0,40}?(\d+)\s*Invois/i);
-  const mUnpaid=txt.match(/INVOIS BELUM DIBAYAR[\s\S]{0,80}?RM\s*([\d,]+(?:\.\d+)?)/i);
-  const mUnpaidInv=txt.match(/INVOIS BELUM DIBAYAR[\s\S]{0,140}?Bilangan No\. Invois:[\s\S]{0,40}?(\d+)\s*Invois/i);
-  const mUnbilled=txt.match(/BELUM DITUNTUT[\s\S]{0,80}?RM\s*([\d,]+(?:\.\d+)?)/i);
-  const mUnbilledRec=txt.match(/BELUM DITUNTUT[\s\S]{0,140}?Bilangan Rekod\s*\/\s*Invois:[\s\S]{0,40}?(\d+)\s*Rekod/i);
+  const mSales=txt.match(/JUMLAH JUALAN KESELURUHAN[\s\S]{0,120}?RM\s*([\d,]+(?:\.\d+)?)/i);
   if(!mSales)return null;
   const rawName=mDiv?mDiv[1].replace(/^Bahagian\s+/i,'').trim():'';
   const hit=AK_DIVS.find(([,n])=>rawName.toLowerCase().includes(n.toLowerCase()));
+  const grab=(reAmt,reCnt)=>{
+    const ma=txt.match(reAmt);
+    const mc=txt.match(reCnt);
+    return {amt:ma?num(ma[1]):0,cnt:mc?+mc[1]:0};
+  };
+  const mFiles=txt.match(/JUMLAH JUALAN KESELURUHAN[\s\S]{0,280}?(\d+)\s*Fail/i);
+  const paidObj=grab(
+    /INVOIS DITUNTUT\s*\(DIBAYAR\)[\s\S]{0,120}?RM\s*([\d,]+(?:\.\d+)?)/i,
+    /INVOIS DITUNTUT\s*\(DIBAYAR\)[\s\S]{0,280}?(\d+)\s*(?:Invois|Rekod|Fail)/i
+  );
+  const unpaidObj=grab(
+    /INVOIS BELUM DIBAYAR[\s\S]{0,120}?RM\s*([\d,]+(?:\.\d+)?)/i,
+    /INVOIS BELUM DIBAYAR[\s\S]{0,280}?(\d+)\s*(?:Invois|Rekod|Fail)/i
+  );
+  const unbilledObj=grab(
+    /BELUM DITUNTUT[\s\S]{0,120}?RM\s*([\d,]+(?:\.\d+)?)/i,
+    /BELUM DITUNTUT[\s\S]{0,280}?(\d+)\s*(?:Rekod|Invois|Fail)/i
+  );
   return {
     id:hit?hit[0]:'',
     name:hit?hit[1]:rawName,
     sales:num(mSales[1]),
     files:mFiles?+mFiles[1]:0,
-    paid:mPaid?num(mPaid[1]):0,
-    paidInv:mPaidInv?+mPaidInv[1]:0,
-    unpaid:mUnpaid?num(mUnpaid[1]):0,
-    unpaidInv:mUnpaidInv?+mUnpaidInv[1]:0,
-    unbilled:mUnbilled?num(mUnbilled[1]):0,
-    unbilledRec:mUnbilledRec?+mUnbilledRec[1]:0
+    paid:paidObj.amt,
+    paidInv:paidObj.cnt,
+    unpaid:unpaidObj.amt,
+    unpaidInv:unpaidObj.cnt,
+    unbilled:unbilledObj.amt,
+    unbilledRec:unbilledObj.cnt
   };
 }
 let akTimer=null;
@@ -1489,7 +1503,7 @@ function render(){
   if(ST.length)R.push(`<b>Sumber manusia:</b> ${ST.length} kakitangan, purata kehadiran ${avgAtt}%, ${pendLeave.length} permohonan cuti menunggu kelulusan.`);else R_empty.push('HR');
   if(EXT.inv)R.push(`<b>Peralatan:</b> ${invTot} unit dipegang ${invTeams.length} orang — ${invOk} baik, ${invWarn} belum lengkap, ${invBad} ada kerosakan${badItems.length?` (${badItems.slice(0,3).map(x=>esc(x.it.name)+' / '+esc(x.team)).join(', ')}${badItems.length>3?', …':''})`:''}.${EXT.inv.hasCal?` ${calItems.length} alat perlu kalibrasi.`:''}`);
   if(trk.length)R.push(`<b>Fail tracking:</b> ${trk.length} fail, ${trkActive.length} aktif, ${trkClosed.length} ditutup, purata kemajuan ${trkAvg}%${trkOver.length?`, ${trkOver.length} melepasi tarikh tamat`:''}.`);else R_empty.push('Fail Tracking');
-  if(q)R.push(`<b>Sebut harga semasa:</b> ${esc(q.ref)} untuk ${esc(q.client)} bernilai RM ${q.total.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})} (termasuk SST ${q.taxRate}%).`);
+  if(q&&q.total>0)R.push(`<b>Sebut harga semasa:</b> ${esc(q.ref)} untuk ${esc(q.client)} bernilai RM ${q.total.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})} (termasuk SST ${q.taxRate}%).`);
   if(pl)R.push(`<b>Ramalan kerja:</b> ${pl.td.toFixed(1)} team-days${pl.days!=null?`, anggaran ${pl.days} hari kerja dengan ${pl.teams} team`:''}; kos ${rm(pl.cost)}, sebut harga ${rm(pl.quote)}, margin ${pl.margin.toFixed(1)}%.`);
   if(R_empty.length)R.push(`<b>Nota modul:</b> Rekod bagi ${R_empty.join(', ')} belum diisi atau diimport dalam browser ini.`);
 
