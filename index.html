@@ -535,6 +535,7 @@ function makeApp(k){
     ready[key]=true;
     if(current===key)$('#loading').classList.remove('on');
     if(k==='pelan-status'){scheduleRender();setTimeout(scheduleRender,1800);setTimeout(scheduleRender,4500);}
+    if(k==='bim'){scheduleRender();setTimeout(scheduleRender,900);setTimeout(scheduleRender,2200);setTimeout(scheduleRender,4500);}
     if(k==='akaun'){setTimeout(()=>collectAkaun(false),900);}
   });
   f.src=appUrl(k);$('#content').appendChild(f);frames[key]=f;
@@ -668,10 +669,82 @@ function readDrafter(){
   return null;
 }
 function readTrack(){const d=lsGet(KEYS.tracking);return Array.isArray(d)?d:[];}
+function normBimStatus(st){
+  const s=String(st||'').toLowerCase();
+  if(/siap|selesai|done|complete|handover/.test(s))return BIM_DONE;
+  if(/sheet/.test(s))return 'Sheet Final';
+  if(/draft/.test(s))return 'Drafting';
+  if(/process/.test(s))return 'Processing';
+  if(/site|lapangan|scan/.test(s))return 'On-Site';
+  return 'Belum Mula';
+}
+function dmyToIso(s){
+  const m=String(s||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:'';
+}
 function readBIM(){
-  const p=lsGet(BIM_KEYS.proj);if(!Array.isArray(p))return null;
-  const s=lsGet(BIM_KEYS.staff),r=lsGet(BIM_KEYS.rpt);
-  return {projects:p,staff:Array.isArray(s)?s:[],reports:Array.isArray(r)?r:[]};
+  // 1. Semak localStorage (jika pengguna pernah simpan/ubah dalam browser)
+  const p=lsGet(BIM_KEYS.proj);
+  if(Array.isArray(p)&&p.length){
+    const s=lsGet(BIM_KEYS.staff),r=lsGet(BIM_KEYS.rpt);
+    return {projects:p,staff:Array.isArray(s)?s:[],reports:Array.isArray(r)?r:[]};
+  }
+  // 2. Baca terus daripada iframe HOD BIM (Database live / state / jadual DOM)
+  const w=win('app:bim');
+  if(w){
+    try{
+      const cand=w.projects||(w.state&&w.state.projects)||(w.APP_STATE&&w.APP_STATE.projects)||(w.db&&w.db.projects)||(w.data&&w.data.projects);
+      if(Array.isArray(cand)&&cand.length){
+        const stf=(w.staff||(w.state&&w.state.staff)||(w.db&&w.db.staff)||[]);
+        const rpt=(w.reports||(w.state&&w.state.reports)||(w.db&&w.db.reports)||[]);
+        const out={projects:cand,staff:Array.isArray(stf)?stf:[],reports:Array.isArray(rpt)?rpt:[]};
+        try{localStorage.setItem('jm_bim_summary_v1',JSON.stringify(out));}catch(e){}
+        return out;
+      }
+    }catch(e){}
+    try{
+      const doc=w.document;
+      const tbl=[...doc.querySelectorAll('table')].find(t=>/PROJEK|NO\.\s*FAIL|PROGRESS/i.test((t.querySelector('thead')||t).innerText||''));
+      if(tbl){
+        const staffSet=new Set();
+        const projects=[...tbl.querySelectorAll('tbody tr')].map(tr=>{
+          const tds=[...tr.querySelectorAll('td')];
+          if(tds.length<4)return null;
+          const lines=(tds[0].innerText||'').split('\n').map(x=>x.trim()).filter(Boolean);
+          if(!lines.length)return null;
+          const fileLine=lines.find(x=>/[A-Z0-9]+\/[A-Z0-9]+/i.test(x))||lines[0];
+          const titleLine=lines.find(x=>x!==fileLine&&!/\.(pdf|dwg|rvt|las|e57|xlsx?|docx?)$/i.test(x))||fileLine;
+          const dates=(tds[1].innerText||'').match(/\d{1,2}\/\d{1,2}\/\d{4}/g)||[];
+          const endIso=dates.length?dmyToIso(dates[dates.length-1]):'';
+          const status=normBimStatus(tds[2].innerText);
+          const pics=(tds[3].innerText||'').split(',').map(x=>x.trim()).filter(x=>x&&x!=='–'&&x!=='-');
+          pics.forEach(n=>staffSet.add(n));
+          const mProg=(tds[4]?tds[4].innerText:tr.innerText).match(/(\d+)\s*%/);
+          return {
+            fileNo:fileLine,
+            title:titleLine,
+            status:status,
+            progressPercent:mProg?+mProg[1]:(status===BIM_DONE?100:0),
+            end:endIso,
+            staffIds:pics
+          };
+        }).filter(Boolean);
+        if(projects.length){
+          const bodyTxt=(doc.body&&doc.body.innerText)||'';
+          const mStaff=bodyTxt.match(/Staff\s*&[\s\S]{0,30}?(\d+)\s*orang/i);
+          const staff=[...staffSet].map(n=>({id:n,name:n}));
+          if(mStaff){while(staff.length<+mStaff[1])staff.push({id:'s'+staff.length,name:'Staff '+(staff.length+1)});}
+          const out={projects:projects,staff:staff,reports:[]};
+          try{localStorage.setItem('jm_bim_summary_v1',JSON.stringify(out));}catch(e){}
+          return out;
+        }
+      }
+    }catch(e){}
+  }
+  // 3. Fallback simpanan terakhir semasa iframe sedang dimuatkan
+  const cached=lsGet('jm_bim_summary_v1');
+  if(cached&&Array.isArray(cached.projects)&&cached.projects.length)return cached;
+  return null;
 }
 function readQuote(){
   const w=win('quotation');let d=null;
@@ -947,6 +1020,7 @@ async function loadExt(){
   if(EXT.loading)return;EXT.loading=true;scheduleRender();
   try{const w=win('app:site-status');if(w&&typeof w.refreshAllData==='function')w.refreshAllData();}catch(e){}
   try{const wp=win('app:pelan-status');if(wp){if(typeof wp.refreshAllData==='function')wp.refreshAllData();else if(typeof wp.loadData==='function')wp.loadData();else if(typeof wp.syncFromSheets==='function')wp.syncFromSheets();}}catch(e){}
+  try{const wb=win('app:bim');if(wb){if(typeof wb.refreshAllData==='function')wb.refreshAllData();else if(typeof wb.loadData==='function')wb.loadData();else if(typeof wb.syncFromSheets==='function')wb.syncFromSheets();}}catch(e){}
   collectAkaun(true);
   const inv=getCSV(EXT_SRC.inv).then(r=>{EXT.inv=parseInv(r);delete EXT.err.inv;}).catch(e=>{EXT.err.inv=e.message;});
   const lh=getCSV(EXT_SRC.lh).then(r=>{EXT.lh=parseLH(r);delete EXT.err.lh;}).catch(e=>{EXT.err.lh=e.message;});
@@ -1482,6 +1556,7 @@ window.addEventListener('storage',scheduleRender);
 Object.keys(MODULES).forEach(makeFrame);
 makeApp('site-status'); // pre-load: Status Site hantar ringkasan progres ke Dashboard Utama, dan sedia bila menu diklik
 makeApp('pelan-status'); // pre-load: Status Pelan segerak dengan Google Sheets supaya angka muncul di Dashboard Utama
+makeApp('bim'); // pre-load: HOD BIM baca data Database live untuk Dashboard Utama
 makeApp('akaun'); // pre-load: HOD Akaun kumpul ringkasan jualan & invois 4 bahagian
 loadExt();setInterval(loadExt,5*60*1000);
 render();
