@@ -191,6 +191,10 @@ button.mini:hover{background:var(--ind-50);border-color:var(--ind-100)}
 .opt input{width:15px;height:15px;accent-color:var(--ind-600)}
 .banner{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r-md);background:var(--yel-50);border:1px solid #f1dc84;color:var(--yel-ink);font-size:12.5px;margin-bottom:16px}
 .form-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:16px;border-top:1px solid var(--line2)}
+/* Mod edit: Bilangan kawasan disorok, No File ambil lebar penuh */
+.form.is-edit #bilKawasanWrap{display:none}
+.form.is-edit #idFileWrap{grid-column:1/-1}
+.form.is-edit .add-only{display:none}
 /* Blok kawasan dinamik: Kawasan di atas, Kuantiti + Unit di bawah */
 .kr-list{display:grid;gap:10px}
 .kr{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);display:grid;gap:10px}
@@ -458,12 +462,12 @@ html,body{max-width:100%;overflow-x:hidden}
 
       <form id="fieldWorkForm" class="form" onsubmit="submitForm(event)">
         <div class="fgrid">
-          <div>
+          <div id="idFileWrap">
             <label class="flab" for="idFile">No File</label>
             <input type="text" id="idFile" class="inp" required placeholder="Cth: MCP 001/26" list="existingFilesList" autocomplete="off" oninput="updateKawasanSuggestions()">
             <datalist id="existingFilesList"></datalist>
           </div>
-          <div>
+          <div id="bilKawasanWrap">
             <label class="flab" for="bilanganKawasan">Bilangan kawasan</label>
             <input type="number" id="bilanganKawasan" class="inp" required min="1" max="50" step="1" inputmode="numeric" placeholder="Cth: 3" oninput="delete this.dataset.auto; onBilanganKawasanInput()">
             <p class="hint" id="bilKawasanHint">Jumlah kawasan yang dirancang untuk No File ini.</p>
@@ -512,7 +516,7 @@ html,body{max-width:100%;overflow-x:hidden}
           <div id="kawasanRows" class="kr-list">
             <div class="kr-empty">Masukkan <b>Bilangan kawasan</b> dahulu. Medan kawasan akan muncul ikut bilangan tu.</div>
           </div>
-          <p class="hint">Pilih nama kawasan dari cadangan supaya ejaan sama. Tekan "Langkau" untuk kawasan yang tiada kerja kali ni.</p>
+          <p class="hint">Pilih nama kawasan dari cadangan supaya ejaan sama.<span class="add-only"> Tekan "Langkau" untuk kawasan yang tiada kerja kali ni.</span></p>
         </div>
 
         <div class="form-foot">
@@ -1483,22 +1487,42 @@ html,body{max-width:100%;overflow-x:hidden}
             return out;
         }
 
+        // Dua perkataan dikira sama jika serupa, atau satu ialah singkatan (awalan) yang lain,
+        // cth. "topo" ↔ "topografi", "kadas" ↔ "kadaster". Minimum 4 huruf supaya "lot"/"ukr" tak tersalah padan.
+        function wordMatch(x, y) {
+            if (x === y) return true;
+            if (Math.min(x.length, y.length) < 4 || /^\d+$/.test(x) || /^\d+$/.test(y)) return false;
+            return x.startsWith(y) || y.startsWith(x);
+        }
+
+        // Perkataan bermakna dalam teks laporan; nama kategori English ("topography") ditambah versi BM
+        function reportWords(text) {
+            const words = normText(text).split(' ').filter(w => w.length > 2);
+            words.slice().forEach(w => {
+                const alias = KATEGORI_ALIASES[w];
+                if (alias) normText(alias).split(' ').forEach(x => words.push(x));
+            });
+            return words;
+        }
+
         // Skor keserupaan laporan ↔ tugas rekod (0 = tak padan)
         function matchScore(lap, task) {
             const a = normText(lap.tugasan);
             const b = normText(task.tugas);
             if (!a) return 0;
+            const aw = reportWords(lap.tugasan);
+            const has = w => aw.some(x => wordMatch(x, w));
             let score = 0;
             if (b && a === b) score = 100;
             else if (b && b.length >= 4 && (a.includes(b) || b.includes(a))) score = 60 + Math.min(b.length, 30);
             else {
-                const ta = new Set(a.split(' ').filter(w => w.length > 2));
                 const tb = b.split(' ').filter(w => w.length > 2);
-                const hit = tb.filter(w => ta.has(w)).length;
+                const hit = tb.filter(has).length;
                 if (tb.length && hit / tb.length >= 0.6) score = 30 + hit;
                 else {
+                    // Fallback: laporan sebut kategori tugas (penuh atau singkatan), cth. "Topo ±9746 m²" → Topografi
                     const cats = splitMultiValues(task.kategori).map(normText).filter(Boolean);
-                    if (cats.some(c => a === c || a.includes(c))) score = 20;
+                    if (cats.some(c => a === c || a.includes(c) || c.split(' ').every(has))) score = 20;
                 }
             }
             if (!score) return 0;
@@ -2018,6 +2042,11 @@ html,body{max-width:100%;overflow-x:hidden}
                 ? 'Perubahan disimpan terus pada baris asal dalam Google Sheets.'
                 : 'Data dihantar ke Google Sheets melalui Apps Script dan menjana kad progres secara automatik';
             if (banner) banner.classList.toggle('hidden', !isEdit);
+            // Bilangan kawasan ialah maklumat peringkat fail, hanya untuk tambah kerja baru.
+            // Medan tersorok mesti tak "required", kalau tak browser sekat submit (not focusable).
+            document.getElementById('fieldWorkForm')?.classList.toggle('is-edit', isEdit);
+            const bilEl = document.getElementById('bilanganKawasan');
+            if (bilEl) bilEl.required = !isEdit;
             if (cancel) cancel.innerText = isEdit ? 'Batal Edit' : 'Batal';
             if (submit && !submit.disabled) {
                 submit.innerHTML = isEdit
@@ -2057,8 +2086,6 @@ html,body{max-width:100%;overflow-x:hidden}
             resetFieldWorkForm();
 
             document.getElementById('idFile').value = rec.idFile || '';
-            // Rekod lama tanpa nilai: biar kosong supaya updateKawasanSuggestions() isi auto ikut fail
-            document.getElementById('bilanganKawasan').value = rec.bilanganKawasan > 0 ? rec.bilanganKawasan : '';
             document.getElementById('tarikh').value = tarikhToIso(rec.tarikh) || '';
             document.getElementById('jangkaSiap').value = tarikhToIso(rec.jangkaSiap) || '';
             document.getElementById('tugas').value = rec.tugas || '';
@@ -2122,7 +2149,8 @@ html,body{max-width:100%;overflow-x:hidden}
 
             const isEdit = Boolean(editingRecord);
             const bilanganKawasan = Number(document.getElementById('bilanganKawasan').value);
-            if (!Number.isInteger(bilanganKawasan) || bilanganKawasan < 1 || bilanganKawasan > MAX_KAWASAN) {
+            // Mod edit tiada medan Bilangan kawasan: tak divalidasi & tak dihantar (Apps Script kekalkan nilai asal)
+            if (!isEdit && (!Number.isInteger(bilanganKawasan) || bilanganKawasan < 1 || bilanganKawasan > MAX_KAWASAN)) {
                 showModal('Bilangan Kawasan', `Bilangan kawasan mesti nombor bulat antara 1 hingga ${MAX_KAWASAN}.`, 'error');
                 return;
             }
@@ -2173,7 +2201,13 @@ html,body{max-width:100%;overflow-x:hidden}
                 const k = kawasanKey(r.kawasan);
                 if (k && r.idFile && normalizeFileId(r.idFile) === fNormSubmit) kwKeys.add(k);
             });
-            if (bilanganKawasan < kwKeys.size) {
+            // Mod edit: tiada medan bilangan, jadi tukar kawasan tak boleh buat fail melebihi bilangan dirancang
+            const plannedBil = window.__processedData?.bilKawasanByFile?.[fNormSubmit]?.n || 0;
+            if (isEdit && plannedBil && kwKeys.size > plannedBil) {
+                showModal('Kawasan Melebihi Bilangan', `Fail ${fileParts.file} dirancang ${plannedBil} kawasan. Menukar kawasan ke "${items[0].kawasan}" akan jadikan ${kwKeys.size} kawasan. Untuk tambah kawasan baru, guna Tambah Kerja dan naikkan Bilangan kawasan.`, 'error');
+                return;
+            }
+            if (!isEdit && bilanganKawasan < kwKeys.size) {
                 showModal('Bilangan Kawasan', `Fail ${fileParts.file} akan ada ${kwKeys.size} kawasan berbeza (rekod sedia ada + yang ini). Bilangan kawasan tak boleh kurang daripada ${kwKeys.size}.`, 'error');
                 return;
             }
@@ -2192,7 +2226,7 @@ html,body{max-width:100%;overflow-x:hidden}
             // Medan sepunya untuk semua kawasan
             const common = {
                 idFile: fileParts.file,
-                bilanganKawasan,
+                ...(isEdit ? {} : { bilanganKawasan }),
                 tarikh: tarikhVal,
                 surveyor: selectedSurveyorList.join(', '),
                 kategori: selectedKategoriList.join(', '),
@@ -2221,7 +2255,8 @@ html,body{max-width:100%;overflow-x:hidden}
                 lastAddedFileId = common.idFile;
                 let savedRows = [];
                 if (isEdit) {
-                    const saved = { ...common, ...items[0], id: result.id || editingRecord.id, updatedAt: result.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' };
+                    // Bilangan kawasan ikut fail sasaran (Apps Script buat perkara yang sama)
+                    const saved = { ...common, ...items[0], bilanganKawasan: plannedBil, id: result.id || editingRecord.id, updatedAt: result.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' };
                     localEdits.set(saved.id, saved);
                     savedRows = [result.row];
                 } else {
