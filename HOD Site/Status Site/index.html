@@ -1506,7 +1506,15 @@ html,body{max-width:100%;overflow-x:hidden}
         }
 
         // Skor keserupaan laporan ↔ tugas rekod (0 = tak padan)
-        function matchScore(lap, task) {
+        // Kawasan dalam No File laporan serasi dengan kawasan tugas: sama, atau satu mengandungi yang lain
+        // ("Bangi" ↔ "Bandar Baru Bangi"). Kosong di mana-mana pihak = tiada sekatan.
+        function kawasanSerasi(hint, kw) {
+            if (!hint || !kw) return true;
+            return hint === kw || kw.includes(hint) || hint.includes(kw);
+        }
+
+        // opts.abaikanKawasan: kira skor tugas sahaja (untuk diagnosis kenapa laporan tak padan)
+        function matchScore(lap, task, opts) {
             const a = normText(lap.tugasan);
             const b = normText(task.tugas);
             if (!a) return 0;
@@ -1526,12 +1534,30 @@ html,body{max-width:100%;overflow-x:hidden}
                 }
             }
             if (!score) return 0;
+            if (opts && opts.abaikanKawasan) return score;
             const kw = kawasanKey(task.kawasan);
             const hint = kawasanKey(lap.kawasanHint);
-            if (hint && kw && hint !== kw) return 0;           // No File sebut kawasan lain
-            if (hint && kw && hint === kw) score += 5;
+            if (!kawasanSerasi(hint, kw)) return 0;             // No File sebut kawasan lain
+            if (hint && kw) score += 5;
             if (kw && normText(lap.tugasan).includes(normText(kw))) score += 5; // kawasan disebut dalam Tugasan
             return score;
+        }
+
+        // Terangkan KENAPA laporan tak padan, dengan senarai tugas fail ini supaya pengguna nampak apa nak dibetulkan
+        function sebabTakPadan(lap, tasks) {
+            const senarai = tasks.map(t => {
+                const kat = [...new Set(splitMultiValues(t.kategori).map(canonicalKategori))].join('/');
+                const kw = kawasanLabel(t.kawasan);
+                return `${t.tugas || 'Tanpa tugas'}${kat ? ` (${kat})` : ''}${kw ? ` @ ${kw}` : ''}`;
+            });
+            const ringkas = senarai.slice(0, 4).join('; ') + (senarai.length > 4 ? `; +${senarai.length - 4} lagi` : '');
+            if (!tasks.length) return 'fail ini tiada tugas dalam Rekod Kerja';
+            const padanTugas = tasks.filter(t => matchScore(lap, t, { abaikanKawasan: true }) > 0);
+            if (padanTugas.length) {
+                const kws = [...new Set(padanTugas.map(t => kawasanLabel(t.kawasan)).filter(Boolean))].join(', ');
+                return `kawasan "${lap.kawasanHint}" dalam No File tak sama dengan kawasan tugas (${kws || '-'})`;
+            }
+            return `tiada tugas sepadan. Tugas fail ini: ${ringkas}`;
         }
 
         // Padankan setiap laporan fail ini ke satu tugas. Laporan kabur/tak padan dikumpul berasingan.
@@ -1545,7 +1571,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     if (s > best) { best = s; top = [i]; }
                     else if (s && s === best) top.push(i);
                 });
-                if (!top.length) { unmatched.push({ ...lap, reason: 'tiada tugas sepadan' }); return; }
+                if (!top.length) { unmatched.push({ ...lap, reason: sebabTakPadan(lap, tasks) }); return; }
                 // Seri antara kawasan berbeza: jangan teka, minta pengguna nyatakan kawasan
                 const kws = new Set(top.map(i => kawasanKey(tasks[i].kawasan)));
                 if (kws.size > 1) { unmatched.push({ ...lap, reason: 'tugas sama di beberapa kawasan' }); return; }
@@ -1841,7 +1867,7 @@ html,body{max-width:100%;overflow-x:hidden}
                             <div class="row">
                                 <span class="kw-n"><i data-lucide="alert-triangle" class="i14"></i><span>Laporan tak dikira (${um.length})</span></span>
                             </div>
-                            <p class="meta">${um.slice(0, 5).map(r => `"${escapeHtml(r.tugasan || '-')}" ${escapeHtml(formatTarikh(r.tarikh))}: ${escapeHtml(r.reason)}`).join('<br>')}${um.length > 5 ? `<br>+${um.length - 5} lagi` : ''}</p>
+                            <p class="meta">${um.slice(0, 5).map(r => `"${escapeHtml(r.tugasan || '-')}" ${escapeHtml(formatTarikh(r.tarikh))}${r.kawasanHint ? ` [No File: ${escapeHtml(r.idFile)} ${escapeHtml(r.kawasanHint)}]` : ''}: ${escapeHtml(r.reason)}`).join('<br>')}${um.length > 5 ? `<br>+${um.length - 5} lagi` : ''}</p>
                             <p class="meta">Pastikan "Tugasan / Output" sama dengan Tugas dalam target. Jika tugas sama ada di beberapa kawasan, tulis No File sebagai "MCP 001/26 Kawasan".</p>
                         </div>` : '';
 
