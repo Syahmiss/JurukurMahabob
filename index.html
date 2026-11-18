@@ -531,7 +531,11 @@ function makeFrame(id){
 function makeApp(k){
   const key='app:'+k,f=document.createElement('iframe');
   f.className='frame';f.name='jm-app-'+k;f.title=APPS[k].t;f.setAttribute('allow','clipboard-write');
-  f.addEventListener('load',()=>{ready[key]=true;if(current===key)$('#loading').classList.remove('on');});
+  f.addEventListener('load',()=>{
+    ready[key]=true;
+    if(current===key)$('#loading').classList.remove('on');
+    if(k==='pelan-status'){scheduleRender();setTimeout(scheduleRender,1800);setTimeout(scheduleRender,4500);}
+  });
   f.src=appUrl(k);$('#content').appendChild(f);frames[key]=f;
 }
 function win(id){try{const w=frames[id]&&ready[id]?frames[id].contentWindow:null;if(w)void w.document;return w;}catch(e){return null;}}
@@ -603,10 +607,64 @@ $('#scrim').onclick=()=>document.body.classList.remove('nav-open');
 /* ================= DATA READERS ================= */
 function readOps(){const w=win('ops');try{if(w&&w.DB&&w.DB.site_projects)return w.DB;}catch(e){}return lsGet(KEYS.ops);}
 function readInv(){return EXT.inv;}
+function normDrStatus(st){
+  const s=String(st||'').toLowerCase();
+  if(/siap|lulus|dilulus|done|complete|approved/.test(s))return 'Diluluskan';
+  if(/semak|review|qc|check/.test(s))return 'Dalam Semakan';
+  if(/sedang|proses|jalan|progress|aktif|wip/.test(s))return 'Penyediaan Plan';
+  return 'Belum Mula';
+}
 function readDrafter(){
-  const d=lsGet('drafter_drawings_data');if(!Array.isArray(d))return null;
   const p=lsGet('drafter_projects_data');const projName={};(Array.isArray(p)?p:[]).forEach(x=>{projName[x.id]=x.name;});
-  return {drawings:d,projName:projName};
+  // 1. Semak kunci localStorage lama & kunci baharu berkaitan pelan/drafter
+  const d=lsGet('drafter_drawings_data');
+  if(Array.isArray(d)&&d.length)return {drawings:d,projName:projName};
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k||k==='jm_nav_open'||!/drafter|pelan/i.test(k))continue;
+      const v=lsGet(k);
+      if(Array.isArray(v)&&v.length&&v[0]&&(v[0].status||v[0].dwgNo||v[0].title))return {drawings:v,projName:projName};
+      if(v&&typeof v==='object'){
+        const arr=v.drawings||v.items||v.list;
+        if(Array.isArray(arr)&&arr.length)return {drawings:arr,projName:projName};
+      }
+    }
+  }catch(e){}
+  // 2. Baca terus dari iframe Status Pelan yang disegerak dengan Google Sheets
+  const w=win('app:pelan-status');
+  if(w){
+    try{
+      const cand=w.drawings||(w.state&&w.state.drawings)||(w.APP_STATE&&w.APP_STATE.drawings)||(w.data&&w.data.drawings);
+      if(Array.isArray(cand)&&cand.length)return {drawings:cand,projName:projName};
+    }catch(e){}
+    try{
+      const txt=(w.document&&w.document.body&&w.document.body.innerText)||'';
+      const mTot=txt.match(/Jumlah\s+Lukisan[\s\S]{0,30}?(\d+)/i);
+      const mSiap=txt.match(/\bSiap[\s\S]{0,20}?(\d+)\s*\/\s*(\d+)/i);
+      if(mTot||mSiap){
+        const tot=mSiap?+mSiap[2]:+mTot[1];
+        const done=mSiap?+mSiap[1]:0;
+        const mJalan=txt.match(/(\d+)\s*Sedang\s*Berjalan/i);
+        const mSemak=txt.match(/(\d+)\s*Dalam\s*Semakan/i);
+        const mMula=txt.match(/(\d+)\s*Belum\s*Mula/i);
+        const mIsu=txt.match(/(\d+)\s*Projek\s*Ada\s*Isu/i);
+        const nSemak=mSemak?+mSemak[1]:0;
+        const nMula=mMula?+mMula[1]:0;
+        const nJalan=mJalan?+mJalan[1]:Math.max(0,tot-done-nSemak-nMula);
+        const out=[];
+        for(let i=0;i<done;i++)out.push({status:'Diluluskan',progress:100});
+        for(let i=0;i<nJalan;i++)out.push({status:'Penyediaan Plan',progress:50});
+        for(let i=0;i<nSemak;i++)out.push({status:'Dalam Semakan',progress:80});
+        for(let i=0;i<nMula;i++)out.push({status:'Belum Mula',progress:0});
+        while(out.length<tot)out.push({status:'Penyediaan Plan',progress:50});
+        const isuCnt=mIsu?+mIsu[1]:0;
+        if(isuCnt>0&&out.length>done)out[done].targetDate='2000-01-01';
+        if(out.length)return {drawings:out,projName:projName};
+      }
+    }catch(e){}
+  }
+  return null;
 }
 function readTrack(){const d=lsGet(KEYS.tracking);return Array.isArray(d)?d:[];}
 function readBIM(){
@@ -785,6 +843,7 @@ window.addEventListener('message',e=>{
 async function loadExt(){
   if(EXT.loading)return;EXT.loading=true;scheduleRender();
   try{const w=win('app:site-status');if(w&&typeof w.refreshAllData==='function')w.refreshAllData();}catch(e){}
+  try{const wp=win('app:pelan-status');if(wp){if(typeof wp.refreshAllData==='function')wp.refreshAllData();else if(typeof wp.loadData==='function')wp.loadData();else if(typeof wp.syncFromSheets==='function')wp.syncFromSheets();}}catch(e){}
   const inv=getCSV(EXT_SRC.inv).then(r=>{EXT.inv=parseInv(r);delete EXT.err.inv;}).catch(e=>{EXT.err.inv=e.message;});
   const lh=getCSV(EXT_SRC.lh).then(r=>{EXT.lh=parseLH(r);delete EXT.err.lh;}).catch(e=>{EXT.err.lh=e.message;});
   const qc=Promise.allSettled(EXT_SRC.qc.map(s=>getCSV(s.url).then(r=>parseQC(r,s.cat)))).then(res=>{
@@ -858,9 +917,9 @@ function render(){
   const crewsOn=CR.filter(c=>c.status==='ongoing').length;
   const avgAtt=ST.length?Math.round(ST.reduce((a,s)=>a+num(s.attend),0)/ST.length):0;
   const QC=ops.pelan_qc||[];const qcOk=QC.filter(x=>x.result==='qc_pass'||x.result==='qc_cond').length;
-  // Status Pelan (aplikasi pelukis) — localStorage
+  // Status Pelan (aplikasi pelukis) — localStorage / Google Sheets live iframe
   const DRW=readDrafter(),DL=DRW?DRW.drawings:[];
-  const drSt={'Belum Mula':0,'Penyediaan Plan':0,'Dalam Semakan':0,'Diluluskan':0};DL.forEach(d=>{if(drSt[d.status]!=null)drSt[d.status]++;});
+  const drSt={'Belum Mula':0,'Penyediaan Plan':0,'Dalam Semakan':0,'Diluluskan':0};DL.forEach(d=>{const k=normDrStatus(d.status);if(drSt[k]!=null)drSt[k]++;});
   const drDue=d=>parseD(d.compDate)||parseD(d.targetDate);
   const drOver=DL.filter(d=>{const due=drDue(d);return due&&due<t0&&num(d.progress)<100;});
   // Kualiti Pelan (QC) — Google Sheets
@@ -1071,7 +1130,7 @@ function render(){
             <div class="stat" data-go="app:pelan-status"><div class="l">Lewat sasaran</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
           </div>
           ${DRW?svgDonut([
-            {l:'Diluluskan',v:drSt['Diluluskan'],c:'var(--ok)'},
+            {l:'Siap / Lulus',v:drSt['Diluluskan'],c:'var(--ok)'},
             {l:'Dalam Semakan',v:drSt['Dalam Semakan'],c:'var(--ind-600)'},
             {l:'Penyediaan Plan',v:drSt['Penyediaan Plan'],c:'var(--warn)'},
             {l:'Belum Mula',v:drSt['Belum Mula'],c:'#94A3B8'}
@@ -1284,6 +1343,7 @@ window.addEventListener('storage',scheduleRender);
 /* ================= BOOT ================= */
 Object.keys(MODULES).forEach(makeFrame);
 makeApp('site-status'); // pre-load: Status Site hantar ringkasan progres ke Dashboard Utama, dan sedia bila menu diklik
+makeApp('pelan-status'); // pre-load: Status Pelan segerak dengan Google Sheets supaya angka muncul di Dashboard Utama
 loadExt();setInterval(loadExt,5*60*1000);
 render();
 const h0=location.hash.slice(1).replace('-',':');
