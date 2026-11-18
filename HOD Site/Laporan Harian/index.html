@@ -53,7 +53,7 @@
                 <div>
                     <h1 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                         Laporan Harian Kerja Lapangan
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v2.8</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v2.9</span>
                     </h1>
                     <p class="text-xs text-blue-200">Copy-paste laporan WhatsApp/Telegram &amp; pantau kemajuan kerja ukur tapak</p>
                 </div>
@@ -189,9 +189,26 @@
                 </div>
 
                 <div class="p-5 space-y-4">
+                    <!-- Contoh ikut nama: laporan terakhir setiap surveyor -->
+                    <div class="p-3.5 rounded-xl bg-yellow-50/70 border border-yellow-200 space-y-2">
+                        <label for="templateSelect" class="text-xs font-semibold text-jm-navy flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-pen text-jm-goldDark"></i>
+                            Contoh Laporan Saya
+                        </label>
+                        <div class="flex gap-2">
+                            <select id="templateSelect" onchange="applyTemplate()" class="flex-1 min-w-0 pl-3 pr-8 py-2 text-xs font-semibold text-jm-navy bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                                <option value="">Pilih nama...</option>
+                            </select>
+                            <button type="button" onclick="applyTemplate()" class="shrink-0 text-xs px-3 py-2 rounded-lg bg-jm-navy hover:bg-jm-blue text-white font-semibold transition-colors">
+                                Guna
+                            </button>
+                        </div>
+                        <p id="templateHint" class="text-[11px] text-slate-500">Laporan terakhir yang dihantar jadi contoh untuk nama tu. TARIKH ditukar ke hari ini secara automatik.</p>
+                    </div>
+
                     <div>
                         <label for="rawReportInput" class="block text-xs font-semibold text-slate-600 mb-1.5">Teks Laporan Harian Kerja Lapangan:</label>
-                        <textarea id="rawReportInput" rows="12" placeholder="Paste laporan harian kerja lapangan di sini...&#10;&#10;*Laporan Harian*&#10;*TARIKH* : 12/11/2026&#10;*NAMA* : M.BADRUL&#10;*NO FILE* : MCP058/26 SMHB KEMAMAN A..." class="w-full rounded-xl bg-slate-50 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs font-mono text-slate-700 p-3.5 transition-all leading-relaxed"></textarea>
+                        <textarea id="rawReportInput" rows="12" placeholder="Paste laporan harian kerja lapangan di sini...&#10;&#10;Laporan Harian&#10;TARIKH : 12/11/2026&#10;NAMA : M.BADRUL&#10;NO FILE : MCP058/26 SMHB KEMAMAN A..." class="w-full rounded-xl bg-slate-50 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs font-mono text-slate-700 p-3.5 transition-all leading-relaxed"></textarea>
                     </div>
 
                     <!-- Lampiran Gambar -->
@@ -505,7 +522,7 @@
                         <i class="fa-solid fa-file-code"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v2.8 (Auto-Tab, Edit &amp; Google Drive)</h3>
+                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v2.9 (Auto-Tab, Edit &amp; Google Drive)</h3>
                         <p class="text-[11px] text-blue-200">Guna Active Spreadsheet • Tetapkan MACRO_URL dalam index.html sebelum push ke GitHub</p>
                     </div>
                 </div>
@@ -545,6 +562,9 @@
  * v2.7: Fungsi EDIT laporan (ikut ID + semakan versi) dan Log_Edit untuk jejak audit.
  * v2.8: Gambar disimpan sebagai fail dalam Google Drive. Sheet hanya simpan link.
  *       Jalankan migrateImagesToDrive() sekali untuk pindah gambar lama (Base64) ke Drive.
+ * v2.9: Lajur 'Edit Token' (token unik setiap simpan) supaya dashboard boleh sahkan
+ *       simpanan SENDIRI yang masuk, bukan simpanan orang lain yang kebetulan sama versi.
+ *       Respons POST kini dibaca terus oleh dashboard (tiada lagi no-cors).
  */
 
 const SHEET_NAME = 'Laporan_Lapangan';
@@ -578,7 +598,8 @@ const HEADERS = [
   'Teks Asal',
   'ID',
   'Versi',
-  'Kemaskini Terakhir'
+  'Kemaskini Terakhir',
+  'Edit Token'
 ];
 const LOG_HEADERS = ['Masa Edit', 'ID', 'Versi Lama', 'Data Lama (JSON)'];
 
@@ -601,7 +622,8 @@ const COL = {
   TEKS_ASAL: HEADERS.indexOf('Teks Asal') + 1,
   ID: HEADERS.indexOf('ID') + 1,
   VERSI: HEADERS.indexOf('Versi') + 1,
-  KEMASKINI: HEADERS.indexOf('Kemaskini Terakhir') + 1
+  KEMASKINI: HEADERS.indexOf('Kemaskini Terakhir') + 1,
+  EDIT_TOKEN: HEADERS.indexOf('Edit Token') + 1
 };
 
 /**
@@ -847,9 +869,10 @@ function createReport(sheet, payload, imageCell) {
   row.push(id);
   row.push(1);
   row.push('');
+  row.push(asText(payload.editToken || ''));
 
   sheet.appendRow(row);
-  return { status: 'success', message: 'Data berjaya disimpan ke dalam ' + SHEET_NAME, id: id };
+  return { status: 'success', message: 'Data berjaya disimpan ke dalam ' + SHEET_NAME, id: id, versi: 1 };
 }
 
 /**
@@ -896,6 +919,7 @@ function updateReport(sheet, payload, imageCell) {
   }
   row[COL.VERSI - 1] = currentVersi + 1;
   row[COL.KEMASKINI - 1] = new Date();
+  row[COL.EDIT_TOKEN - 1] = asText(payload.editToken || '');
 
   range.setValues([row]);
   return { status: 'success', message: 'Laporan dikemaskini', id: id, versi: currentVersi + 1 };
@@ -996,7 +1020,8 @@ function doGet(e) {
         rawText: r[16] || '',
         id: r[17] || '',
         versi: Number(r[18]) || 1,
-        updatedAt: r[19] || ''
+        updatedAt: r[19] || '',
+        editToken: r[COL.EDIT_TOKEN - 1] || ''
       };
     });
 
@@ -1158,6 +1183,12 @@ function migrateImagesToDrive() {
 
         // Klik butang "Lihat" gambar (event delegation, tiada inline JS dengan data user)
         document.getElementById('reportTableBody').addEventListener('click', (e) => {
+            const resendBtn = e.target.closest('[data-resend-id]');
+            if (resendBtn) {
+                resendReport(resendBtn.dataset.resendId);
+                return;
+            }
+
             const editBtn = e.target.closest('[data-edit-id]');
             if (editBtn) {
                 openEditModal(editBtn.dataset.editId);
@@ -1269,7 +1300,150 @@ Tamat : 3.00pm
 
 *PERANCANGAN :*
 - PKNP - IKS Gebeng`;
-            document.getElementById('rawReportInput').value = sample;
+            // TARIKH dalam contoh ikut tarikh hari ini
+            document.getElementById('rawReportInput').value = stripStars(withTodayDate(sample));
+        }
+
+        // ============================================================================
+        // CONTOH LAPORAN IKUT NAMA
+        // Laporan terakhir yang DIHANTAR oleh setiap surveyor jadi contoh untuk nama tu.
+        // Sumber: reportsData (Teks Asal dari Sheet + laporan pending), jadi contoh ikut ke
+        // semua peranti selepas Sync. Nama terakhir yang dipilih/dihantar diingat dalam pelayar.
+        // ============================================================================
+        const TEMPLATE_PREF_KEY = 'drafter_template_name';
+
+        function getTemplatePref() {
+            try { return localStorage.getItem(TEMPLATE_PREF_KEY) || ''; } catch (e) { return ''; }
+        }
+
+        function setTemplatePref(key) {
+            try { if (key) localStorage.setItem(TEMPLATE_PREF_KEY, key); } catch (e) {}
+        }
+
+        // Nama paparan khas dalam dropdown. Semua variasi nama yang mengandungi perkataan ni
+        // (contoh "M.BADRUL", "Mohd Badrul") digabung jadi SATU pilihan dengan label ini sahaja.
+        // Tambah di sini jika mahu nama lain diringkaskan juga, contoh: HELMI: 'Helmi'.
+        const TEMPLATE_ALIASES = { BADRUL: 'Badrul' };
+
+        function templateKey(nama) {
+            const tokens = surveyorKey(nama).split(/[^A-Z]+/).filter(Boolean);
+            const alias = Object.keys(TEMPLATE_ALIASES).find(k => tokens.includes(k));
+            return alias ? 'ALIAS:' + alias : surveyorKey(nama);
+        }
+
+        function templateLabel(key, r) {
+            if (key.startsWith('ALIAS:')) return TEMPLATE_ALIASES[key.slice(6)];
+            return `${String(r.nama).trim()} • ${r.tarikh || '-'} • ${r.noFile || '-'}`;
+        }
+
+        // reportsData tersusun ikut masa hantar (pending dahulu, kemudian Sheet terbaru dahulu),
+        // jadi rekod pertama bagi setiap nama = laporan terakhir dia hantar.
+        function getTemplates() {
+            const map = new Map();
+            reportsData.forEach(r => {
+                if (surveyorKey(r.nama) === '-') return;
+                const key = templateKey(r.nama);
+                if (!key || key === '-' || map.has(key)) return;
+                map.set(key, r);
+            });
+            return map;
+        }
+
+        // Untuk rekod tanpa Teks Asal (contoh: CSV fallback), bina semula teks format WhatsApp
+        function buildReportText(r) {
+            const v = k => (r[k] && r[k] !== '-' ? r[k] : '');
+            return `*Laporan Harian*
+
+*TARIKH* : ${v('tarikh')}
+*NAMA* : ${v('nama')}
+*NO FILE* : ${v('noFile')}
+
+*TUGASAN / OUTPUT :*
+- ${v('tugasan')}
+
+*PROGRESS (%) :*
+- Hari ini : ${v('progressHariIni')}
+
+- Total dah siap : ${v('totalSiap')}
+
+*DATELINE PROJEK :*
+- Jangka siap asal : ${v('jangkaAsal')}
+
+- Jangka siap semasa : ${v('jangkaSemasa')}
+
+- Status : ${v('status')}
+
+*WAKTU :*
+Mula kerja : ${v('waktuMula')}
+Tamat : ${v('waktuTamat')}
+
+*ISU / HALANGAN :*
+- ${v('isu')}
+
+*MAKLUMAT TAMBAHAN :*
+- ${v('maklumat')}
+
+*PERANCANGAN :*
+- ${v('perancangan')}`;
+        }
+
+        // Buang semua tanda * dan ruang lebihan di hujung baris
+        function stripStars(text) {
+            return String(text || '').replace(/\*/g, '').replace(/[ \t]+$/gm, '');
+        }
+
+        // Tukar baris TARIKH kepada tarikh hari ini (format dd/mm/yyyy)
+        function withTodayDate(text) {
+            const today = formatTarikh(new Date());
+            return text.replace(/^([ \t]*\*?[ \t]*TARIKH[ \t]*\*?[ \t]*:[ \t]*)[^\n]*/im, `$1${today}`);
+        }
+
+        function refreshTemplateOptions() {
+            const select = document.getElementById('templateSelect');
+            if (!select) return;
+            const templates = getTemplates();
+            // Pilihan lama mungkin tersimpan sebagai "M.BADRUL", jadi normalkan ikut alias
+            const raw = getTemplatePref() || select.value;
+            const current = templates.has(raw) ? raw : templateKey(raw);
+
+            const items = [...templates.entries()]
+                .map(([key, r]) => ({ key, label: templateLabel(key, r) }))
+                .sort((a, b) => a.label.localeCompare(b.label));
+            select.innerHTML = `<option value="">Pilih nama...</option>` + items.map(({ key, label }) =>
+                `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`
+            ).join('');
+            select.value = templates.has(current) ? current : '';
+        }
+
+        function applyTemplate() {
+            const select = document.getElementById('templateSelect');
+            const key = select.value;
+            if (!key) {
+                showToast('info', 'Pilih Nama', 'Pilih nama anda dahulu untuk guna laporan terakhir sebagai contoh.');
+                return;
+            }
+            const rec = getTemplates().get(key);
+            if (!rec) {
+                showToast('warning', 'Tiada Contoh', 'Belum ada laporan untuk nama ni. Sync data dahulu.');
+                return;
+            }
+
+            const source = String(rec.rawText || '').trim() ? rec.rawText : buildReportText(rec);
+            // Buang tanda * (format bold WhatsApp) supaya contoh bersih
+            const text = stripStars(withTodayDate(source));
+            const input = document.getElementById('rawReportInput');
+            if (input.value.trim() && input.value.trim() !== text.trim()
+                && !confirm('Kotak laporan dah ada teks. Ganti dengan contoh laporan terakhir?')) {
+                return;
+            }
+
+            input.value = text;
+            setTemplatePref(key);
+            document.getElementById('templateHint').textContent =
+                `Contoh dari laporan ${rec.tarikh || '-'} (${rec.noFile || '-'}). TARIKH dah ditukar ke hari ini. Semak progress, waktu & isu sebelum hantar.`;
+            input.focus();
+            input.setSelectionRange(0, 0);
+            input.scrollTop = 0;
         }
 
         // Kecilkan gambar (maks 1600px) dan mampatkan berperingkat jika masih terlalu besar
@@ -1456,14 +1630,20 @@ Tamat : 3.00pm
             }
             parsedRecord.id = generateId();
             parsedRecord.versi = 1;
-            parsedRecord.action = 'create';
+            parsedRecord.editToken = generateId();
+            parsedRecord.pending = true; // belum disahkan masuk Sheet
 
-            // Optimistic UI
+            // Laporan ni terus jadi contoh untuk nama dia, dan nama dia diingat untuk esok
+            setTemplatePref(templateKey(parsedRecord.nama));
+
+            // Optimistic UI. Rekod disimpan sebagai "pending" dalam pelayar dan boleh dihantar
+            // semula dengan ID SAMA (server tolak duplikat ikut ID), jadi input boleh terus dikosongkan.
             reportsData.unshift(parsedRecord);
             saveStoredData();
-            renderTable(reportsData);
+            filterReports();
             updateKPIs(reportsData);
             clearAttachedImage();
+            rawInput.value = '';
 
             if (!isMacroConfigured()) {
                 showToast('info', 'Dijana (Mod Tempatan)', `Laporan ${parsedRecord.nama} ditambah. Masukkan MACRO_URL dalam index.html untuk simpan ke Google Sheet.`);
@@ -1472,61 +1652,166 @@ Tamat : 3.00pm
 
             try {
                 setSubmitting(true, 'Menghantar Ke Google Sheet...');
-                setSyncStatus('Saving...');
-
-                // no-cors: browser tak boleh baca respons, jadi kita sahkan semula melalui GET
-                await fetch(MACRO_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(parsedRecord)
-                });
-
-                setSubmitting(true, 'Mengesahkan Dalam Sheet...');
-                const verified = await verifyRecord(parsedRecord.id, 1);
-
-                if (verified) {
-                    rawInput.value = '';
-                    setSyncStatus('Saved to Cloud');
-                    showToast('success', 'Disahkan Dalam Sheet', `Laporan ${parsedRecord.nama} (${parsedRecord.noFile}) dah masuk Google Sheet.`);
-                } else {
-                    setSyncStatus('Belum Disahkan');
-                    showToast('warning', 'Belum Disahkan', 'Data dihantar tapi tak jumpa dalam Sheet. Semak Google Sheet sebelum hantar semula.');
-                }
-            } catch (err) {
-                console.error('Ralat menghantar ke Apps Script:', err);
-                setSyncStatus('Local Saved');
-                showToast('error', 'Disimpan Secara Tempatan', 'Gagal hubungi MACRO_URL. Data disimpan dalam pelayar sahaja.');
+                await submitAndReport(parsedRecord);
             } finally {
                 setSubmitting(false);
             }
         }
 
-        // Tarik semula data dari Apps Script dan sahkan rekod (ikut ID & versi) dah ada dalam Sheet.
-        // Jika Sheet berjaya dibaca, data Sheet dijadikan sumber utama (walaupun pengesahan gagal),
-        // supaya paparan tak tunjuk data yang sebenarnya tak tersimpan.
-        async function verifyRecord(id, expectedVersi) {
+        // ============================================================================
+        // HANTAR KE APPS SCRIPT & PENGESAHAN
+        // ============================================================================
+
+        // POST biasa (bukan no-cors) supaya respons JSON Apps Script boleh dibaca terus.
+        // text/plain = "simple request", tiada preflight CORS.
+        // Pulangkan { json } jika respons dapat dibaca, atau { json: null } jika tidak
+        // (rangkaian putus, atau browser sekat respons). Dalam kes null, POST mungkin dah
+        // sampai ke server, jadi pemanggil MESTI sahkan melalui GET.
+        async function postToMacro(payload) {
+            try {
+                const res = await fetch(MACRO_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (json && typeof json.status === 'string') return { json };
+            } catch (e) {
+                console.warn('Respons POST tak dapat dibaca, sahkan melalui GET:', e);
+            }
+            return { json: null };
+        }
+
+        // Tarik data dari Apps Script dan gabung dengan rekod pending tempatan.
+        // Pulangkan array data Sheet, atau null jika gagal.
+        async function pullFromSheet() {
+            const res = await fetch(MACRO_URL, { method: 'GET', redirect: 'follow' });
+            const json = await res.json();
+            if (!json || json.status !== 'success' || !Array.isArray(json.data)) return null;
+            mergeWithSheet(json.data);
+            return json.data;
+        }
+
+        // Sahkan melalui GET (fallback bila respons POST tak dapat dibaca).
+        // Pulangkan { reachable, match } dengan match = rekod Sheet ikut ID (atau undefined).
+        async function verifyRecord(id) {
             await new Promise(r => setTimeout(r, 1500));
             try {
-                const res = await fetch(MACRO_URL, { method: 'GET', redirect: 'follow' });
-                const json = await res.json();
-                if (!json || json.status !== 'success' || !Array.isArray(json.data)) return false;
-
-                const match = json.data.find(d => d.id === id);
-                const found = !!match && Number(match.versi) === Number(expectedVersi);
-
-                // Simpan rekod tempatan yang belum masuk Sheet (contoh: gagal hantar) supaya tak hilang
-                const sheetIds = new Set(json.data.map(d => d.id).filter(Boolean));
-                const localOnly = reportsData.filter(r => r.id && !sheetIds.has(r.id) && !(r.id === id && found));
-
-                reportsData = [...localOnly, ...json.data];
-                saveStoredData();
-                filterReports();
-                updateKPIs(reportsData);
-                return found;
+                const data = await pullFromSheet();
+                if (!data) return { reachable: false };
+                return { reachable: true, match: data.find(d => d.id === id) };
             } catch (e) {
                 console.warn('Gagal sahkan rekod:', e);
-                return false;
+                return { reachable: false };
+            }
+        }
+
+        // Rekod yang belum disahkan masuk Sheet. 'action: create' = rekod pending dari versi lama (v2.8).
+        function isPendingLocal(r) {
+            return !!(r && r.id && (r.pending === true || r.action === 'create'));
+        }
+
+        // Data Sheet jadi sumber utama, TAPI rekod pending tempatan yang belum ada dalam Sheet
+        // dikekalkan di atas supaya tak hilang bila tekan Sync. Pulangkan bilangan pending.
+        function mergeWithSheet(sheetData) {
+            const sheetIds = new Set(sheetData.map(d => d.id).filter(Boolean));
+            const pendingLocal = reportsData
+                .filter(r => isPendingLocal(r) && !sheetIds.has(r.id))
+                .map(r => ({ ...r, pending: true }));
+            reportsData = [...pendingLocal, ...sheetData];
+            saveStoredData();
+            filterReports();
+            updateKPIs(reportsData);
+            return pendingLocal.length;
+        }
+
+        function pendingCount() {
+            return reportsData.filter(isPendingLocal).length;
+        }
+
+        function markSaved(id) {
+            const rec = reportsData.find(r => r.id === id);
+            if (rec) {
+                rec.pending = false;
+                delete rec.action;
+                delete rec.imageDropped;
+            }
+            saveStoredData();
+            filterReports();
+            updateKPIs(reportsData);
+            // Tarik semula senyap untuk dapat link Drive gambar & data rasmi Sheet
+            pullFromSheet().catch(() => {});
+        }
+
+        function buildCreatePayload(rec) {
+            const payload = { action: 'create', id: rec.id, editToken: rec.editToken || generateId() };
+            EDIT_FIELDS.forEach(f => { payload[f.key] = rec[f.key]; });
+            payload.rawText = rec.rawText || '';
+            payload.image = safeImageSrc(rec.image);
+            return payload;
+        }
+
+        // Hantar rekod baharu. Pulangkan 'saved' | 'rejected' | 'notfound' | 'offline'
+        async function submitCreate(rec) {
+            if (!rec.editToken) rec.editToken = generateId();
+            const { json } = await postToMacro(buildCreatePayload(rec));
+
+            if (json) {
+                if (json.status === 'success') { markSaved(rec.id); return { state: 'saved' }; }
+                return { state: 'rejected', message: json.message || 'Ralat tidak diketahui dari server.' };
+            }
+
+            // Respons tak dapat dibaca: semak dalam Sheet ikut ID
+            const v = await verifyRecord(rec.id);
+            if (!v.reachable) return { state: 'offline' };
+            if (v.match) return { state: 'saved' }; // mergeWithSheet dah ganti rekod pending dengan versi Sheet
+            return { state: 'notfound' };
+        }
+
+        // Hantar + papar toast ikut keputusan
+        async function submitAndReport(rec) {
+            setSyncStatus('Saving...');
+            const out = await submitCreate(rec);
+            const label = `${rec.nama} (${rec.noFile})`;
+
+            if (out.state === 'saved') {
+                setSyncStatus('Saved to Cloud');
+                showToast('success', 'Disahkan Dalam Sheet', `Laporan ${label} dah masuk Google Sheet.`);
+            } else if (out.state === 'rejected') {
+                setSyncStatus('Ditolak Server');
+                showToast('error', 'Server Tolak Laporan', `${out.message} Laporan disimpan dalam pelayar, tekan "Hantar Semula" lepas betulkan.`);
+            } else if (out.state === 'notfound') {
+                setSyncStatus('Belum Masuk Sheet');
+                showToast('warning', 'Belum Masuk Sheet', `Laporan ${label} tak jumpa dalam Sheet. Tekan "Hantar Semula" pada baris tu.`);
+            } else {
+                setSyncStatus('Offline');
+                showToast('error', 'Tiada Sambungan', `Laporan ${label} disimpan dalam pelayar. Tekan "Hantar Semula" bila ada line.`);
+            }
+            return out;
+        }
+
+        const resendingIds = new Set();
+
+        async function resendReport(id) {
+            if (!isMacroConfigured()) {
+                showToast('info', 'Mod Tempatan', 'Masukkan MACRO_URL dalam index.html dahulu.');
+                return;
+            }
+            if (resendingIds.has(id)) return;
+            const rec = reportsData.find(r => r.id === id && isPendingLocal(r));
+            if (!rec) return;
+
+            resendingIds.add(id);
+            filterReports();
+            try {
+                if (rec.imageDropped && !rec.image) {
+                    showToast('info', 'Gambar Tak Dapat Dihantar', 'Gambar laporan ni tak sempat disimpan dalam pelayar. Lampir semula melalui Edit selepas laporan masuk Sheet.');
+                }
+                await submitAndReport(rec);
+            } finally {
+                resendingIds.delete(id);
+                filterReports();
             }
         }
 
@@ -1572,7 +1857,10 @@ Tamat : 3.00pm
 
             const notice = document.getElementById('editLocalNotice');
             const noticeText = document.getElementById('editLocalNoticeText');
-            if (!isMacroConfigured()) {
+            if (isPendingLocal(item)) {
+                noticeText.textContent = 'Laporan ni belum masuk Google Sheet. Perubahan disimpan dalam pelayar, kemudian tekan "Hantar Semula" pada jadual.';
+                notice.classList.remove('hidden');
+            } else if (!isMacroConfigured()) {
                 noticeText.textContent = 'MACRO_URL belum ditetapkan. Perubahan hanya disimpan dalam pelayar ini.';
                 notice.classList.remove('hidden');
             } else {
@@ -1706,9 +1994,27 @@ Tamat : 3.00pm
             if (updated.status === '-') {
                 updated.status = (parseFloat(updated.totalSiap) || 0) >= 100 ? 'SIAP' : 'DALAM PROSES';
             }
-            if (editImageChanged) updated.image = editImageData;
+            if (editImageChanged) {
+                updated.image = editImageData;
+                updated.imageThumb = '';
+                delete updated.imageDropped;
+            }
 
             const baseVersi = Number(original.versi) || 1;
+
+            // Rekod pending belum wujud dalam Sheet: edit dalam pelayar sahaja.
+            // Bila "Hantar Semula", data terkini ni yang dihantar (ID sama).
+            if (isPendingLocal(original)) {
+                updated.pending = true;
+                reportsData[idx] = updated;
+                saveStoredData();
+                filterReports();
+                updateKPIs(reportsData);
+                setEditSaving(false);
+                closeEditModal();
+                showToast('info', 'Dikemaskini (Belum Masuk Sheet)', 'Perubahan disimpan dalam pelayar. Tekan "Hantar Semula" untuk hantar ke Google Sheet.');
+                return;
+            }
 
             // Mod tempatan: terus simpan dalam pelayar
             if (!isMacroConfigured()) {
@@ -1723,45 +2029,75 @@ Tamat : 3.00pm
                 return;
             }
 
+            // Token unik untuk simpanan INI. Pengesahan semak token, bukan nombor versi,
+            // sebab versi boleh sama dengan hasil edit orang lain (kes konflik).
+            const editToken = generateId();
             const payload = {
                 action: 'update',
                 id: updated.id,
                 baseVersi: baseVersi,
                 rawText: updated.rawText,
-                imageChanged: editImageChanged
+                imageChanged: editImageChanged,
+                editToken: editToken
             };
             EDIT_FIELDS.forEach(f => { payload[f.key] = updated[f.key]; });
-            if (editImageChanged) payload.image = editImageData;
+            if (editImageChanged) payload.image = safeImageSrc(editImageData);
+
+            const showFreshVersion = () => {
+                const fresh = reportsData.find(r => r.id === editingId);
+                if (fresh) {
+                    document.getElementById('editModalSub').textContent =
+                        `${fresh.nama || '-'} • ${fresh.noFile || '-'} • Versi ${fresh.versi || 1} (terkini dari Sheet)`;
+                }
+            };
 
             try {
                 setEditSaving(true, 'Menyimpan...');
                 setSyncStatus('Updating...');
 
-                await fetch(MACRO_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
+                const { json } = await postToMacro(payload);
+                let state, serverMsg = '';
 
-                setEditSaving(true, 'Mengesahkan...');
-                const verified = await verifyRecord(updated.id, baseVersi + 1);
+                if (json) {
+                    state = json.status === 'success' ? 'saved' : 'rejected';
+                    serverMsg = json.message || '';
+                    if (state === 'saved') {
+                        // Kemaskini paparan terus, kemudian tarik data rasmi Sheet di belakang
+                        reportsData[idx] = { ...updated, versi: Number(json.versi) || baseVersi + 1, editToken };
+                        saveStoredData();
+                        filterReports();
+                        updateKPIs(reportsData);
+                        pullFromSheet().catch(() => {});
+                    } else {
+                        // Konflik / ralat: muat semula supaya pengguna nampak data terkini
+                        try { await pullFromSheet(); } catch (e) {}
+                    }
+                } else {
+                    // Respons tak dapat dibaca: sahkan ikut token dalam Sheet
+                    setEditSaving(true, 'Mengesahkan...');
+                    const v = await verifyRecord(updated.id);
+                    if (!v.reachable) state = 'offline';
+                    else state = v.match && v.match.editToken === editToken ? 'saved' : 'unverified';
+                }
+
                 setEditSaving(false);
 
-                if (verified) {
+                if (state === 'saved') {
                     setSyncStatus('Updated');
                     closeEditModal();
                     showToast('success', 'Laporan Dikemaskini', `${updated.nama} (${updated.noFile}) dah dikemaskini dalam Google Sheet.`);
+                } else if (state === 'rejected') {
+                    setSyncStatus('Edit Ditolak');
+                    showToast('warning', 'Kemaskini Ditolak', `${serverMsg || 'Server tolak perubahan.'} Perubahan anda masih dalam borang, semak data terkini dan simpan semula.`);
+                    showFreshVersion();
+                } else if (state === 'unverified') {
+                    setSyncStatus('Edit Gagal');
+                    showToast('warning', 'Kemaskini Tidak Masuk',
+                        'Perubahan anda tak jumpa dalam Sheet. Mungkin orang lain dah edit laporan ni dulu. Data terkini dah dimuat semula, semak dan cuba lagi.');
+                    showFreshVersion();
                 } else {
                     setSyncStatus('Edit Gagal');
-                    showToast('warning', 'Kemaskini Tidak Disahkan',
-                        'Perubahan tak masuk Sheet. Mungkin orang lain dah edit laporan ni dulu, atau rekod belum ada dalam Sheet. Data terkini dah dimuat semula, semak dan cuba lagi.');
-                    // Kemaskini paparan versi dalam modal supaya pengguna nampak data terkini
-                    const fresh = reportsData.find(r => r.id === editingId);
-                    if (fresh) {
-                        document.getElementById('editModalSub').textContent =
-                            `${fresh.nama || '-'} • ${fresh.noFile || '-'} • Versi ${fresh.versi || 1} (terkini dari Sheet)`;
-                    }
+                    showToast('error', 'Gagal Hubungi Server', 'Status perubahan tak dapat disahkan. Semak sambungan internet, Sync, dan semak laporan ni sebelum simpan semula.');
                 }
             } catch (err) {
                 console.error('Ralat kemaskini:', err);
@@ -1813,13 +2149,24 @@ Tamat : 3.00pm
                        </button>`
                     : `<span title="Rekod dari CSV fallback tiada ID. Sync melalui Apps Script untuk edit." class="text-slate-300 cursor-help"><i class="fa-solid fa-lock"></i></span>`;
 
+                const isPending = isPendingLocal(item);
+                const isResending = isPending && resendingIds.has(item.id);
+                const pendingCell = isPending
+                    ? `<div class="mt-1.5 flex flex-col items-center gap-1">
+                           <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700" title="${item.imageDropped && !item.image ? 'Gambar tak tersimpan dalam pelayar, lampir semula melalui Edit' : 'Laporan disimpan dalam pelayar sahaja'}">Belum masuk Sheet</span>
+                           <button type="button" data-resend-id="${escapeHtml(item.id)}" ${isResending ? 'disabled' : ''} class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-jm-navy hover:bg-jm-blue disabled:opacity-60 text-white text-[10px] font-bold transition-colors">
+                               <i class="fa-solid ${isResending ? 'fa-circle-notch fa-spin' : 'fa-rotate-right'} text-jm-gold"></i> ${isResending ? 'Menghantar...' : 'Hantar Semula'}
+                           </button>
+                       </div>`
+                    : '';
+
                 const editedBadge = Number(item.versi) > 1
                     ? `<div class="mt-1 text-[10px] font-semibold text-jm-goldDark" title="${escapeHtml(item.updatedAt ? 'Dikemaskini: ' + item.updatedAt : 'Telah diedit')}">diedit • v${Number(item.versi)}</div>`
                     : '';
 
                 return `
-                    <tr class="hover:bg-blue-50/50 transition-colors align-top">
-                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${editCell}${editedBadge}</td>
+                    <tr class="${isPending ? 'bg-red-50/40 ' : ''}hover:bg-blue-50/50 transition-colors align-top">
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${editCell}${editedBadge}${pendingCell}</td>
                         <td class="py-3.5 px-3 font-mono whitespace-nowrap text-slate-600">${escapeHtml(item.tarikh || '-')}</td>
                         <td class="py-3.5 px-3 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(item.nama || '-')}</td>
                         <td class="py-3.5 px-3 font-mono font-semibold text-jm-royal whitespace-nowrap">${escapeHtml(item.noFile || '-')}</td>
@@ -1867,6 +2214,7 @@ Tamat : 3.00pm
             document.getElementById('kpiAvgBar').style.width = `${Math.min(100, avg)}%`;
             document.getElementById('kpiIssues').textContent = issues;
 
+            refreshTemplateOptions();
             renderSurveyorStats();
         }
 
@@ -2499,12 +2847,23 @@ Tamat : 3.00pm
             renderTable(filtered);
         }
 
+        // Gambar Base64 rekod yang dah masuk Sheet tak dicache (link Drive dah ada).
+        // Gambar rekod PENDING cuba disimpan supaya boleh dihantar semula selepas refresh.
+        // Jika localStorage penuh (had ~5MB), gambar pending dibuang dan ditanda imageDropped.
         function saveStoredData() {
+            const build = (keepPendingImages) => reportsData.map(r => {
+                if (!/^data:/i.test(String(r.image || ''))) return r;
+                if (keepPendingImages && isPendingLocal(r)) return r;
+                return { ...r, image: '', imageThumb: '', imageDropped: isPendingLocal(r) ? true : r.imageDropped };
+            });
             try {
-                // Gambar Base64 tak dicache (boleh cecah MB). Link Drive kekal.
-                const slim = reportsData.map(r => (/^data:/i.test(String(r.image || ''))
-                    ? { ...r, image: '', imageThumb: '' } : r));
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(build(true)));
+                return;
+            } catch (e) {
+                console.warn('LocalStorage penuh, simpan tanpa gambar pending:', e);
+            }
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(build(false)));
             } catch (e) {
                 console.warn('LocalStorage penuh atau tidak tersedia:', e);
             }
@@ -2521,6 +2880,10 @@ Tamat : 3.00pm
         }
 
         function clearLocalData() {
+            const pending = pendingCount();
+            if (pending > 0 && !confirm(`${pending} laporan BELUM masuk Google Sheet dan akan hilang terus jika Reset. Teruskan?`)) {
+                return;
+            }
             try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
             reportsData = [];
             renderTable(reportsData);
@@ -2542,13 +2905,14 @@ Tamat : 3.00pm
                     const response = await fetch(MACRO_URL, { method: 'GET', redirect: 'follow' });
                     const json = await response.json();
                     if (json && json.status === 'success' && Array.isArray(json.data)) {
-                        reportsData = json.data;
-                        saveStoredData();
-                        filterReports();
-                        updateKPIs(reportsData);
+                        const pending = mergeWithSheet(json.data);
                         setSyncStatus('AppsScript Synced');
                         setRefreshing(false);
-                        showToast('success', 'Sync Berjaya', `${reportsData.length} rekod dimuat turun dari Google Sheet.`);
+                        if (pending > 0) {
+                            showToast('warning', 'Sync Berjaya, Ada Pending', `${json.data.length} rekod dari Google Sheet. ${pending} laporan masih belum masuk Sheet, tekan "Hantar Semula".`);
+                        } else {
+                            showToast('success', 'Sync Berjaya', `${json.data.length} rekod dimuat turun dari Google Sheet.`);
+                        }
                         return;
                     }
                 } catch (err) {
@@ -2599,16 +2963,21 @@ Tamat : 3.00pm
                                 isu: getVal('isu') || getVal('halangan') || '-',
                                 maklumat: getVal('maklumat') || getVal('tambahan') || '-',
                                 perancangan: getVal('perancangan') || '-',
-                                image: getVal('gambar') || getVal('image') || ''
+                                image: getVal('gambar') || getVal('image') || '',
+                                // Padanan TEPAT (bukan includes) supaya 'ID' tak tersalah padan lajur lain
+                                id: String(row['ID'] || '').trim(),
+                                versi: Number(row['Versi']) || 1,
+                                editToken: String(row['Edit Token'] || '').trim()
                             };
                         });
 
-                        reportsData = sheetRecords;
-                        saveStoredData();
-                        filterReports();
-                        updateKPIs(reportsData);
+                        const pending = mergeWithSheet(sheetRecords);
                         setSyncStatus('CSV Synced');
-                        showToast('success', 'Sync Berjaya', `${sheetRecords.length} rekod dimuat turun dari Google Sheets (CSV).`);
+                        if (pending > 0) {
+                            showToast('warning', 'Sync Berjaya (CSV), Ada Pending', `${sheetRecords.length} rekod dari CSV. ${pending} laporan masih belum masuk Sheet.`);
+                        } else {
+                            showToast('success', 'Sync Berjaya', `${sheetRecords.length} rekod dimuat turun dari Google Sheets (CSV).`);
+                        }
                     } else {
                         // Sheet kosong: papar keadaan kosong sahaja, TIDAK hantar data sampel ke Sheet
                         renderTable(reportsData);
