@@ -10,20 +10,24 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 /* ============================================================
-   JMC Operations Hub — UI v2 (GEO-STAT: light, indigo + kuning)
+   JMC Operations Hub — UI v3 (Executive Command Center)
    Struktur: sidebar indigo tetap + topbar + kawasan kandungan
-   (dashboard utama ATAU iframe modul). Logik JS tidak berubah.
+   (dashboard utama berhierarki + iframe modul). Logik JS asal dikekalkan.
    ============================================================ */
 :root{
   --ind-950:#0A2540; --ind-900:#0F2A52; --ind-800:#13346B; --ind-600:#1D4ED8; --ind-500:#3B82F6; --ind-100:#DBEAFE; --ind-50:#EFF6FF;
   --yel:#FACC15; --yel-600:#CA8A04; --yel-50:#FEF9C3; --yel-ink:#0A2540;
-  --bg:#F8FAFC; --surface:#ffffff; --line:#E2E8F0; --line2:#EEF2F6;
-  --ink:#1E293B; --ink2:#334155; --muted:#64748B;
-  --ok:#0f7a43; --ok-50:#e5f4ec; --warn:#B45309; --warn-50:#FEF3C7; --bad:#DC2626; --bad-50:#FEE2E2;
-  --c-rev:#1D4ED8; --c-exp:#CA8A04;
+  --bg:#F1F5F9; --surface:#ffffff; --line:#E2E8F0; --line2:#F1F5F9;
+  --ink:#0F172A; --ink2:#334155; --muted:#64748B;
+  --ok:#059669; --ok-50:#ECFDF5;
+  --warn:#D97706; --warn-50:#FFFBEB;
+  --bad:#DC2626; --bad-50:#FEF2F2;
+  --c-rev:#1D4ED8; --c-exp:#D97706;
   --f:'Inter','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
   --sb:252px; --top:64px;
-  --r-lg:16px; --r-md:10px; --r-sm:6px;
+  --r-lg:16px; --r-md:12px; --r-sm:8px;
+  --sh-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.03);
+  --sh-md:0 4px 14px -2px rgba(15,23,42,.06),0 2px 6px -2px rgba(15,23,42,.04);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -35,7 +39,7 @@ button{font-family:inherit;cursor:pointer}
 /* ---------- Sidebar ---------- */
 .sb{position:fixed;inset:0 auto 0 0;width:var(--sb);background:var(--ind-950);color:#c3c5ef;display:flex;flex-direction:column;z-index:60;transition:transform .22s ease}
 .brand{display:flex;gap:12px;align-items:center;padding:20px 20px 18px}
-.mark{width:42px;height:42px;border-radius:12px;background:var(--yel);color:var(--ind-950);display:grid;place-items:center;flex:none;position:relative}
+.mark{width:42px;height:42px;border-radius:12px;background:var(--yel);color:var(--ind-950);display:grid;place-items:center;flex:none;position:relative;box-shadow:0 4px 12px rgba(250,204,21,.25)}
 .mark svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .brand b{display:block;color:#fff;font-size:15px;font-weight:750;font-stretch:112%;letter-spacing:.2px;line-height:1.15}
 .brand span{font-size:11.5px;color:#9497cf}
@@ -61,7 +65,7 @@ button{font-family:inherit;cursor:pointer}
 .top h1{font-size:17px;font-weight:700;font-stretch:108%;letter-spacing:-.1px;line-height:1.2}
 .crumb{font-size:12px;color:var(--muted)}
 .sp{flex:1}
-.clock{font-size:12.5px;color:var(--ink2);white-space:nowrap;font-variant-numeric:tabular-nums;padding:6px 10px;border-radius:8px;background:var(--bg)}
+.clock{font-size:12.5px;color:var(--ink2);white-space:nowrap;font-variant-numeric:tabular-nums;padding:6px 11px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
 .btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;transition:border-color .15s,color .15s,background .15s}
 .btn:hover{border-color:var(--ind-600);color:var(--ind-600)}
 .btn.p{background:var(--ind-600);border-color:var(--ind-600);color:#fff}
@@ -73,126 +77,206 @@ button{font-family:inherit;cursor:pointer}
 .burger{display:none;border:0;background:none;padding:6px;margin-left:-6px;border-radius:8px}
 .burger i{font-size:19px;color:var(--ink)}
 .content{flex:1;position:relative;min-height:0}
-#home{position:absolute;inset:0;overflow:auto;padding:22px 26px 44px}
+#home{position:absolute;inset:0;overflow:auto;padding:20px 26px 48px;scroll-behavior:smooth}
 .frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);display:none}
 .frame.on{display:block}
 .loading{position:absolute;inset:0;display:none;place-items:center;color:var(--muted);font-size:13px;background:var(--bg)}
 .loading.on{display:grid}
 
-/* ---------- Hero: tajuk + jalur KPI (elemen utama) ---------- */
-.hero{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px}
-.hero .contour{position:absolute;right:-40px;top:-60px;width:520px;height:300px;pointer-events:none;color:var(--ind-600);opacity:.13}
-.hero-head{position:relative;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:20px 24px 18px}
-.hero-head h2{font-size:26px;font-weight:780;font-stretch:118%;letter-spacing:-.4px;line-height:1.1;color:var(--ind-950)}
-.hero-head p{font-size:12.5px;color:var(--muted);margin-top:5px}
-.hero-head .chips{display:flex;gap:6px;flex-wrap:wrap}
-/* 8 KPI (4 x 2). Garisan antara kad guna gap 1px atas latar --line, jadi tak perlu kira nth-child ikut lebar skrin. */
-.kpis{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;border-top:1px solid var(--line);background:var(--line)}
-.kpi{all:unset;box-sizing:border-box;cursor:pointer;display:block;padding:15px 18px 16px;min-width:0;position:relative;transition:background .15s;background:var(--surface)}
-.kpi:hover{background:var(--ind-50)}
-.kpi:focus-visible{outline:2px solid var(--ind-600);outline-offset:-2px}
-.kpi .l{font-size:12px;color:var(--muted);font-weight:500}
-.kpi .v{font-size:27px;font-weight:720;font-stretch:112%;margin-top:4px;letter-spacing:-.6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);line-height:1.15}
-.kpi .v small{font-size:13px;font-weight:600;color:var(--ink2);margin-right:3px;letter-spacing:0}
-.kpi .s{font-size:11.5px;color:var(--ink2);margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.kpi.hl .v{display:inline-block;max-width:100%;background:linear-gradient(transparent 66%,var(--yel) 66%,var(--yel) 92%,transparent 92%)}
-.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;padding:2px 8px;border-radius:20px;white-space:nowrap}
-.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-.chip.ok{background:var(--ok-50);color:var(--ok)}.chip.warn{background:var(--warn-50);color:var(--warn)}.chip.bad{background:var(--bad-50);color:var(--bad)}.chip.info{background:var(--ind-50);color:var(--ind-600)}.chip.mute{background:var(--line2);color:var(--ink2)}
+/* ---------- Hero: Executive Command Center ---------- */
+.hero{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-bottom:18px;box-shadow:var(--sh-sm)}
+.hero-top{position:relative;background:linear-gradient(135deg,var(--ind-950) 0%,var(--ind-800) 100%);color:#fff;padding:20px 24px 18px;overflow:hidden}
+.hero .contour{position:absolute;right:-30px;top:-65px;width:540px;height:310px;pointer-events:none;color:var(--yel);opacity:.15}
+.hero-head{position:relative;display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hero-head h2{font-size:23px;font-weight:780;font-stretch:115%;letter-spacing:-.3px;line-height:1.15;color:#fff}
+.hero-head p{font-size:12.5px;color:#cbd5e1;margin-top:4px}
+.hero-head .chips{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.hero-bar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12)}
 
-/* ---------- Panels ---------- */
+/* Live Source Health Pills */
+.srcs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.src-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:550;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.1)}
+.src-pill i.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.src-pill.ok i.dot{background:#34D399;box-shadow:0 0 6px #34D399}
+.src-pill.load i.dot{background:var(--yel)}
+.src-pill.err i.dot{background:#F87171}
+
+/* Executive Focus Filter Tabs */
+.ftabs{display:flex;gap:4px;background:rgba(10,37,64,.45);padding:3px;border-radius:10px;border:1px solid rgba(255,255,255,.12)}
+.ftab{all:unset;cursor:pointer;font-size:11.5px;font-weight:600;color:#cbd5e1;padding:5px 11px;border-radius:7px;transition:background .15s,color .15s;white-space:nowrap}
+.ftab:hover{color:#fff;background:rgba(255,255,255,.08)}
+.ftab.on{background:var(--yel);color:var(--ind-950);font-weight:700}
+
+/* 8 KPI (4 x 2) */
+.kpis{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line)}
+.kpi{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;padding:15px 18px 16px;min-width:0;position:relative;transition:background .15s;background:var(--surface)}
+.kpi:hover{background:#F8FAFC}
+.kpi:focus-visible{outline:2px solid var(--ind-600);outline-offset:-2px}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:12.5px;flex:none}
+.kpi .ico.b{background:var(--ind-50);color:var(--ind-600)}
+.kpi .ico.g{background:var(--ok-50);color:var(--ok)}
+.kpi .ico.y{background:var(--warn-50);color:var(--warn)}
+.kpi .ico.r{background:var(--bad-50);color:var(--bad)}
+.kpi .v{font-size:26px;font-weight:750;font-stretch:112%;margin-top:6px;letter-spacing:-.6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);line-height:1.15}
+.kpi .v small{font-size:13px;font-weight:650;color:var(--muted);margin-right:3px;letter-spacing:0}
+.kpi .s{font-size:11.5px;color:var(--ink2);margin-top:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi.pri{background:linear-gradient(180deg,#ffffff 0%,#FAFBFD 100%)}
+.kpi.pri::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:transparent;transition:background .15s}
+.kpi.pri:hover::before{background:var(--ind-600)}
+.kpi.hl .v{color:var(--ind-800)}
+
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.chip::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.chip.ok{background:var(--ok-50);color:var(--ok)}.chip.warn{background:var(--warn-50);color:var(--warn)}.chip.bad{background:var(--bad-50);color:var(--bad)}.chip.info{background:var(--ind-50);color:var(--ind-600)}.chip.mute{background:var(--line2);color:var(--ink2)}
+.hero-top .chip.bad{background:rgba(220,38,38,.25);color:#FECACA;border:1px solid rgba(248,113,113,.35)}
+.hero-top .chip.warn{background:rgba(217,119,6,.25);color:#FDE68A;border:1px solid rgba(251,191,36,.35)}
+.hero-top .chip.ok{background:rgba(5,150,105,.25);color:#A7F3D0;border:1px solid rgba(52,211,153,.35)}
+
+/* ---------- Sections & Panels ---------- */
+.sec-blk{margin-bottom:18px}
+.sec-blk.hide{display:none}
+.sec-lbl{display:flex;align-items:center;gap:10px;margin:20px 0 11px;font-size:11.5px;font-weight:750;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.sec-lbl::after{content:"";flex:1;height:1px;background:var(--line)}
 .grid{display:grid;gap:16px;margin-bottom:16px}
-.g21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.grid:last-child{margin-bottom:0}
+.g21{grid-template-columns:minmax(0,1.85fr) minmax(0,1.15fr)}
 .g11{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g111{grid-template-columns:repeat(3,minmax(0,1fr))}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;min-width:0}
-.ph{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.ph h3{font-size:14.5px;font-weight:700;font-stretch:106%;display:flex;align-items:center;gap:9px}
-.ph h3::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--yel)}
-.ph .src{font-size:11.5px;color:var(--muted);padding:2px 8px;border-radius:6px;background:var(--bg)}
+.g1{grid-template-columns:minmax(0,1fr)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;min-width:0;box-shadow:var(--sh-sm);display:flex;flex-direction:column}
+.ph{display:flex;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap}
+.ph h3{font-size:14.5px;font-weight:720;font-stretch:106%;display:flex;align-items:center;gap:9px;color:var(--ink)}
+.ph h3::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--yel);flex:none}
+.ph .src{font-size:11px;font-weight:550;color:var(--muted);padding:2px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
 .ph .sp{flex:1}
-.link{all:unset;cursor:pointer;font-size:12px;font-weight:650;color:var(--ind-600);padding:4px 8px;border-radius:7px}
+.link{all:unset;cursor:pointer;font-size:12px;font-weight:650;color:var(--ind-600);padding:4px 9px;border-radius:7px;transition:background .15s}
 .link:hover{background:var(--ind-50)}
 .link:focus-visible{outline:2px solid var(--ind-600)}
-.lgd{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:10px;align-items:center}
+.lgd{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:auto;padding-top:12px;align-items:center}
 .lgd i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 svg.chart{width:100%;height:auto;display:block;overflow:visible}
 svg.chart text{font-family:var(--f)}
-.empty{padding:24px 10px;text-align:center;color:var(--muted);font-size:12.5px}
+.empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:12.5px;background:var(--bg);border-radius:var(--r-md);border:1px dashed var(--line)}
+
+/* Mini Strip inside Panels */
+.ministrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.mstat{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.mstat span{font-size:11.5px;color:var(--muted);font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mstat b{font-size:14px;font-weight:750;font-variant-numeric:tabular-nums}
 
 /* horizontal bars */
-.hb{display:grid;grid-template-columns:minmax(0,132px) minmax(0,1fr) auto;gap:12px;align-items:center;padding:6px 0;font-size:12.5px}
-.hb .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
-.hb .track{display:flex;height:14px;border-radius:5px;overflow:hidden;background:var(--line2);gap:2px}
-.hb .track span{height:100%}
-.hb .val{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink);font-weight:650;min-width:50px;text-align:right}
+.hb{display:grid;grid-template-columns:minmax(0,120px) minmax(0,1fr) auto;gap:12px;align-items:center;padding:6px 0;font-size:12.5px}
+.hb .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2);font-weight:600}
+.hb .track-bg{background:var(--line2);border-radius:6px;height:12px;overflow:hidden;display:flex}
+.hb .track{display:flex;height:100%;border-radius:6px;overflow:hidden;gap:2px}
+.hb .track span{height:100%;transition:width .3s ease}
+.hb .val{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink);font-weight:650;text-align:right;white-space:nowrap}
+.hb .val small{font-weight:500;color:var(--muted);margin-right:6px;font-size:11px}
 
 /* tables */
-.tw{overflow-x:auto;margin:0 -6px}
+.tw{overflow-x:auto;margin:0 -4px}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
-th{font-size:11.5px;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:10px;}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:650;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFD}
+td{padding:10px;border-bottom:1px solid var(--line2);vertical-align:middle}
 td:nth-child(3){white-space:nowrap}
-td{border-bottom:1px solid var(--line2);vertical-align:middle}
-tbody tr:hover td{background:#eff6ff}
+tbody tr{transition:background .12s}
+tbody tr:hover td{background:var(--ind-50)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 tr:last-child td{border-bottom:0}
-.prog{display:flex;align-items:center;gap:8px;min-width:120px}
-.prog .bar{flex:1;height:7px;background:var(--line2);border-radius:4px;overflow:hidden}
+.prog{display:flex;align-items:center;gap:8px;min-width:115px}
+.prog .bar{flex:1;height:7px;background:var(--line);border-radius:4px;overflow:hidden}
 .prog .bar i{display:block;height:100%;border-radius:4px}
-.prog b{font-size:11.5px;font-weight:650;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.prog b{font-size:11.5px;font-weight:700;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
 
 /* alerts */
-.alerts{display:grid;gap:6px;max-height:340px;overflow:auto;margin:0 -4px;padding:0 4px}
-.al{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;padding:9px 10px;border-radius:10px;background:transparent;cursor:pointer;border:1px solid var(--line2);text-align:left;font:inherit;color:inherit;width:100%;transition:border-color .15s,background .15s}
-.al:hover{background:var(--ind-50);border-color:var(--ind-100)}
-.al .st{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800}
+.af-bar{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.af-btn{all:unset;cursor:pointer;font-size:11px;font-weight:650;padding:4px 9px;border-radius:7px;background:var(--bg);color:var(--ink2);border:1px solid var(--line);transition:all .15s}
+.af-btn:hover{border-color:var(--ind-600);color:var(--ind-600)}
+.af-btn.on{background:var(--ind-950);color:#fff;border-color:var(--ind-950)}
+.alerts{display:grid;gap:7px;max-height:390px;overflow:auto;margin:0 -4px;padding:0 4px}
+.al{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;align-items:start;padding:9px 11px;border-radius:10px;background:#FAFBFD;cursor:pointer;border:1px solid var(--line);border-left-width:3px;text-align:left;font:inherit;color:inherit;width:100%;transition:transform .12s,border-color .15s,background .15s}
+.al[data-sev="bad"]{border-left-color:var(--bad)}
+.al[data-sev="warn"]{border-left-color:var(--warn)}
+.al[data-sev="info"]{border-left-color:var(--ind-600)}
+.al.hide{display:none}
+.al:hover{background:var(--ind-50);border-color:var(--ind-100);transform:translateX(2px)}
+.al .st{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:800;margin-top:1px}
 .al .st.bad{background:var(--bad-50);color:var(--bad)}.al .st.warn{background:var(--warn-50);color:var(--warn)}.al .st.info{background:var(--ind-50);color:var(--ind-600)}
 .al .st.bad::before{content:"!"}.al .st.warn::before{content:"•"}.al .st.info::before{content:"i"}
-.al b{font-size:12.5px;font-weight:650;display:block;line-height:1.35}
-.al span{font-size:11.5px;color:var(--ink2)}
+.al b{font-size:12.5px;font-weight:650;display:block;line-height:1.35;color:var(--ink)}
+.al span{font-size:11.5px;color:var(--ink2);display:block;margin-top:1px}
+
+/* micro-feed inside Laporan Harian */
+.mfeed{display:grid;gap:6px;margin-top:12px}
+.mf-item{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;background:#FAFBFD;border:1px solid var(--line);font-size:12px}
+.mf-item b{font-weight:650;color:var(--ink)}
+.mf-item span{color:var(--ink2);font-size:11.5px}
+
+/* tag pills for drafters/checkers/categories */
+.tpills{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.tpill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:#fff;border:1px solid var(--line);color:var(--ink2)}
+.tpill b{color:var(--ind-800);font-weight:750}
 
 /* tracking pipeline: susunan peringkat sebenar fail (1 → 11) */
-.pipe{display:grid;gap:3px;position:relative}
-.pipe .r{display:grid;grid-template-columns:22px minmax(0,140px) minmax(0,1fr) 26px;gap:10px;align-items:center;font-size:12px}
-.pipe .r .k{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;background:var(--line2);color:var(--ink2);font-variant-numeric:tabular-nums}
+.pipe{display:grid;gap:4px;position:relative}
+.pipe .r{display:grid;grid-template-columns:22px minmax(0,136px) minmax(0,1fr) 26px;gap:10px;align-items:center;font-size:12px}
+.pipe .r .k{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;background:var(--line2);color:var(--muted);font-variant-numeric:tabular-nums}
 .pipe .r.has .k{background:var(--ind-600);color:#fff}
-.pipe .r .n{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pipe .r .t{height:12px;background:var(--line2);border-radius:4px;overflow:hidden}
-.pipe .r .t i{display:block;height:100%;background:var(--ind-600);border-radius:4px}
-.pipe .r b{font-variant-numeric:tabular-nums;text-align:right;font-weight:650}
+.pipe .r.peak .k{background:var(--yel);color:var(--ind-950)}
+.pipe .r .n{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.pipe .r .t{height:10px;background:var(--line2);border-radius:5px;overflow:hidden}
+.pipe .r .t i{display:block;height:100%;background:var(--ind-600);border-radius:5px}
+.pipe .r.peak .t i{background:var(--warn)}
+.pipe .r b{font-variant-numeric:tabular-nums;text-align:right;font-weight:700}
 
-.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.stat{background:var(--bg);border-radius:var(--r-md);padding:11px 13px}
-.stat .l{font-size:11.5px;color:var(--muted)}
-.stat .v{font-size:20px;font-weight:720;font-stretch:110%;font-variant-numeric:tabular-nums;margin-top:2px}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:12.5px;margin-top:14px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px}
+.stat .l{font-size:11.5px;color:var(--muted);font-weight:550}
+.stat .v{font-size:19px;font-weight:750;font-stretch:110%;font-variant-numeric:tabular-nums;margin-top:2px;color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:12.5px;margin-top:14px;padding-top:10px;border-top:1px solid var(--line2)}
 .kv dt{color:var(--muted)}
-.kv dd{font-weight:550;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
-/* Panel HOD Pelan: Status Pelan | Checklist | QC — 3 lajur sama tinggi; jadi 1 lajur bila PANEL sempit (container query) */
+.kv dd{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+
+/* Panel HOD Pelan: Status Pelan | Checklist | QC — 3 lajur sama tinggi */
 .panel.pelan{container-type:inline-size}
-.pcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
-@container (max-width:680px){.pcols{grid-template-columns:minmax(0,1fr)}}
-.pcol{min-width:0;border:1px solid var(--line2);border-radius:var(--r-md);padding:12px 14px}
-.psec{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:var(--ind-800);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line2)}
-.psec .link{font-size:11.5px;padding:2px 6px}
+.pcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}
+@container (max-width:740px){.pcols{grid-template-columns:minmax(0,1fr)}}
+.pcol{min-width:0;border:1px solid var(--line);background:#FAFBFD;border-radius:var(--r-md);padding:14px 15px;display:flex;flex-direction:column}
+.psec{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:720;color:var(--ind-900);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.psec .link{font-size:11.5px;padding:2px 7px;background:#fff;border:1px solid var(--line)}
 .pcol .stats{gap:8px}
-.pcol .stat{padding:9px 11px}
+.pcol .stat{padding:9px 11px;background:#fff}
 .pcol .stat .v{font-size:18px}
-/* Senarai dalam kad HOD Pelan: label atas, nilai bawah. Kelas sendiri (bukan .kv) supaya tak warisi grid 2 lajur yang menyebabkan teks bertindih. */
 .pkv{display:block;margin:10px 0 0;font-size:12.5px}
-.pkv dt{display:block;color:var(--muted);font-size:11.5px;margin-top:8px}
+.pkv dt{display:block;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:9px}
 .pkv dt:first-child{margin-top:0}
-.pkv dd{display:block;margin:2px 0 0;font-weight:550;text-align:left;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;word-break:break-word;line-height:1.4}
+.pkv dd{display:block;margin:3px 0 0;font-weight:600;text-align:left;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;word-break:break-word;line-height:1.45;color:var(--ink)}
 .errm{color:var(--bad);font-weight:600;cursor:help;border-bottom:1px dotted currentColor}
 
+/* SVG Donut Gauge */
+.donut-wrap{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:var(--r-sm)}
+.donut-leg{display:grid;gap:4px;font-size:11.5px;flex:1;min-width:0}
+.donut-leg div{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.donut-leg span{display:flex;align-items:center;gap:6px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.donut-leg i{width:8px;height:8px;border-radius:2px;flex:none}
+
+/* Unpopulated Modules Compact Strip */
+.setup-strip{background:var(--surface);border:1px dashed #CBD5E1;border-radius:var(--r-lg);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.setup-strip .st-info{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink2)}
+.setup-strip .st-info i{color:var(--ind-600);font-size:15px}
+.setup-btns{display:flex;gap:7px;flex-wrap:wrap}
+.setup-btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:650;padding:5px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--line);color:var(--ink2);transition:all .15s}
+.setup-btn:hover{background:var(--ind-50);border-color:var(--ind-600);color:var(--ind-600)}
+
 /* summary report */
-.report{background:var(--ind-950);color:#dfe0fa;border-radius:var(--r-lg);padding:20px 24px}
+.report{background:linear-gradient(135deg,var(--ind-950) 0%,#0E2E50 100%);color:#e2e8f0;border-radius:var(--r-lg);padding:22px 24px;box-shadow:var(--sh-md)}
 .report .ph h3{color:#fff}
-.report .ph .src{background:rgba(255,255,255,.08);color:#a9abe0}
-.report .btn{background:transparent;border-color:rgba(255,255,255,.2);color:#fff}
+.report .ph .src{background:rgba(255,255,255,.08);color:#cbd5e1;border-color:rgba(255,255,255,.12)}
+.report .btn{background:transparent;border-color:rgba(255,255,255,.22);color:#fff}
 .report .btn:hover{background:var(--yel);border-color:var(--yel);color:var(--yel-ink)}
-.report ol{padding-left:20px;display:grid;gap:8px;font-size:13.5px;max-width:96ch;line-height:1.55}
+.report ol{padding-left:20px;display:grid;gap:8px;font-size:13.5px;max-width:98ch;line-height:1.55}
 .report ol li::marker{color:var(--yel);font-weight:700}
 .report ol b{color:#fff;font-weight:650}
 
@@ -210,12 +294,12 @@ tr:last-child td{border-bottom:0}
 .modal p{font-size:13px;color:var(--ink2);margin-bottom:18px}
 .modal .row{display:flex;gap:8px;justify-content:flex-end}
 
-/* item nav + mod "rail" bila aplikasi folder dibuka (aplikasi ada sidebar sendiri) */
+/* item nav + mod "rail" bila aplikasi folder dibuka */
 .nav button .tx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav button .tag{margin-left:auto;font-size:10px;font-weight:650;color:#8285c4;border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:0 5px;line-height:16px}
 .nav button.on .tag{display:none}
-.stat[data-go]{cursor:pointer;transition:background .15s}
-.stat[data-go]:hover{background:var(--ind-50)}
+.stat[data-go]{cursor:pointer;transition:background .15s,border-color .15s}
+.stat[data-go]:hover{background:var(--ind-50);border-color:var(--ind-100)}
 
 /* ---------- Nav dropdown: main nav (.gh) + sub nav (.sub) ---------- */
 .nav{padding-top:8px}
@@ -225,9 +309,7 @@ tr:last-child td{border-bottom:0}
 .ngrp.open>.gh .chev{transform:rotate(180deg)}
 .nav .gh.has-on{color:#fff;font-weight:650;background:rgba(255,255,255,.06)}
 .nav .gh.has-on>i:first-child{color:var(--yel)}
-/* titik kuning pada main nav bila sub aktif tersembunyi dalam dropdown tertutup */
 .ngrp:not(.open)>.gh.has-on .tx::after{content:"";display:inline-block;width:6px;height:6px;border-radius:2px;background:var(--yel);margin-left:8px;vertical-align:2px}
-/* animasi tinggi auto: grid-rows 0fr → 1fr */
 .sub{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}
 .ngrp.open>.sub{grid-template-rows:1fr}
 .sub>div{min-height:0;overflow:hidden;visibility:hidden;transition:visibility .22s}
@@ -268,8 +350,9 @@ tr:last-child td{border-bottom:0}
   .crumb,.clock{display:none}
   #home{padding:16px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
   .top{padding:0 16px;gap:8px}
-  .hero-head{padding:16px 16px 14px}.hero-head h2{font-size:22px}
+  .hero-top{padding:16px 16px 14px}.hero-head h2{font-size:20px}
   .hero .contour{width:360px;right:-120px}
+  .ministrip{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:560px){
   .kpi .v{font-size:22px}
@@ -280,10 +363,14 @@ tr:last-child td{border-bottom:0}
 }
 @media print{
   body{overflow:visible;background:#fff}
-  .sb,.top .btn,.burger,.frame,.toast,.tip,.hero .contour{display:none!important}
+  .sb,.top .btn,.burger,.frame,.toast,.tip,.hero .contour,.ftabs,.af-bar,.setup-strip{display:none!important}
   .main{position:static}.content{position:static}#home{position:static;overflow:visible;padding:0}
+  .sec-blk{display:block!important}
+  .al{display:grid!important}
   .panel,.hero,.report{break-inside:avoid}
   .kpis{grid-template-columns:repeat(4,1fr)}
+  .hero-top{background:#fff;color:var(--ink);border-bottom:1px solid var(--line)}
+  .hero-head h2{color:var(--ink)}.hero-head p{color:var(--muted)}
   .report{background:#fff;color:var(--ink);border:1px solid var(--line)}.report .ph h3,.report ol b{color:var(--ink)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -395,7 +482,7 @@ const KEYS={ops:'mjt_ops_db',tracking:'survey_tracker_v1',inventory:'jmc_instrum
 const EXTRA_KEYS=['jmc_quotation_lib_v1','mjt_ops_sync','mjt_ops_lang','drafter_projects_data','drafter_drawings_data','geo_local_reports','stb_projects','stb_staff','stb_reports'];
 const BIM_KEYS={proj:'stb_projects',staff:'stb_staff',rpt:'stb_reports'};
 const BIM_DONE='Siap / Selesai';
-const BIM_ST={'Belum Mula':'#a3a6c2','On-Site':'#b45309','Processing':'#5b51e0','Drafting':'#272483','Sheet Final':'#d9a400','Siap / Selesai':'#0f7a43'};
+const BIM_ST={'Belum Mula':'#94A3B8','On-Site':'#D97706','Processing':'#6366F1','Drafting':'#1D4ED8','Sheet Final':'#EAB308','Siap / Selesai':'#059669'};
 const OPS_TITLES={overview:'Ringkasan Operasi',site:'HOD Site / Tapak',pelan:'HOD Pelan',hr:'HOD HR',akaun:'HOD Akaun',data:'Data & Sync'};
 const MOD_TITLES={tracking:['Fail Tracking','Jejak fail dari kutipan data hingga tutup fail'],quotation:['Penjana Sebut Harga','Sebut harga rasmi atas kepala surat'],planner:['Perancangan & Ramalan','Ramal tempoh, krew & kos ikut tarikh akhir']};
 /* Aplikasi dalam folder repo — dimuat terus (iframe src), jadi kemas kini fail dalam folder terus nampak di hub */
@@ -450,7 +537,6 @@ function makeApp(k){
 function win(id){try{const w=frames[id]&&ready[id]?frames[id].contentWindow:null;if(w)void w.document;return w;}catch(e){return null;}}
 function onFrameReady(id){
   if(id==='ops')try{
-    // keep shell sidebar in sync when ops navigates internally (e.g. clicking a KPI)
     const w=win('ops');
     if(w&&typeof w.go==='function'&&!w.go._jm){
       const orig=w.go;const wrapped=function(p){orig(p);if(current.startsWith('ops:')&&current!=='ops:'+p)setActive('ops:'+p,true);};
@@ -466,7 +552,6 @@ let current='home',pendingOps=null;
 function setActive(v,fromFrame){
   current=v;
   document.querySelectorAll('#nav button[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  // main nav: tanda kumpulan yang ada sub aktif, dan buka dropdown dia (tak simpan sebagai pilihan user)
   document.querySelectorAll('#nav .ngrp').forEach(g=>{const has=!!g.querySelector('button.on');g.querySelector('.gh').classList.toggle('has-on',has);if(has)setGroup(g,true,false);});
   const [mod,sub]=v.split(':');
   if(mod==='home'){$('#pgTitle').textContent='Dashboard Utama';$('#pgCrumb').textContent='Ringkasan semua modul';}
@@ -524,7 +609,6 @@ function readDrafter(){
   return {drawings:d,projName:projName};
 }
 function readTrack(){const d=lsGet(KEYS.tracking);return Array.isArray(d)?d:[];}
-/* HOD BIM — localStorage sama origin. Null kalau app BIM belum pernah simpan (jangan guna data demo app). */
 function readBIM(){
   const p=lsGet(BIM_KEYS.proj);if(!Array.isArray(p))return null;
   const s=lsGet(BIM_KEYS.staff),r=lsGet(BIM_KEYS.rpt);
@@ -555,7 +639,6 @@ function readPlanner(){
   const teams=+S.teams||0;const days=S.mode==='A'&&teams>0?Math.ceil(td/teams):null;
   return {segs:S.segs.length,td:td,len:len,area:area,cost:cost,quote:quote,profit:quote-cost,margin:quote>0?(quote-cost)/quote*100:0,mode:S.mode,teams:teams,days:days,deadline:S.deadline};
 }
-/* Sama dengan computeItem() app Inventori: ada "Tidak Baik" = rosak; ada status kosong = belum lengkap */
 function invStatus(it){const c=it.comp||[];return c.some(x=>x.s==='tidak')?'bad':c.some(x=>x.s==='kosong')?'warn':'ok';}
 function trackStage(f){const s=STAGES.find(([k])=>!f.stages||!f.stages[k]||f.stages[k].status!=='done');return s?s[0]:'done';}
 function trackProg(f){return Math.round(STAGES.filter(([k])=>f.stages&&f.stages[k]&&f.stages[k].status==='done').length/STAGES.length*100);}
@@ -564,14 +647,8 @@ function trackProg(f){return Math.round(STAGES.filter(([k])=>f.stages&&f.stages[
 const EXT={inv:null,qc:null,ck:null,lh:null,err:{},loading:false};
 const EXT_SRC={
   inv:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTo5oCD7Wd6vTJNFs1WZti8ZKgkHjp869JylM1NbJwFll8rQ6VoHtgkNSoFHnAjON77i9xZC4QwnA91/pub?gid=0&single=true&output=csv',
-  /* QC — SAMA dengan CSV_SOURCES dalam app Kualiti Pelan, supaya angka hub = angka app.
-     Dulu hub guna sheet lain (2PACX-1vT9VxT7lq3…, tab ENGINEERING/TITLE/UMAP). Kalau sheet tu yang betul,
-     tukar URL dalam app Kualiti Pelan juga, kemudian letak balik di sini:
-     {name:'ENGINEERING',url:'…/pub?output=csv&gid=399274151',cat:'ENGINEERING'}, dsb. */
   qc:[{name:'QC',url:'https://docs.google.com/spreadsheets/d/e/2PACX-1vSu5gATXzC5n6KzCNO5mk54h2EORGalqNs0XrGcxEeUXdIINtUZZfA2f7kNhAnFVPFnWFYXumEnx4FC/pub?output=csv',cat:'UMUM'}],
-  /* Laporan Harian — CSV_URL dalam HOD Site/Laporan Harian (sheet statistik surveyor) */
   lh:'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9K9IiWtk4r4MouH9wGT5DeKJWGXyaKcKgj43dnC48KG_87QE7jO7wOJF6jzKQn2XwsJipuQRRj9MZ/pub?gid=1353013862&single=true&output=csv',
-  /* Checklist Plan — Web App Apps Script (doPost dalam Api.gs) */
   ckApi:'https://script.google.com/macros/s/AKfycbxZtlvQERuGapebTBHFHT2i6ZFEGRdUnRSDfEyVKPNUDNDsRO28iNKuZYRqFGoWHn5d/exec'
 };
 const CK_ST={DRAFT:['Draf','mute'],PENDING_CHECK:['Menunggu semakan','info'],RETURNED:['Dipulangkan','bad'],APPROVED:['Diluluskan','ok']};
@@ -585,8 +662,6 @@ function csvRows(txt){
   if(cur!==''||row.length){row.push(cur);rows.push(row);}
   return rows;
 }
-/* fetch dengan had masa. Sesetengah persekitaran (preview/iframe/extension) tak boleh hantar AbortSignal
-   ("AbortSignal object could not be cloned") — bila jadi, cuba semula tanpa signal; had masa tetap jalan guna Promise.race. */
 async function fetchT(url,opts,ms){
   let ctl=null;try{ctl=new AbortController();}catch(e){}
   let tm;const timeout=new Promise((_,rej)=>{tm=setTimeout(()=>{try{ctl&&ctl.abort();}catch(e){}const er=new Error('tamat masa');er.name='AbortError';rej(er);},ms);});
@@ -600,9 +675,6 @@ async function getCSV(url){
     if(/^\s*</.test(txt))throw new Error('respons bukan CSV');return csvRows(txt);}
   catch(e){throw new Error(e.name==='AbortError'?'tamat masa':e.message);}
 }
-/* Inventori: Nama | Peralatan | S/N | Detail | Status | Catatan | (Status Kalibrasi | Tarikh Kalibrasi) — gaya "merged".
-   Logik SAMA dengan buildModel()/computeItem()/calInfo() dalam app Inventori Peralatan:
-   status kosong = "belum lengkap" (bukan baik), catatan = nota sahaja, kalibrasi sah 12 bulan, amaran 30 hari. */
 const CAL_VALID_MONTHS=12,CAL_WARN_DAYS=30;
 function parseDMY(s){s=String(s||'').trim();let m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(s);
   if(m){const d=new Date(+m[3],m[2]-1,+m[1]);return d.getDate()===+m[1]&&d.getMonth()===m[2]-1?d:null;}
@@ -627,7 +699,7 @@ function parseInv(rows){
     if(!r.join('').trim())return;
     const n=g(iN),p=g(iP);
     if(n)nama=n;
-    if(n&&!p){item=null;return;}               // baris tajuk pemegang sahaja
+    if(n&&!p){item=null;return;}
     if(p){let tm=by[nama];if(!tm){tm=by[nama]={name:nama||'–',groups:[{cat:'',items:[]}]};teams.push(tm);}
       item={name:p,serial:g(iS),comp:[],calSt:'',calDt:''};tm.groups[0].items.push(item);}
     if(!item)return;
@@ -639,7 +711,6 @@ function parseInv(rows){
   teams.forEach(t=>t.groups[0].items.forEach(it=>{it.cal=calInfo(it.calSt,it.calDt);}));
   return {teams:teams,hasCal:iKs>=0||iKt>=0};
 }
-/* Laporan Harian — nama lajur ikut FIELD_ALIASES app Laporan Harian */
 const LH_NO_ISSUE=new Set(['','-','0','tiada','tiada isu','tiada masalah','tak ada','takde','none','no','nil','n/a','na']);
 function parseTarikh(v){const s=String(v||'').trim();let m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/),y,mo,d;
   if(m){y=+m[1];mo=+m[2];d=+m[3];}else{m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);if(!m)return null;d=+m[1];mo=+m[2];y=+m[3];if(y<100)y+=2000;}
@@ -660,14 +731,12 @@ function parseLH(rows){
       asal:parseTarikh(g(C.ja)),semasa:parseTarikh(g(C.js))};
   });
 }
-/* QC: logik status sama seperti aplikasi Kualiti Pelan */
 function parseQC(rows,cat){
   const h=(rows[0]||[]).map(nk);
   const get=(r,names)=>{for(const n of names){const i=h.indexOf(nk(n));if(i>=0&&r[i]!=null&&String(r[i]).trim())return String(r[i]).trim();}return '';};
   return rows.slice(1).filter(r=>r.join('').trim()).map(r=>{
     const sl=get(r,['STATUS','STATUS QC','KEPUTUSAN','STATE']).toLowerCase();
     const st=/rework|tolak|baiki|reject|gagal|tidak lulus|tak lulus/.test(sl)?'REWORK REQUIRED':/lul|siap|pass|selesai|approved/.test(sl)?'LULUS':'DALAM PROSES QC';
-    /* Rework: sama dengan cleanData()/hasRework() app Kualiti Pelan — fail yang LULUS selepas dibaiki tetap dikira kes rework */
     const rl=get(r,['REWORK','SEMAK SEMULA','BAIKI']).toLowerCase();
     const rwCol=!rl||/^(tiada|tidak|tak|no|none|false|n|nil)\b/.test(rl)||/^[-–0]+$/.test(rl)?false:/ada|ya|yes|true|\d/.test(rl);
     return {MAKLUMAT:(get(r,['MAKLUMAT','BIDANG','KATEGORI'])||cat).toUpperCase(),'NO. FAIL':get(r,['NO. FAIL','NO_FAIL','FILE NO','NO REF'])||'–',
@@ -675,7 +744,6 @@ function parseQC(rows,cat){
       RW:rwCol||st==='REWORK REQUIRED'};
   });
 }
-/* Web App: POST text/plain (tiada preflight), Apps Script redirect ke googleusercontent yang beri CORS * */
 async function gasCall(url,fn,args){
   try{const r=await fetchT(url,{method:'POST',redirect:'follow',cache:'no-store',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args||[]})},25000);
     if(!r.ok)throw new Error('HTTP '+r.status);
@@ -691,7 +759,6 @@ function parseCK(res){
     st:String(s.current_status||'DRAFT').trim().toUpperCase(),round:Number(s.current_round)||1,
     drafter:s.drafter_name||'',checker:s.assigned_checker_name||'',proj:proj[s.project_id]||s.file_ref||s.project_id||''
   })).filter(s=>s.st!=='INACTIVE');
-  /* Item paling kerap gagal — sama dengan computeDashboardFromState() app Checklist Plan */
   const ids=new Set(sheets.map(s=>s.id)),fails={};
   (res.itemResults||[]).forEach(r=>{if(String(r.checker_status).toUpperCase()==='FAIL'&&ids.has(r.sheet_id))fails[r.item_id]=(fails[r.item_id]||0)+1;});
   const master=res.checklistMaster||[];
@@ -699,8 +766,6 @@ function parseCK(res){
     return {type:m.drawing_type||'–',no:m.item_number||id,title:m.item_title||'–',n:n};});
   return {sheets:sheets,topErr:topErr,at:new Date()};
 }
-/* Status Site — app itu sendiri kira progres fail, lepas tu hantar ringkasan via postMessage (salinan dalam localStorage).
-   Hub TAK salin logik kiraan, supaya angka dashboard sentiasa sama dengan app. */
 const SS_KEY='jm_status_site_v1';
 function normSS(s){
   if(!s||typeof s!=='object'||!Array.isArray(s.files))return null;
@@ -731,29 +796,49 @@ async function loadExt(){
   await Promise.allSettled([inv,lh,qc,ck]);EXT.loading=false;scheduleRender();
 }
 
-/* ================= CHARTS ================= */
+/* ================= CHARTS & VISUAL HELPERS ================= */
 function niceStep(m){const p=Math.pow(10,Math.floor(Math.log10(m||1)));const n=m/p;return (n<=2?0.5:n<=5?1:2)*p;}
 function groupBars(data,series){
   const W=620,H=240,pl=48,pr=8,pt=12,pb=28,iw=W-pl-pr,ih=H-pt-pb;
   let max=0;data.forEach(d=>series.forEach(s=>{max=Math.max(max,+d[s.k]||0);}));
   const step=niceStep(max||1),top=Math.ceil((max||1)/step)*step;
-  let g='';for(let y=0;y<=top+1e-9;y+=step){const yy=pt+ih-(y/top)*ih;g+=`<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" stroke="#eef0f6"/><text x="${pl-8}" y="${yy+3.5}" font-size="10.5" fill="#757a94" text-anchor="end">${y}k</text>`;}
+  let g='';for(let y=0;y<=top+1e-9;y+=step){const yy=pt+ih-(y/top)*ih;g+=`<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" stroke="#E2E8F0"/><text x="${pl-8}" y="${yy+3.5}" font-size="10.5" fill="#64748B" text-anchor="end">${y}k</text>`;}
   const n=data.length,bw=iw/n,inner=Math.min(bw*0.62,58),gw=inner/series.length;
   let b='';data.forEach((d,i)=>{const x0=pl+i*bw+(bw-inner)/2;
     series.forEach((s,j)=>{const v=+d[s.k]||0,h=Math.max(0,(v/top)*ih),x=x0+j*gw,y=pt+ih-h,w=gw-2,r=Math.min(4,h,w/2);
       const path=h>0?`M${x},${pt+ih}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${pt+ih}Z`:'';
       b+=`<path d="${path}" fill="${s.c}"/><rect x="${x-1}" y="${pt}" width="${w+2}" height="${ih}" fill="transparent" data-tip="<b>${escA(d.m)}</b> · ${escA(s.l)}<br>RM ${(v*1000).toLocaleString('en-MY')}"/>`;});
-    b+=`<text x="${pl+i*bw+bw/2}" y="${H-9}" font-size="11.5" fill="#484d66" text-anchor="middle">${esc(d.m)}</text>`;});
-  // emphasise last period values
-  const last=data[n-1];if(last){series.forEach((s,j)=>{const v=+last[s.k]||0,x=pl+(n-1)*bw+(bw-inner)/2+j*gw+(gw-2)/2,y=pt+ih-(v/top)*ih-5;b+=`<text x="${x}" y="${y}" font-size="10.5" font-weight="700" fill="#16182b" text-anchor="middle">${v}k</text>`;});}
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Carta hasil vs belanja">${g}<line x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}" stroke="#c8cbe0"/>${b}</svg>`;
+    b+=`<text x="${pl+i*bw+bw/2}" y="${H-9}" font-size="11.5" fill="#334155" text-anchor="middle">${esc(d.m)}</text>`;});
+  const last=data[n-1];if(last){series.forEach((s,j)=>{const v=+last[s.k]||0,x=pl+(n-1)*bw+(bw-inner)/2+j*gw+(gw-2)/2,y=pt+ih-(v/top)*ih-5;b+=`<text x="${x}" y="${y}" font-size="10.5" font-weight="700" fill="#0F172A" text-anchor="middle">${v}k</text>`;});}
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Carta hasil vs belanja">${g}<line x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}" stroke="#CBD5E1"/>${b}</svg>`;
 }
-function hbStack(label,parts,total,valTxt){
+function hbStack(label,parts,total,valTxt,subTxt){
   const sum=parts.reduce((a,p)=>a+p.v,0)||1;
-  return `<div class="hb"><div class="n" title="${esc(label)}">${esc(label)}</div><div class="track">${parts.filter(p=>p.v>0).map(p=>`<span style="width:${p.v/sum*100*(total?sum/total:1)}%;background:${p.c}" data-tip="<b>${escA(label)}</b><br>${escA(p.l)}: ${escA(p.t||p.v)}"></span>`).join('')}</div><div class="val">${valTxt}</div></div>`;
+  const pct=total>0?Math.min(100,Math.max(8,sum/total*100)):100;
+  return `<div class="hb"><div class="n" title="${esc(label)}">${esc(label)}</div><div class="track-bg"><div class="track" style="width:${pct}%">${parts.filter(p=>p.v>0).map(p=>`<span style="width:${p.v/sum*100}%;background:${p.c}" data-tip="<b>${escA(label)}</b><br>${escA(p.l)}: ${escA(p.t||p.v)}"></span>`).join('')}</div></div><div class="val">${subTxt?`<small>${subTxt}</small>`:''}${valTxt}</div></div>`;
 }
-/* FIX: default dulu var(--royal) yang tak wujud dalam :root → bar lutsinar. Guna indigo tema. */
 function progCell(p,col){p=Math.max(0,Math.min(100,+p||0));col=col||(p>=100?'var(--ok)':'var(--ind-600)');return `<div class="prog"><div class="bar"><i style="width:${p}%;background:${col}"></i></div><b>${p}%</b></div>`;}
+function svgDonut(segs,centerVal,centerSub){
+  const tot=segs.reduce((a,s)=>a+s.v,0);
+  const r=30,c=2*Math.PI*r;let off=0;
+  const rings=tot>0?segs.filter(s=>s.v>0).map(s=>{const len=(s.v/tot)*c;const el=`<circle cx="40" cy="40" r="${r}" fill="none" stroke="${s.c}" stroke-width="10" stroke-dasharray="${len} ${c}" stroke-dashoffset="${-off}" transform="rotate(-90 40 40)"/>`;off+=len;return el;}).join(''):`<circle cx="40" cy="40" r="${r}" fill="none" stroke="#E2E8F0" stroke-width="10"/>`;
+  return `<div class="donut-wrap"><svg width="80" height="80" viewBox="0 0 80 80" style="flex:none"><circle cx="40" cy="40" r="${r}" fill="none" stroke="#F1F5F9" stroke-width="10"/>${rings}<text x="40" y="39" text-anchor="middle" font-size="14" font-weight="800" fill="#0F172A">${esc(centerVal)}</text><text x="40" y="50" text-anchor="middle" font-size="8.5" font-weight="600" fill="#64748B">${esc(centerSub)}</text></svg><div class="donut-leg">${segs.map(s=>`<div><span><i style="background:${s.c}"></i>${esc(s.l)}</span><b>${s.v}</b></div>`).join('')}</div></div>`;
+}
+
+/* ================= FILTER STATE ================= */
+let HOME_TAB='all',ALERT_FILTER='all';
+function applyHomeFilters(){
+  document.querySelectorAll('#home .ftab').forEach(b=>b.classList.toggle('on',b.dataset.tab===HOME_TAB));
+  document.querySelectorAll('#home .sec-blk').forEach(s=>{
+    const showSec=HOME_TAB==='all'||s.dataset.sec===HOME_TAB;
+    s.classList.toggle('hide',!showSec);
+  });
+  document.querySelectorAll('#home .af-btn').forEach(b=>b.classList.toggle('on',b.dataset.af===ALERT_FILTER));
+  document.querySelectorAll('#home .al[data-sev]').forEach(a=>{
+    const showAl=ALERT_FILTER==='all'||a.dataset.sev===ALERT_FILTER;
+    a.classList.toggle('hide',!showAl);
+  });
+}
 
 /* ================= RENDER ================= */
 let renderT=null;function scheduleRender(){clearTimeout(renderT);renderT=setTimeout(()=>{if(current==='home')render();},120);}
@@ -789,7 +874,6 @@ function render(){
   const lhIsu14=LH.filter(r=>r.isu&&r.tarikh&&r.tarikh>=d14).sort((a,b)=>b.tarikh-a.tarikh);
   const lhOut7={};lh7.forEach(r=>{if(r.qty)lhOut7[r.unit]=(lhOut7[r.unit]||0)+r.qty;});
   const lhBySv={};LH.forEach(r=>{const s=lhBySv[r.surveyor]=lhBySv[r.surveyor]||{n7:0,last:null};if(lh7.includes(r))s.n7++;if(r.tarikh&&(!s.last||r.tarikh>s.last))s.last=r.tarikh;});
-  // Jangka siap dianjak: laporan TERKINI setiap fail+kawasan, jangka semasa > jangka asal
   const lhLatest={};LH.forEach(r=>{if(!r.tarikh)return;const k=r.file+'|'+r.kawasan.toLowerCase();if(!lhLatest[k]||r.tarikh>=lhLatest[k].tarikh)lhLatest[k]=r;});
   const lhSlip=Object.values(lhLatest).filter(r=>r.asal&&r.semasa&&r.semasa>r.asal).map(r=>Object.assign({slip:Math.round((r.semasa-r.asal)/864e5)},r)).sort((a,b)=>b.slip-a.slip);
   // HOD BIM (localStorage)
@@ -810,7 +894,7 @@ function render(){
   // Status Site — progres kerja ukur setiap fail
   const SS=EXT.ss,SF=SS?SS.files:[];
   const ssStat=f=>f.progress>=100?'done':(f.due&&f.due<t0)?'late':f.progress>0?'prog':'new';
-  const SS_ST={late:['Lewat jangka siap','bad','var(--bad)'],prog:['Dalam progres','info','var(--ind-600)'],new:['Baru direkod','mute','#a3a6c2'],done:['Selesai','ok','var(--ok)']};
+  const SS_ST={late:['Lewat jangka siap','bad','var(--bad)'],prog:['Dalam progres','info','var(--ind-600)'],new:['Baru direkod','mute','#94A3B8'],done:['Selesai','ok','var(--ok)']};
   const ssN={late:0,prog:0,new:0,done:0};SF.forEach(f=>ssN[ssStat(f)]++);
   const ssOpen=SF.filter(f=>f.progress<100);
   const ssAvg=SF.length?Math.round(SF.reduce((a,f)=>a+f.progress,0)/SF.length):0;
@@ -861,188 +945,300 @@ function render(){
   QC.filter(x=>x.result==='qc_fix'||x.result==='qc_reject').forEach(x=>A.push({s:x.result==='qc_reject'?'bad':'warn',t:'QC pelan '+(x.result==='qc_reject'?'ditolak':'perlu pembetulan')+': '+x.plan,d:(x.proj||'')+(x.issue?' · '+x.issue:'')+(x.errors?' · '+x.errors+' kesilapan':''),go:'ops:pelan'}));
   pendPlans.filter(p=>p.status==='review').forEach(p=>A.push({s:'info',t:'Pelan dalam semakan: '+p.plan,d:p.proj+' · '+p.prog+'%',go:'ops:pelan'}));
   const order={bad:0,warn:1,info:2};A.sort((a,b)=>order[a.s]-order[b.s]);
-  const nBad=A.filter(a=>a.s==='bad').length,nWarn=A.filter(a=>a.s==='warn').length;
+  const nBad=A.filter(a=>a.s==='bad').length,nWarn=A.filter(a=>a.s==='warn').length,nInfo=A.filter(a=>a.s==='info').length;
 
-  // --- hero + KPI strip
-  const kpi=(go,l,v,s,hl)=>`<button class="kpi${hl?' hl':''}" data-go="${go}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></button>`;
+  // --- TIER 1: EXECUTIVE COMMAND HERO + 8 KPI STRIP
+  const kpi=(go,l,v,s,ico,ic,pri,hl)=>`<button class="kpi${pri?' pri':''}${hl?' hl':''}" data-go="${go}"><div class="kpi-top"><div class="l">${l}</div><div class="ico ${ic}"><i class="fa-solid ${ico}"></i></div></div><div class="v">${v}</div><div class="s">${s}</div></button>`;
   const hr=new Date().getHours(),greet=hr<12?'Selamat pagi':hr<14?'Selamat tengah hari':hr<19?'Selamat petang':'Selamat malam';
-  let h=`<section class="hero">${CONTOUR}<div class="hero-head"><div><h2>Ringkasan operasi syarikat</h2><p>${greet}. Data live dari semua modul & Google Sheets, dikemas kini ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} pada ${dmy(new Date())}.</p></div><div class="sp"></div>
-    <div class="chips">${nBad?`<span class="chip bad">${nBad} kritikal</span>`:''}${nWarn?`<span class="chip warn">${nWarn} perlu perhatian</span>`:''}${!nBad&&!nWarn?'<span class="chip ok">Semua terkawal</span>':''}</div></div>`;
-  /* Pelan perlu tindakan = QC perlu rework + checklist dipulangkan + lukisan lewat (setiap satu dari app sendiri) */
+  const srcBadge=(lbl,state)=>`<span class="src-pill ${state}"><i class="dot"></i>${lbl}</span>`;
+  let h=`<section class="hero">
+    <div class="hero-top">${CONTOUR}
+      <div class="hero-head">
+        <div>
+          <h2>Pusat Kawalan Operasi Syarikat</h2>
+          <p>${greet}. Data live dari modul dalaman &amp; Google Sheets, dikemas kini ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} pada ${dmy(new Date())}.</p>
+        </div>
+        <div class="sp"></div>
+        <div class="chips">
+          ${nBad?`<span class="chip bad">${nBad} kritikal</span>`:''}
+          ${nWarn?`<span class="chip warn">${nWarn} amaran</span>`:''}
+          ${!nBad&&!nWarn?'<span class="chip ok">Semua operasi terkawal</span>':''}
+        </div>
+      </div>
+      <div class="hero-bar">
+        <div class="srcs">
+          ${srcBadge('Status Site',SS?'ok':'load')}
+          ${srcBadge('Laporan Harian',EXT.lh?'ok':EXT.err.lh?'err':'load')}
+          ${srcBadge('QC Pelan',EXT.qc?'ok':EXT.err.qc?'err':'load')}
+          ${srcBadge('Checklist API',EXT.ck?'ok':EXT.err.ck?'err':'load')}
+          ${srcBadge('Inventori',EXT.inv?'ok':EXT.err.inv?'err':'load')}
+        </div>
+        <div class="ftabs" role="tablist" aria-label="Tapis bahagian dashboard">
+          <button class="ftab on" data-tab="all">Semua Bahagian</button>
+          <button class="ftab" data-tab="ops">Tapak &amp; BIM</button>
+          <button class="ftab" data-tab="plan">Pelan &amp; QC</button>
+          <button class="ftab" data-tab="fin">Kewangan &amp; Logistik</button>
+        </div>
+      </div>
+    </div>`;
+
   const plAct=(QX.length?qxRw.length:0)+(EXT.ck?ckRet.length:0)+drOver.length,plAny=QX.length||EXT.ck||DRW;
   h+='<div class="kpis">'
-   +kpi('app:site-status','Fail ukur aktif',SS?ssOpen.length:'–',SS?`${ssLate.length?`<span class="chip bad">${ssLate.length} lewat</span>`:'<span class="chip ok">Tiada lewat</span>'} purata ${ssAvg}%`:`<span class="chip mute">${ssMsg}</span>`)
-   +kpi('app:site','Laporan harian (7 hari)',EXT.lh?lh7.length:'–',EXT.lh?`${lhToday.length} hari ini ${lhIsu14.length?`<span class="chip warn">${lhIsu14.length} isu (14 hari)</span>`:'<span class="chip ok">Tiada isu</span>'}`:`<span class="chip mute">${extMsg('lh')}</span>`)
-   +kpi('app:akaun','Kutipan diterima',`<small>RM</small>${Math.round(paid/1000).toLocaleString('en-MY')}k`,`${billed?Math.round(paid/billed*100):0}% daripada ${rmK(billed)} diinvois`,true)
-   +kpi('app:akaun','Belum dikutip',`<small>RM</small>${Math.round(outst/1000).toLocaleString('en-MY')}k`,`${INV.filter(i=>num(i.amt)-num(i.paid)>0).length} invois tertunggak`)
-   +kpi(qxRw.length?'app:pelan-qc':ckRet.length?'app:pelan-checklist':'app:pelan-status','Pelan perlu tindakan',plAny?plAct:'–',plAny?`${QX.length?`<span class="chip ${qxRw.length?'bad':'ok'}">${qxRw.length} rework</span>`:''}${EXT.ck?`<span class="chip ${ckRet.length?'warn':'ok'}">${ckRet.length} dipulang</span>`:''}${DRW?`<span class="chip ${drOver.length?'warn':'ok'}">${drOver.length} lewat</span>`:''}`:`<span class="chip mute">${extMsg('qc')}</span>`)
-   +kpi('app:bim','Fail BIM aktif',BIM?bimAct.length:'–',BIM?`${bimOver.length?`<span class="chip bad">${bimOver.length} lewat</span>`:'<span class="chip ok">Tiada lewat</span>'} purata ${bimAvg}%`:'<span class="chip mute">Belum ada data BIM</span>')
-   /* FIX: jangan tunjuk "0 rosak" bila CSV inventori belum load atau gagal */
-   +kpi('app:inventory','Peralatan perlu tindakan',EXT.inv?invAction.size:'–',EXT.inv?`<span class="chip bad">${invBad} rosak</span><span class="chip warn">${invWarn} belum lengkap</span>${EXT.inv.hasCal?`<span class="chip ${calItems.length?'warn':'ok'}">${calItems.length} kalibrasi</span>`:''}`:`<span class="chip mute">${extMsg('inv')}</span>`)
-   +kpi('tracking','Fail tracking aktif',trkActive.length,trk.length?`${trkClosed.length} ditutup, purata ${trkAvg}%`:'Belum ada fail')
+   // Baris 1: 4 KPI Eksekutif Utama
+   +kpi('app:site-status','Fail ukur aktif',SS?ssOpen.length:'–',SS?`${ssLate.length?`<span class="chip bad">${ssLate.length} lewat</span>`:'<span class="chip ok">Tiada lewat</span>'} purata ${ssAvg}%`:`<span class="chip mute">${ssMsg}</span>`,'fa-compass-drafting','b',true)
+   +kpi('app:akaun','Kutipan diterima',`<small>RM</small>${Math.round(paid/1000).toLocaleString('en-MY')}k`,`${billed?Math.round(paid/billed*100):0}% daripada ${rmK(billed)} diinvois`,'fa-sack-dollar','g',true,true)
+   +kpi(qxRw.length?'app:pelan-qc':ckRet.length?'app:pelan-checklist':'app:pelan-status','Pelan perlu tindakan',plAny?plAct:'–',plAny?`${QX.length?`<span class="chip ${qxRw.length?'bad':'ok'}">${qxRw.length} rework</span>`:''}${EXT.ck?`<span class="chip ${ckRet.length?'warn':'ok'}">${ckRet.length} dipulang</span>`:''}${DRW?`<span class="chip ${drOver.length?'warn':'ok'}">${drOver.length} lewat</span>`:''}`:`<span class="chip mute">${extMsg('qc')}</span>`,'fa-map','y',true)
+   +kpi('app:bim','Fail BIM aktif',BIM?bimAct.length:'–',BIM?`${bimOver.length?`<span class="chip bad">${bimOver.length} lewat</span>`:'<span class="chip ok">Tiada lewat</span>'} purata ${bimAvg}%`:'<span class="chip mute">Belum ada data BIM</span>','fa-cube','b',true)
+   // Baris 2: 4 KPI Operasi & Logistik
+   +kpi('app:site','Laporan harian (7 hari)',EXT.lh?lh7.length:'–',EXT.lh?`${lhToday.length} hari ini ${lhIsu14.length?`<span class="chip warn">${lhIsu14.length} isu (14 hari)</span>`:'<span class="chip ok">Tiada isu</span>'}`:`<span class="chip mute">${extMsg('lh')}</span>`,'fa-clipboard-list','b',false)
+   +kpi('app:akaun','Belum dikutip',`<small>RM</small>${Math.round(outst/1000).toLocaleString('en-MY')}k`,`${INV.filter(i=>num(i.amt)-num(i.paid)>0).length} invois tertunggak`,'fa-file-invoice-dollar','y',false)
+   +kpi('app:inventory','Peralatan perlu tindakan',EXT.inv?invAction.size:'–',EXT.inv?`<span class="chip bad">${invBad} rosak</span><span class="chip warn">${invWarn} belum lengkap</span>${EXT.inv.hasCal?`<span class="chip ${calItems.length?'warn':'ok'}">${calItems.length} kalibrasi</span>`:''}`:`<span class="chip mute">${extMsg('inv')}</span>`,'fa-screwdriver-wrench',invBad?'r':'g',false)
+   +kpi('tracking','Fail tracking aktif',trkActive.length,trk.length?`${trkClosed.length} ditutup, purata ${trkAvg}%`:'Belum ada fail','fa-folder-tree','b',false)
    +'</div></section>';
 
-  // --- row 1: trend + alerts
-  h+='<div class="grid g21">';
-  h+=`<div class="panel"><div class="ph"><h3>Hasil vs perbelanjaan bulanan</h3><span class="src">HOD Akaun · RM '000</span><div class="sp"></div><button class="link" data-go="app:akaun">Buka Akaun</button></div>`
-    +(TR.length?groupBars(TR,[{k:'rev',l:'Hasil',c:'var(--c-rev)'},{k:'exp',l:'Perbelanjaan',c:'var(--c-exp)'}])+`<div class="lgd"><span><i style="background:var(--c-rev)"></i>Hasil</span><span><i style="background:var(--c-exp)"></i>Perbelanjaan</span><span style="margin-left:auto">Perbelanjaan bulan ini: <b>${rm(expT)}</b></span></div>`:'<div class="empty">Tiada data trend. Import data di Data & Sync.</div>')
-    +'</div>';
-  h+=`<div class="panel"><div class="ph"><h3>Perlu perhatian</h3><span class="src">${A.length} perkara</span></div><div class="alerts">`
-    +(A.length?A.map(a=>`<button class="al" data-go="${a.go}"><div class="st ${a.s}"></div><div><b>${esc(a.t)}</b><span>${esc(a.d)}</span></div></button>`).join(''):'<div class="empty">Tiada isu tertunggak.</div>')
-    +'</div></div></div>';
-
-  // --- row 2: progres kerja ukur (Status Site)
-  const SS_MAX=12;
+  // --- TIER 2: PEMANTAUAN TAPAK & PUSAT TINDAKAN SEGERA
+  const SS_MAX=10;
   const ssRows=ssOpen.slice().sort((a,b)=>(a.due||9e15)-(b.due||9e15)||a.progress-b.progress);
-  h+='<div class="grid g21">';
-  h+=`<div class="panel"><div class="ph"><h3>Progres fail ukur</h3><span class="src">${esc(ssSrc)}</span><div class="sp"></div><button class="link" data-go="app:site-status">Semua fail</button></div><div class="tw"><table><thead><tr><th>No. fail</th><th>Surveyor</th><th>Kategori</th><th>Progres</th><th class="num">Jangka siap</th><th>Status</th></tr></thead><tbody>`
-    +(!SS?`<tr><td colspan="6" class="empty">${ssMsg}</td></tr>`
-      :ssRows.length?ssRows.slice(0,SS_MAX).map(f=>{const dd=f.due?daysTo(f.due):null,k=ssStat(f),st=SS_ST[k];
-        return `<tr data-go="app:site-status" style="cursor:pointer"><td><b style="font-weight:600">${esc(f.idFile)}</b>${f.kawasan.length?`<div style="font-size:11.5px;color:var(--muted)">${esc(f.kawasan.join(', '))}</div>`:''}</td><td>${f.surveyors.length?esc(f.surveyors.join(', ')):'<span style="color:var(--muted)">–</span>'}</td><td style="font-size:11.5px;color:var(--ink2)">${f.kategori.length?esc(f.kategori.join(', ')):'Umum'}</td><td>${progCell(f.progress,k==='late'?'var(--bad)':null)}</td><td class="num">${f.due?dmy(f.due):'–'}${dd!=null?`<div style="font-size:11px;color:${dd<0?'var(--bad)':dd<=14?'var(--warn)':'var(--muted)'}">${dd<0?Math.abs(dd)+' hari lewat':dd===0?'hari ini':dd+' hari lagi'}</div>`:''}</td><td><span class="chip ${st[1]}">${st[0]}</span></td></tr>`;}).join('')
-        +(ssRows.length>SS_MAX?`<tr><td colspan="6" style="text-align:center"><button class="link" data-go="app:site-status">+${ssRows.length-SS_MAX} lagi fail aktif</button></td></tr>`:'')
-      :`<tr><td colspan="6" class="empty">Semua ${SF.length} fail dah selesai.</td></tr>`)
-    +'</tbody></table></div></div>';
-  h+=`<div class="panel"><div class="ph"><h3>Status kerja ukur</h3><span class="src">${SF.length} fail</span><div class="sp"></div><button class="link" data-go="app:site-status">Buka</button></div>`
-    +(SS?Object.keys(SS_ST).map(k=>{const v=ssN[k];return `<div class="hb"><div class="n">${SS_ST[k][0]}</div><div class="track"><span style="width:${SF.length?v/SF.length*100:0}%;background:${SS_ST[k][2]}" data-tip="${SS_ST[k][0]}: ${v} fail"></span></div><div class="val">${v}</div></div>`;}).join('')
-      +`<div class="stats" style="margin-top:14px"><div class="stat" data-go="app:site-status"><div class="l">Purata progres</div><div class="v">${ssAvg}%</div></div><div class="stat" data-go="app:site-status"><div class="l">Jangka siap ≤ 14 hari</div><div class="v" style="${ssSoon.length?'color:var(--warn)':''}">${ssSoon.length}</div></div></div>`
-      +(Object.keys(ssBySurv).length?`<dl class="kv"><dt>Fail aktif ikut surveyor</dt><dd>${Object.entries(ssBySurv).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd><dt>Rekod kerja</dt><dd>${SS.records}</dd></dl>`:'')
-      :`<div class="empty">${ssMsg}</div>`)
-    +'</div>';
-  h+='</div>';
+  h+=`<div class="sec-blk" data-sec="ops">
+    <div class="sec-lbl">Pemantauan Tapak &amp; Tindakan Segera</div>
+    <div class="grid g21">
+      <div class="panel">
+        <div class="ph"><h3>Progres fail ukur</h3><span class="src">${esc(ssSrc)}</span><div class="sp"></div><button class="link" data-go="app:site-status">Semua fail <i class="fa-solid fa-arrow-right" style="font-size:10px"></i></button></div>
+        ${SS?`<div class="ministrip">
+          <div class="mstat"><span>Selesai</span><b style="color:var(--ok)">${ssN.done}</b></div>
+          <div class="mstat"><span>Dalam progres</span><b style="color:var(--ind-600)">${ssN.prog}</b></div>
+          <div class="mstat"><span>Baru direkod</span><b style="color:var(--muted)">${ssN.new}</b></div>
+          <div class="mstat"><span>Lewat jadual</span><b style="color:${ssN.late?'var(--bad)':'var(--ink)'}">${ssN.late}</b></div>
+        </div>`:''}
+        <div class="tw"><table><thead><tr><th>No. fail</th><th>Surveyor</th><th>Kategori</th><th>Progres</th><th class="num">Jangka siap</th><th>Status</th></tr></thead><tbody>
+        ${!SS?`<tr><td colspan="6" class="empty">${ssMsg}</td></tr>`
+          :ssRows.length?ssRows.slice(0,SS_MAX).map(f=>{const dd=f.due?daysTo(f.due):null,k=ssStat(f),st=SS_ST[k];
+            return `<tr data-go="app:site-status" style="cursor:pointer"><td><b style="font-weight:650;color:var(--ink)">${esc(f.idFile)}</b>${f.kawasan.length?`<div style="font-size:11.5px;color:var(--muted)">${esc(f.kawasan.join(', '))}</div>`:''}</td><td>${f.surveyors.length?esc(f.surveyors.join(', ')):'<span style="color:var(--muted)">–</span>'}</td><td style="font-size:11.5px;color:var(--ink2)">${f.kategori.length?esc(f.kategori.join(', ')):'Umum'}</td><td>${progCell(f.progress,k==='late'?'var(--bad)':null)}</td><td class="num">${f.due?dmy(f.due):'–'}${dd!=null?`<div style="font-size:11px;font-weight:600;color:${dd<0?'var(--bad)':dd<=14?'var(--warn)':'var(--muted)'}">${dd<0?Math.abs(dd)+' hari lewat':dd===0?'Hari ini':dd+' hari lagi'}</div>`:''}</td><td><span class="chip ${st[1]}">${st[0]}</span></td></tr>`;}).join('')
+            +(ssRows.length>SS_MAX?`<tr><td colspan="6" style="text-align:center"><button class="link" data-go="app:site-status">+${ssRows.length-SS_MAX} lagi fail aktif</button></td></tr>`:'')
+          :`<tr><td colspan="6" class="empty">Semua ${SF.length} fail dah selesai.</td></tr>`}
+        </tbody></table></div>
+        ${SS&&Object.keys(ssBySurv).length?`<dl class="kv"><dt>Fail aktif ikut surveyor (${SS.records} rekod)</dt><dd>${Object.entries(ssBySurv).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' ('+n+')').join(' · ')}</dd></dl>`:''}
+      </div>
 
-  // --- row 2b: Laporan Harian + HOD BIM
-  h+='<div class="grid g11">';
-  const svRows=Object.entries(lhBySv).sort((a,b)=>b[1].n7-a[1].n7||a[0].localeCompare(b[0]));
-  const maxSv=Math.max(1,...svRows.map(x=>x[1].n7));
-  h+=`<div class="panel"><div class="ph"><h3>Laporan harian lapangan</h3><span class="src">HOD Site · Google Sheets</span><div class="sp"></div><button class="link" data-go="app:site">Buka laporan</button></div>`
-    +(EXT.lh?`<div class="stats"><div class="stat" data-go="app:site"><div class="l">Laporan 7 hari</div><div class="v">${lh7.length}</div></div><div class="stat" data-go="app:site"><div class="l">Isu dilapor (14 hari)</div><div class="v" style="${lhIsu14.length?'color:var(--warn)':''}">${lhIsu14.length}</div></div></div>`
-      +`<div style="margin-top:12px">${svRows.length?svRows.map(([n,v])=>{const ago=v.last?daysTo(v.last):null;
-        return `<div class="hb"><div class="n" title="${esc(n)}">${esc(n)}</div><div class="track"><span style="width:${v.n7/maxSv*100}%;background:var(--ind-600)" data-tip="<b>${escA(n)}</b><br>${v.n7} laporan dalam 7 hari"></span></div><div class="val" style="${ago!=null&&ago<-3?'color:var(--warn)':''}">${v.n7}<span style="font-weight:500;color:var(--muted);font-size:11px"> · ${v.last?(ago===0?'hari ini':Math.abs(ago)+'h lalu'):'–'}</span></div></div>`;}).join(''):'<div class="empty">Tiada laporan.</div>'}</div>`
-      +`<dl class="kv"><dt>Output 7 hari</dt><dd>${Object.entries(lhOut7).map(([u,v])=>v.toLocaleString('en-MY',{maximumFractionDigits:2})+' '+esc(u)).join(' · ')||'–'}</dd><dt>Jangka siap dianjak</dt><dd style="${lhSlip.length?'color:var(--warn);font-weight:650':''}">${lhSlip.length} fail/kawasan</dd><dt>Jumlah rekod</dt><dd>${LH.length}</dd></dl>`
-      :`<div class="empty">Laporan Harian: ${extMsg('lh')}</div>`)
-    +'</div>';
-  const bimList=bimAct.slice().sort((a,b)=>(parseD(a.end)||9e15)-(parseD(b.end)||9e15)).slice(0,6);
-  h+=`<div class="panel"><div class="ph"><h3>HOD BIM · Scan to BIM</h3><span class="src">${BIM?BP.length+' fail · '+BIM.staff.length+' staff':'GEO-BIM Tracker'}</span><div class="sp"></div><button class="link" data-go="app:bim">Buka BIM</button></div>`
-    +(BIM?Object.keys(BIM_ST).map(k=>`<div class="hb"><div class="n">${esc(k)}</div><div class="track"><span style="width:${BP.length?bimSt[k]/BP.length*100:0}%;background:${BIM_ST[k]}" data-tip="${esc(k)}: ${bimSt[k]} fail"></span></div><div class="val">${bimSt[k]}</div></div>`).join('')
-      +(bimList.length?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>No. fail</th><th>PIC</th><th>Progres</th><th class="num">Tarikh akhir</th></tr></thead><tbody>${bimList.map(p=>{const d=parseD(p.end),dd=d?daysTo(d):null;
-        return `<tr data-go="app:bim" style="cursor:pointer"><td><b style="font-weight:600">${esc(p.fileNo)}</b><div style="font-size:11.5px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</div></td><td style="font-size:12px">${esc((p.staffIds||[]).map(bimStaffName).filter(Boolean).join(', ')||'–')}</td><td>${progCell(p.progressPercent,dd!=null&&dd<0?'var(--bad)':null)}</td><td class="num">${d?dmy(d):'–'}${dd!=null?`<div style="font-size:11px;color:${dd<0?'var(--bad)':dd<=14?'var(--warn)':'var(--muted)'}">${dd<0?Math.abs(dd)+' hari lewat':dd===0?'hari ini':dd+' hari lagi'}</div>`:''}</td></tr>`;}).join('')}</tbody></table></div>`:'')
-      +`<dl class="kv"><dt>Purata progres fail aktif</dt><dd>${bimAvg}%</dd><dt>Jam kerja dilapor (7 hari)</dt><dd>${bimHrs7.toLocaleString('en-MY')} j</dd></dl>`
-      :'<div class="empty">Tiada data BIM dalam browser ini.<br><button class="link" data-go="app:bim" style="margin-top:8px">Buka HOD BIM</button></div>')
-    +'</div>';
-  h+='</div>';
+      <div class="panel">
+        <div class="ph"><h3>Perlu perhatian</h3><span class="src">${A.length} perkara</span></div>
+        <div class="af-bar">
+          <button class="af-btn on" data-af="all">Semua (${A.length})</button>
+          <button class="af-btn" data-af="bad" style="${nBad?'color:var(--bad)':''}">Kritikal (${nBad})</button>
+          <button class="af-btn" data-af="warn" style="${nWarn?'color:var(--warn)':''}">Amaran (${nWarn})</button>
+          <button class="af-btn" data-af="info">Info (${nInfo})</button>
+        </div>
+        <div class="alerts">
+          ${A.length?A.map(a=>`<button class="al" data-sev="${a.s}" data-go="${a.go}"><div class="st ${a.s}"></div><div><b>${esc(a.t)}</b><span>${esc(a.d)}</span></div></button>`).join(''):'<div class="empty">Tiada isu tertunggak.</div>'}
+        </div>
+      </div>
+    </div>
 
-  // --- row 3: collections + inventory
+    <div class="grid ${BIM?'g11':'g1'}">
+      <div class="panel">
+        <div class="ph"><h3>Laporan harian lapangan</h3><span class="src">HOD Site · Google Sheets</span><div class="sp"></div><button class="link" data-go="app:site">Buka laporan</button></div>
+        ${EXT.lh?`<div class="stats"><div class="stat" data-go="app:site"><div class="l">Laporan 7 hari</div><div class="v">${lh7.length}</div></div><div class="stat" data-go="app:site"><div class="l">Isu dilapor (14 hari)</div><div class="v" style="${lhIsu14.length?'color:var(--warn)':''}">${lhIsu14.length}</div></div></div>
+          <div style="margin-top:12px">${(()=>{const svRows=Object.entries(lhBySv).sort((a,b)=>b[1].n7-a[1].n7||a[0].localeCompare(b[0]));const maxSv=Math.max(1,...svRows.map(x=>x[1].n7));return svRows.length?svRows.map(([n,v])=>{const ago=v.last?daysTo(v.last):null;
+            return `<div class="hb"><div class="n" title="${esc(n)}">${esc(n)}</div><div class="track-bg"><div class="track" style="width:${Math.max(10,v.n7/maxSv*100)}%"><span style="width:100%;background:var(--ind-600)" data-tip="<b>${escA(n)}</b><br>${v.n7} laporan dalam 7 hari"></span></div></div><div class="val" style="${ago!=null&&ago<-3?'color:var(--warn)':''}">${v.n7}<small> · ${v.last?(ago===0?'hari ini':Math.abs(ago)+'h lalu'):'–'}</small></div></div>`;}).join(''):'<div class="empty">Tiada laporan.</div>';})()}</div>
+          ${(lhIsu14.length||lhSlip.length)?`<div class="mfeed">${lhIsu14.slice(0,2).map(r=>`<div class="mf-item"><div><b>Isu: ${esc(r.file)}</b>${r.kawasan?' · '+esc(r.kawasan):''}<br><span>${esc(r.isu)} (${esc(r.surveyor)})</span></div><span class="chip warn">${dmy(r.tarikh)}</span></div>`).join('')}${lhSlip.slice(0,2).map(r=>`<div class="mf-item"><div><b>Anjakan Tarikh: ${esc(r.file)}</b>${r.kawasan?' · '+esc(r.kawasan):''}<br><span>Asal ${dmy(r.asal)} → Semasa ${dmy(r.semasa)}</span></div><span class="chip info">+${r.slip} hari</span></div>`).join('')}</div>`:''}
+          <dl class="kv"><dt>Output 7 hari</dt><dd>${Object.entries(lhOut7).map(([u,v])=>v.toLocaleString('en-MY',{maximumFractionDigits:2})+' '+esc(u)).join(' · ')||'–'}</dd><dt>Jangka siap dianjak</dt><dd style="${lhSlip.length?'color:var(--warn);font-weight:700':''}">${lhSlip.length} fail/kawasan (${LH.length} rekod)</dd></dl>`
+          :`<div class="empty">Laporan Harian: ${extMsg('lh')}</div>`}
+      </div>
+
+      ${BIM?`<div class="panel">
+        <div class="ph"><h3>HOD BIM · Scan to BIM</h3><span class="src">${BP.length} fail · ${BIM.staff.length} staff</span><div class="sp"></div><button class="link" data-go="app:bim">Buka BIM</button></div>
+        ${Object.keys(BIM_ST).map(k=>`<div class="hb"><div class="n">${esc(k)}</div><div class="track-bg"><div class="track" style="width:${BP.length?bimSt[k]/BP.length*100:0}%"><span style="width:100%;background:${BIM_ST[k]}" data-tip="${esc(k)}: ${bimSt[k]} fail"></span></div></div><div class="val">${bimSt[k]}</div></div>`).join('')}
+        ${bimAct.length?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>No. fail</th><th>PIC</th><th>Progres</th><th class="num">Tarikh akhir</th></tr></thead><tbody>${bimAct.slice().sort((a,b)=>(parseD(a.end)||9e15)-(parseD(b.end)||9e15)).slice(0,6).map(p=>{const d=parseD(p.end),dd=d?daysTo(d):null;
+            return `<tr data-go="app:bim" style="cursor:pointer"><td><b style="font-weight:650">${esc(p.fileNo)}</b><div style="font-size:11.5px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</div></td><td style="font-size:12px">${esc((p.staffIds||[]).map(bimStaffName).filter(Boolean).join(', ')||'–')}</td><td>${progCell(p.progressPercent,dd!=null&&dd<0?'var(--bad)':null)}</td><td class="num">${d?dmy(d):'–'}${dd!=null?`<div style="font-size:11px;font-weight:600;color:${dd<0?'var(--bad)':dd<=14?'var(--warn)':'var(--muted)'}">${dd<0?Math.abs(dd)+' hari lewat':dd===0?'hari ini':dd+' hari lagi'}</div>`:''}</td></tr>`;}).join('')}</tbody></table></div>`:''}
+        <dl class="kv"><dt>Purata progres fail aktif</dt><dd>${bimAvg}%</dd><dt>Jam kerja dilapor (7 hari)</dt><dd>${bimHrs7.toLocaleString('en-MY')} j</dd></dl>
+      </div>`:''}
+    </div>
+  </div>`;
+
+  // --- TIER 3: HOD PELAN (Status Pelan + Checklist + QC)
+  const dash='<span style="color:var(--muted)">–</span>';
+  const qxRwList=qxRw.slice(0,5);
+  const pillList=obj=>Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<span class="tpill">${esc(k)} <b>${n}</b></span>`).join('');
+  h+=`<div class="sec-blk" data-sec="plan">
+    <div class="sec-lbl">Pengeluaran Pelan, Semakan &amp; Kualiti (QC)</div>
+    <div class="panel pelan">
+      <div class="ph"><h3>HOD Pelan</h3><span class="src">Status Pelan · Checklist · Kualiti Pelan (QC)</span></div>
+      <div class="pcols">
+        <div class="pcol">
+          <div class="psec"><span>Status Pelan</span><button class="link" data-go="app:pelan-status">Buka</button></div>
+          <div class="stats">
+            <div class="stat" data-go="app:pelan-status"><div class="l">Dalam proses</div><div class="v">${DRW?DL.length-drSt['Diluluskan']:dash}</div></div>
+            <div class="stat" data-go="app:pelan-status"><div class="l">Lewat sasaran</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
+          </div>
+          ${DRW?svgDonut([
+            {l:'Diluluskan',v:drSt['Diluluskan'],c:'var(--ok)'},
+            {l:'Dalam Semakan',v:drSt['Dalam Semakan'],c:'var(--ind-600)'},
+            {l:'Penyediaan Plan',v:drSt['Penyediaan Plan'],c:'var(--warn)'},
+            {l:'Belum Mula',v:drSt['Belum Mula'],c:'#94A3B8'}
+          ],String(DL.length),'Lukisan'):`<dl class="pkv"><dt>Mula / proses / semak / lulus</dt><dd style="color:var(--muted);font-weight:500">Belum ada data dalam browser ini. <button class="link" data-go="app:pelan-status" style="padding:0">Isi Status Pelan →</button></dd></dl>`}
+        </div>
+
+        <div class="pcol">
+          <div class="psec"><span>Checklist Plan</span><button class="link" data-go="app:pelan-checklist">Buka</button></div>
+          <div class="stats">
+            <div class="stat" data-go="app:pelan-checklist"><div class="l">Lulus pusingan 1</div><div class="v" style="color:var(--ok)">${ckFirstRate!=null?ckFirstRate+'%':dash}</div></div>
+            <div class="stat" data-go="app:pelan-checklist"><div class="l">Dipulangkan</div><div class="v" style="${ckRet.length?'color:var(--bad)':''}">${EXT.ck?ckRet.length:dash}</div></div>
+          </div>
+          <dl class="pkv">
+            <dt>Draf / semak / pulang / lulus</dt>
+            <dd>${EXT.ck?`<span data-go="app:pelan-checklist" style="cursor:pointer">${ckN.DRAFT} / ${ckN.PENDING_CHECK} / <span style="${ckN.RETURNED?'color:var(--bad);font-weight:750':''}">${ckN.RETURNED}</span> / <span style="color:var(--ok)">${ckN.APPROVED}</span></span>`:extMsg('ck')}</dd>
+            ${Object.keys(ckByChecker).length?`<dt>Menunggu ikut checker</dt><dd><div class="tpills">${pillList(ckByChecker)}</div></dd>`:''}
+            ${Object.keys(ckByDrafter).length?`<dt>Helaian ikut drafter</dt><dd><div class="tpills">${pillList(ckByDrafter)}</div></dd>`:''}
+            ${EXT.ck&&EXT.ck.topErr.length?`<dt>Item kerap gagal</dt><dd>${EXT.ck.topErr.slice(0,3).map(e=>esc(e.type+' '+e.no)+' ('+e.n+'×)').join(' · ')}</dd>`:''}
+          </dl>
+        </div>
+
+        <div class="pcol">
+          <div class="psec"><span>Kualiti Pelan (QC)</span><button class="link" data-go="app:pelan-qc">Buka</button></div>
+          <div class="stats">
+            <div class="stat" data-go="app:pelan-qc"><div class="l">QC lulus</div><div class="v" style="color:var(--ok)">${QX.length?Math.round(qxPass/QX.length*100)+'%':dash}</div></div>
+            <div class="stat" data-go="app:pelan-qc"><div class="l">Perlu rework</div><div class="v" style="${qxRw.length?'color:var(--bad)':''}">${QX.length?qxRw.length:dash}</div></div>
+          </div>
+          <dl class="pkv">
+            <dt>Dalam proses / kadar rework</dt>
+            <dd>${QX.length?`${qxProg} dalam proses · <span style="${qxRwRate?'color:var(--bad)':''}">${qxRwRate}% kadar rework</span>`:extMsg('qc')}</dd>
+            <dt>Fail ikut bidang</dt>
+            <dd><div class="tpills">${Object.keys(qxCat).length?pillList(qxCat):'–'}</div></dd>
+            ${Object.keys(qxRwBySv).length?`<dt>Rework ikut surveyor</dt><dd><div class="tpills">${pillList(qxRwBySv)}</div></dd>`:''}
+            ${QC.length?`<dt>QC dalaman</dt><dd><span data-go="ops:pelan" style="cursor:pointer">${qcOk} / ${QC.length} lulus</span></dd>`:''}
+          </dl>
+        </div>
+      </div>
+      ${qxRwList.length?`<div class="tw" style="margin-top:14px"><table><thead><tr><th>QC perlu rework</th><th>Bidang</th><th>Perkara</th><th>Surveyor</th></tr></thead><tbody>${qxRwList.map(i=>`<tr data-go="app:pelan-qc" style="cursor:pointer"><td><b style="font-weight:650;color:var(--bad)">${esc(i['NO. FAIL'])}</b></td><td style="font-size:12px">${esc(i.MAKLUMAT)}</td><td style="font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.PERKARA||'–')}</td><td style="font-size:12px">${esc(i['NAMA SURVEYOR'])}</td></tr>`).join('')}${qxRw.length>5?`<tr><td colspan="4" style="text-align:center"><button class="link" data-go="app:pelan-qc">+${qxRw.length-5} lagi perlu rework</button></td></tr>`:''}</tbody></table></div>`:''}
+    </div>
+  </div>`;
+
+  // --- TIER 4: LOGISTIK, SEBUT HARGA, KEWANGAN & HR (Hanya papar panel yang ada data supaya tiada ruang kosong besar)
   const byClient={};INV.forEach(i=>{const c=i.client||'–';byClient[c]=byClient[c]||{p:0,o:0};byClient[c].p+=num(i.paid);byClient[c].o+=num(i.amt)-num(i.paid);});
   const clients=Object.entries(byClient).sort((a,b)=>(b[1].p+b[1].o)-(a[1].p+a[1].o));
   const maxC=Math.max(1,...clients.map(c=>c[1].p+c[1].o));
-  h+='<div class="grid g11">';
-  h+=`<div class="panel"><div class="ph"><h3>Kutipan invois ikut klien</h3><span class="src">HOD Akaun</span><div class="sp"></div><button class="link" data-go="app:akaun">Invois</button></div>`
-    +(clients.length?clients.map(([c,v])=>hbStack(c,[{v:v.p,c:'var(--c-rev)',l:'Dibayar',t:rm(v.p)},{v:v.o,c:'var(--c-exp)',l:'Tertunggak',t:rm(v.o)}],0,rmK(v.p+v.o)).replace('<div class="track">',`<div class="track" style="width:${(v.p+v.o)/maxC*100}%">`)).join(''):'<div class="empty">Tiada invois.</div>')
-    +`<div class="lgd"><span><i style="background:var(--c-rev)"></i>Dibayar ${rmK(paid)}</span><span><i style="background:var(--c-exp)"></i>Tertunggak ${rmK(outst)}</span></div></div>`;
-  h+=`<div class="panel"><div class="ph"><h3>Keadaan peralatan ikut pemegang</h3><span class="src">Google Sheets</span><div class="sp"></div><button class="link" data-go="app:inventory">Inventori</button></div>`
-    +(invTeams.length?invTeams.map(t=>hbStack(t.name,[{v:t.o,c:'var(--ok)',l:'Baik'},{v:t.w,c:'#d9a400',l:'Belum lengkap'},{v:t.b,c:'var(--bad)',l:'Ada kerosakan'}],0,t.o+t.w+t.b)).join(''):'<div class="empty">Inventori: '+extMsg('inv')+'</div>')
-    +`<div class="lgd"><span><i style="background:var(--ok)"></i>Baik ${invOk}</span><span><i style="background:#d9a400"></i>Belum lengkap ${invWarn}</span><span><i style="background:var(--bad)"></i>Ada kerosakan ${invBad}</span><span style="margin-left:auto">${invTot} unit</span></div>`
-    +(EXT.inv&&EXT.inv.hasCal?`<dl class="kv"><dt>Kalibrasi tamat / hampir tamat</dt><dd style="${calItems.length?'color:var(--warn);font-weight:650':''}">${calItems.filter(x=>x.it.cal.state==='tamat').length} tamat · ${calItems.filter(x=>x.it.cal.state==='hampir').length} dalam ${CAL_WARN_DAYS} hari</dd></dl>`:'')
-    +'</div>';
-  h+='</div>';
-
-  // --- row 4: HOD Pelan (Status Pelan + Checklist + QC) | HR
-  const plSt={draft:0,review:0,correction:0,submitted:0,approved:0};PL.forEach(p=>{if(plSt[p.status]!=null)plSt[p.status]++;});
+  const maxInvTeam=Math.max(1,...invTeams.map(t=>t.o+t.w+t.b));
   const depts={};ST.forEach(s=>{depts[s.dept]=(depts[s.dept]||0)+1;});
-  const dash='<span style="color:var(--muted)">–</span>';
   const lowAtt=ST.filter(s=>num(s.attend)<80);
   const deptRows=Object.entries(depts).sort((a,b)=>b[1]-a[1]),maxD=Math.max(1,...deptRows.map(x=>x[1]));
-  h+='<div class="grid g21">';
-  // HOD Pelan — satu panel: Status Pelan | Checklist Plan | Kualiti Pelan (QC)
-  const qxRwList=qxRw.slice(0,5);
-  h+=`<div class="panel pelan"><div class="ph"><h3>HOD Pelan</h3><span class="src">Status Pelan · Checklist · Kualiti Pelan (QC)</span></div>
-    <div class="pcols">
-    <div class="pcol"><div class="psec"><span>Status Pelan</span><button class="link" data-go="app:pelan-status">Buka</button></div>
-      <div class="stats">
-        <div class="stat" data-go="app:pelan-status"><div class="l">Dalam proses</div><div class="v">${DRW?DL.length-drSt['Diluluskan']:dash}</div></div>
-        <div class="stat" data-go="app:pelan-status"><div class="l">Lewat sasaran</div><div class="v" style="${drOver.length?'color:var(--bad)':''}">${DRW?drOver.length:dash}</div></div>
-      </div>
-      <dl class="pkv"><dt>Mula / proses / semak / lulus</dt><dd>${DRW?`${drSt['Belum Mula']} / ${drSt['Penyediaan Plan']} / ${drSt['Dalam Semakan']} / ${drSt['Diluluskan']}`:'Belum ada data'}</dd></dl>
-    </div>
-    <div class="pcol"><div class="psec"><span>Checklist Plan</span><button class="link" data-go="app:pelan-checklist">Buka</button></div>
-      <div class="stats">
-        <div class="stat" data-go="app:pelan-checklist"><div class="l">Lulus pusingan 1</div><div class="v">${ckFirstRate!=null?ckFirstRate+'%':dash}</div></div>
-        <div class="stat" data-go="app:pelan-checklist"><div class="l">Dipulangkan</div><div class="v" style="${ckRet.length?'color:var(--bad)':''}">${EXT.ck?ckRet.length:dash}</div></div>
-      </div>
-      <dl class="pkv"><dt>Draf / semak / pulang / lulus</dt><dd>${EXT.ck?`<span data-go="app:pelan-checklist" style="cursor:pointer">${ckN.DRAFT} / ${ckN.PENDING_CHECK} / <span style="${ckN.RETURNED?'color:var(--bad);font-weight:700':''}">${ckN.RETURNED}</span> / ${ckN.APPROVED}</span>`:extMsg('ck')}</dd>
-      ${Object.keys(ckByChecker).length?`<dt>Menunggu ikut checker</dt><dd>${Object.entries(ckByChecker).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
-      ${Object.keys(ckByDrafter).length?`<dt>Helaian ikut drafter</dt><dd>${Object.entries(ckByDrafter).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
-      ${EXT.ck&&EXT.ck.topErr.length?`<dt>Item kerap gagal</dt><dd>${EXT.ck.topErr.slice(0,3).map(e=>esc(e.type+' '+e.no)+' ('+e.n+'×)').join(' · ')}</dd>`:''}
-      </dl>
-    </div>
-    <div class="pcol"><div class="psec"><span>Kualiti Pelan (QC)</span><button class="link" data-go="app:pelan-qc">Buka</button></div>
-      <div class="stats">
-        <div class="stat" data-go="app:pelan-qc"><div class="l">QC lulus</div><div class="v">${QX.length?Math.round(qxPass/QX.length*100)+'%':dash}</div></div>
-        <div class="stat" data-go="app:pelan-qc"><div class="l">Dalam proses</div><div class="v">${QX.length?qxProg:dash}</div></div>
-        <div class="stat" data-go="app:pelan-qc"><div class="l">Perlu rework</div><div class="v" style="${qxRw.length?'color:var(--bad)':''}">${QX.length?qxRw.length:dash}</div></div>
-        <div class="stat" data-go="app:pelan-qc"><div class="l">Kadar rework</div><div class="v" style="${qxRwRate?'color:var(--bad)':''}">${QX.length?qxRwRate+'%':dash}</div></div>
-      </div>
-      <dl class="pkv"><dt>Fail ikut bidang</dt><dd>${Object.entries(qxCat).map(([k,n])=>esc(k)+' '+n).join(' · ')||extMsg('qc')}</dd>
-      ${Object.keys(qxRwBySv).length?`<dt>Rework ikut surveyor</dt><dd>${Object.entries(qxRwBySv).sort((a,b)=>b[1]-a[1]).map(([k,n])=>esc(k)+' '+n).join(' · ')}</dd>`:''}
-      ${QC.length?`<dt>QC dalaman</dt><dd><span data-go="ops:pelan" style="cursor:pointer">${qcOk} / ${QC.length} lulus</span></dd>`:''}
-      </dl>
-    </div>
-    </div>
-    ${qxRwList.length?`<div class="tw" style="margin-top:14px"><table><thead><tr><th>QC perlu rework</th><th>Bidang</th><th>Perkara</th><th>Surveyor</th></tr></thead><tbody>${qxRwList.map(i=>`<tr data-go="app:pelan-qc" style="cursor:pointer"><td><b style="font-weight:600">${esc(i['NO. FAIL'])}</b></td><td style="font-size:12px">${esc(i.MAKLUMAT)}</td><td style="font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.PERKARA||'–')}</td><td style="font-size:12px">${esc(i['NAMA SURVEYOR'])}</td></tr>`).join('')}${qxRw.length>5?`<tr><td colspan="4" style="text-align:center"><button class="link" data-go="app:pelan-qc">+${qxRw.length-5} lagi perlu rework</button></td></tr>`:''}</tbody></table></div>`:''}
-  </div>`;
-  h+=`<div class="panel"><div class="ph"><h3>HR · Sumber manusia</h3><span class="src">HOD HR</span><div class="sp"></div><button class="link" data-go="ops:hr">Buka HR</button></div>
-    <div class="stats">
-      <div class="stat" data-go="ops:hr"><div class="l">Kakitangan</div><div class="v">${ST.length}</div></div>
-      <div class="stat" data-go="ops:hr"><div class="l">Purata kehadiran</div><div class="v" style="${ST.length&&avgAtt<80?'color:var(--warn)':''}">${ST.length?avgAtt+'%':dash}</div></div>
-      <div class="stat" data-go="ops:hr"><div class="l">Cuti menunggu</div><div class="v" style="${pendLeave.length?'color:var(--warn)':''}">${pendLeave.length}</div></div>
-      <div class="stat" data-go="ops:hr"><div class="l">Hadir &lt; 80%</div><div class="v" style="${lowAtt.length?'color:var(--bad)':''}">${ST.length?lowAtt.length:dash}</div></div>
-    </div>
-    ${deptRows.length?`<div style="margin-top:12px">${deptRows.map(([k,n])=>`<div class="hb"><div class="n" title="${esc(k||'–')}">${esc(k||'Tiada jabatan')}</div><div class="track"><span style="width:${n/maxD*100}%;background:var(--ind-600)" data-tip="${escA(k||'Tiada jabatan')}: ${n} orang"></span></div><div class="val">${n}</div></div>`).join('')}</div>`:''}
-    ${pendLeave.length?`<dl class="kv"><dt>Cuti menunggu</dt><dd>${pendLeave.slice(0,4).map(l=>esc(l.name)+' ('+esc(l.type)+', '+dmy(parseD(l.date))+')').join(' · ')}${pendLeave.length>4?' · +'+(pendLeave.length-4)+' lagi':''}</dd></dl>`:''}
-    ${!ST.length&&!LV.length?'<div class="empty">Tiada data HR. Import data di Data &amp; Sync.</div>':''}
-    </div>`;
-  h+='</div>';
-
-  // --- row 5: pipeline fail tracking | sebut harga & ramalan
   const maxS=Math.max(1,...Object.values(stageCount));
-  h+='<div class="grid g11">';
-  h+=`<div class="panel"><div class="ph"><h3>Pipeline fail tracking</h3><span class="src">Peringkat semasa fail aktif</span><div class="sp"></div><button class="link" data-go="tracking">Buka</button></div>`
-    +(trk.length?`<div class="pipe">${STAGES.map(([k,l],i)=>`<div class="r${stageCount[k]?' has':''}"><div class="k">${i+1}</div><div class="n">${l}</div><div class="t"><i style="width:${stageCount[k]/maxS*100}%" data-tip="${l}: ${stageCount[k]} fail"></i></div><b>${stageCount[k]}</b></div>`).join('')}</div>`
-      :`<div class="empty">Belum ada fail dijejak.<br><button class="link" data-go="tracking" style="margin-top:8px">Tambah fail pertama</button></div>`)
-    +'</div>';
-  h+=`<div class="panel"><div class="ph"><h3>Sebut harga & ramalan</h3><span class="src">Penjana · Perancangan</span></div>`
-    +(q?`<div style="font-size:12px;color:var(--muted)">${esc(q.ref)} · ${esc(q.date)}</div><div style="font-weight:600;font-size:13px;margin:2px 0 4px">${esc(q.client)}</div><div style="font-size:11.5px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(q.title)}</div>
-      <dl class="kv"><dt>${q.items} item · SST ${q.taxRate}%</dt><dd>${rm(q.sub)}</dd><dt><b style="color:var(--ink)">Jumlah keseluruhan</b></dt><dd><b>RM ${q.total.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}</b></dd></dl>`:'<div class="empty">Tiada draf sebut harga.</div>')
-    +(pl?`<div style="border-top:1px solid var(--line2);margin-top:12px;padding-top:10px"><dl class="kv" style="margin-top:0"><dt>Output dirancang</dt><dd>${[pl.len?pl.len.toFixed(2)+' km':'',pl.area?pl.area.toFixed(2)+' ha':''].filter(Boolean).join(' + ')||'0'}</dd><dt>Team-days</dt><dd>${pl.td.toFixed(1)}${pl.days!=null?' · '+pl.days+' hari kerja':''}</dd><dt>Kos / sebut harga</dt><dd>${rmK(pl.cost)} / ${rmK(pl.quote)}</dd><dt>Margin untung</dt><dd><span class="chip ${pl.margin<10?'bad':pl.margin<20?'warn':'ok'}">${pl.margin.toFixed(1)}%</span></dd></dl></div>`:'')
-    +'</div>';
-  h+='</div>';
 
-  // --- summary report
-  const R=[];
+  const hasFinCharts=TR.length>0||clients.length>0;
+  const hasHR=ST.length>0||LV.length>0;
+  const hasTrack=trk.length>0;
+  const hasQuotePlan=!!(q||pl);
+
+  h+=`<div class="sec-blk" data-sec="fin">
+    <div class="sec-lbl">Logistik Peralatan, Sebut Harga &amp; Kewangan</div>`;
+
+  if(hasFinCharts){
+    h+=`<div class="grid ${TR.length&&clients.length?'g11':'g1'}">
+      ${TR.length?`<div class="panel">
+        <div class="ph"><h3>Hasil vs perbelanjaan bulanan</h3><span class="src">HOD Akaun · RM '000</span><div class="sp"></div><button class="link" data-go="app:akaun">Buka Akaun</button></div>
+        ${groupBars(TR,[{k:'rev',l:'Hasil',c:'var(--c-rev)'},{k:'exp',l:'Perbelanjaan',c:'var(--c-exp)'}])}<div class="lgd"><span><i style="background:var(--c-rev)"></i>Hasil</span><span><i style="background:var(--c-exp)"></i>Perbelanjaan</span><span style="margin-left:auto">Perbelanjaan bulan ini: <b>${rm(expT)}</b></span></div>
+      </div>`:''}
+      ${clients.length?`<div class="panel">
+        <div class="ph"><h3>Kutipan invois ikut klien</h3><span class="src">HOD Akaun</span><div class="sp"></div><button class="link" data-go="app:akaun">Invois</button></div>
+        ${clients.map(([c,v])=>hbStack(c,[{v:v.p,c:'var(--c-rev)',l:'Dibayar',t:rm(v.p)},{v:v.o,c:'var(--c-exp)',l:'Tertunggak',t:rm(v.o)}],maxC,rmK(v.p+v.o))).join('')}
+        <div class="lgd"><span><i style="background:var(--c-rev)"></i>Dibayar ${rmK(paid)}</span><span><i style="background:var(--c-exp)"></i>Tertunggak ${rmK(outst)}</span></div>
+      </div>`:''}
+    </div>`;
+  }
+
+  const botCols=[true,hasQuotePlan,hasTrack,hasHR].filter(Boolean).length;
+  h+=`<div class="grid ${botCols>=3?'g111':botCols===2?'g11':'g1'}">
+      <div class="panel">
+        <div class="ph"><h3>Keadaan peralatan ikut pemegang</h3><span class="src">Google Sheets</span><div class="sp"></div><button class="link" data-go="app:inventory">Inventori</button></div>
+        ${invTeams.length?invTeams.map(t=>hbStack(t.name,[{v:t.o,c:'var(--ok)',l:'Baik'},{v:t.w,c:'var(--warn)',l:'Belum lengkap'},{v:t.b,c:'var(--bad)',l:'Ada kerosakan'}],maxInvTeam,String(t.o+t.w+t.b),`${t.o} baik${t.b?' · '+t.b+' rosak':''}`)).join(''):'<div class="empty">Inventori: '+extMsg('inv')+'</div>'}
+        <div class="lgd"><span><i style="background:var(--ok)"></i>Baik ${invOk}</span><span><i style="background:var(--warn)"></i>Belum lengkap ${invWarn}</span><span><i style="background:var(--bad)"></i>Ada kerosakan ${invBad}</span><span style="margin-left:auto"><b>${invTot}</b> unit</span></div>
+        ${EXT.inv&&EXT.inv.hasCal?`<dl class="kv"><dt>Kalibrasi tamat / hampir tamat</dt><dd style="${calItems.length?'color:var(--warn);font-weight:700':''}">${calItems.filter(x=>x.it.cal.state==='tamat').length} tamat · ${calItems.filter(x=>x.it.cal.state==='hampir').length} dalam ${CAL_WARN_DAYS} hari</dd></dl>`:''}
+      </div>
+
+      ${hasQuotePlan?`<div class="panel">
+        <div class="ph"><h3>Sebut harga &amp; ramalan</h3><span class="src">Penjana · Perancangan</span><div class="sp"></div><button class="link" data-go="quotation">Buka</button></div>
+        ${q?`<div style="background:#FAFBFD;border:1px solid var(--line);border-radius:var(--r-md);padding:12px">
+          <div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted)"><span>${esc(q.ref)}</span><span>${esc(q.date)}</span></div>
+          <div style="font-weight:700;font-size:13.5px;color:var(--ink);margin:3px 0">${esc(q.client)}</div>
+          <div style="font-size:11.5px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(q.title)}</div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
+            <span style="font-size:11.5px;color:var(--muted)">${q.items} item · SST ${q.taxRate}%</span>
+            <b style="font-size:15px;color:var(--ind-800)">RM ${q.total.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}</b>
+          </div>
+        </div>`:''}
+        ${pl?`<dl class="kv" style="${q?'margin-top:12px':'margin-top:0;border-top:0;padding-top:0'}">
+          <dt>Output dirancang</dt><dd>${[pl.len?pl.len.toFixed(2)+' km':'',pl.area?pl.area.toFixed(2)+' ha':''].filter(Boolean).join(' + ')||'0'}</dd>
+          <dt>Team-days</dt><dd>${pl.td.toFixed(1)}${pl.days!=null?' · '+pl.days+' hari kerja':''}</dd>
+          <dt>Kos / sebut harga</dt><dd>${rmK(pl.cost)} / ${rmK(pl.quote)}</dd>
+          <dt>Margin untung</dt><dd><span class="chip ${pl.margin<10?'bad':pl.margin<20?'warn':'ok'}">${pl.margin.toFixed(1)}%</span></dd>
+        </dl>`:''}
+      </div>`:''}
+
+      ${hasTrack?`<div class="panel">
+        <div class="ph"><h3>Pipeline fail tracking</h3><span class="src">Peringkat semasa fail aktif</span><div class="sp"></div><button class="link" data-go="tracking">Buka</button></div>
+        <div class="pipe">${STAGES.map(([k,l],i)=>{const cnt=stageCount[k],isPeak=cnt>0&&cnt===maxS;return `<div class="r${cnt?' has':''}${isPeak?' peak':''}"><div class="k">${i+1}</div><div class="n" title="${esc(l)}">${l}</div><div class="t"><i style="width:${cnt/maxS*100}%" data-tip="${l}: ${cnt} fail"></i></div><b>${cnt}</b></div>`;}).join('')}</div>
+      </div>`:''}
+
+      ${hasHR?`<div class="panel">
+        <div class="ph"><h3>HR · Sumber manusia</h3><span class="src">HOD HR</span><div class="sp"></div><button class="link" data-go="ops:hr">Buka HR</button></div>
+        <div class="stats">
+          <div class="stat" data-go="ops:hr"><div class="l">Kakitangan</div><div class="v">${ST.length}</div></div>
+          <div class="stat" data-go="ops:hr"><div class="l">Purata kehadiran</div><div class="v" style="${ST.length&&avgAtt<80?'color:var(--warn)':''}">${ST.length?avgAtt+'%':dash}</div></div>
+          <div class="stat" data-go="ops:hr"><div class="l">Cuti menunggu</div><div class="v" style="${pendLeave.length?'color:var(--warn)':''}">${pendLeave.length}</div></div>
+          <div class="stat" data-go="ops:hr"><div class="l">Hadir &lt; 80%</div><div class="v" style="${lowAtt.length?'color:var(--bad)':''}">${ST.length?lowAtt.length:dash}</div></div>
+        </div>
+        ${deptRows.length?`<div style="margin-top:12px">${deptRows.map(([k,n])=>`<div class="hb"><div class="n" title="${esc(k||'–')}">${esc(k||'Tiada jabatan')}</div><div class="track-bg"><div class="track" style="width:${n/maxD*100}%"><span style="width:100%;background:var(--ind-600)" data-tip="${escA(k||'Tiada jabatan')}: ${n} orang"></span></div></div><div class="val">${n}</div></div>`).join('')}</div>`:''}
+        ${pendLeave.length?`<dl class="kv"><dt>Cuti menunggu</dt><dd>${pendLeave.slice(0,4).map(l=>esc(l.name)+' ('+esc(l.type)+', '+dmy(parseD(l.date))+')').join(' · ')}${pendLeave.length>4?' · +'+(pendLeave.length-4)+' lagi':''}</dd></dl>`:''}
+      </div>`:''}
+    </div>
+  </div>`;
+
+  // --- COMPACT SETUP STRIP FOR UNPOPULATED LOCAL MODULES
+  const unpop=[];
+  if(!BIM)unpop.push({go:'app:bim',lbl:'HOD BIM'});
+  if(!hasFinCharts)unpop.push({go:'ops:data',lbl:'Akaun & Trend'});
+  if(!hasHR)unpop.push({go:'ops:hr',lbl:'HOD HR'});
+  if(!hasTrack)unpop.push({go:'tracking',lbl:'Fail Tracking'});
+  if(!DRW)unpop.push({go:'app:pelan-status',lbl:'Status Pelan'});
+  if(unpop.length){
+    h+=`<div class="setup-strip">
+      <div class="st-info"><i class="fa-solid fa-circle-info"></i><span><b>${unpop.length} modul</b> belum mempunyai rekod dalam browser ini (dipadatkan supaya paparan kekal kemas):</span></div>
+      <div class="setup-btns">${unpop.map(u=>`<button class="setup-btn" data-go="${u.go}"><i class="fa-solid fa-plus" style="font-size:10px;color:var(--ind-600)"></i>${u.lbl}</button>`).join('')}</div>
+    </div>`;
+  }
+
+  // --- summary report (Utamakan modul yang aktif, gabung modul kosong di baris akhir)
+  const R=[],R_empty=[];
   R.push(`<b>Kerja ukur:</b> ${SS?`${SF.length} fail dalam Status Site — ${ssN.done} selesai, ${ssN.prog} dalam progres, ${ssN.new} baru direkod, ${ssLate.length} lewat jangka siap. Purata progres ${ssAvg}%${ssSoon.length?`, ${ssSoon.length} fail dengan jangka siap dalam 14 hari`:''}.`:'data Status Site belum dimuat.'}`);
-  if(EXT.lh)R.push(`<b>Laporan harian:</b> ${lh7.length} laporan dalam 7 hari (${lhToday.length} hari ini) daripada ${svRows.filter(x=>x[1].n7).length} surveyor${Object.keys(lhOut7).length?`, output ${Object.entries(lhOut7).map(([u,v])=>v.toLocaleString('en-MY',{maximumFractionDigits:2})+' '+esc(u)).join(', ')}`:''}. ${lhIsu14.length} isu lapangan dalam 14 hari${lhSlip.length?`, ${lhSlip.length} fail/kawasan dengan jangka siap dianjak`:''}.`);
-  if(BIM)R.push(`<b>BIM:</b> ${BP.length} fail Scan to BIM — ${bimAct.length} aktif (purata ${bimAvg}%), ${bimSt[BIM_DONE]} siap${bimOver.length?`, ${bimOver.length} lewat tarikh akhir`:''}${bimSoon.length?`, ${bimSoon.length} tamat dalam 14 hari`:''}. ${bimHrs7.toLocaleString('en-MY')} jam kerja dilapor minggu ini.`);
+  if(EXT.lh)R.push(`<b>Laporan harian:</b> ${lh7.length} laporan dalam 7 hari (${lhToday.length} hari ini) daripada ${Object.values(lhBySv).filter(x=>x.n7).length} surveyor${Object.keys(lhOut7).length?`, output ${Object.entries(lhOut7).map(([u,v])=>v.toLocaleString('en-MY',{maximumFractionDigits:2})+' '+esc(u)).join(', ')}`:''}. ${lhIsu14.length} isu lapangan dalam 14 hari${lhSlip.length?`, ${lhSlip.length} fail/kawasan dengan jangka siap dianjak`:''}.`);
+  if(BIM)R.push(`<b>BIM:</b> ${BP.length} fail Scan to BIM — ${bimAct.length} aktif (purata ${bimAvg}%), ${bimSt[BIM_DONE]} siap${bimOver.length?`, ${bimOver.length} lewat tarikh akhir`:''}${bimSoon.length?`, ${bimSoon.length} tamat dalam 14 hari`:''}. ${bimHrs7.toLocaleString('en-MY')} jam kerja dilapor minggu ini.`);else R_empty.push('HOD BIM');
   if(P.length)R.push(`<b>Projek:</b> ${active.length} aktif daripada ${P.length} projek (${delayed.length} lewat, ${dueSoon.length} dengan tarikh akhir dalam 14 hari). ${crewsOn} krew sedang di tapak.`);
-  R.push(`<b>Kewangan:</b> ${rm(billed)} telah diinvois, ${rm(paid)} diterima (${billed?Math.round(paid/billed*100):0}%). Baki belum dikutip ${rm(outst)}${clients.length?`, terbesar dari ${esc(clients.slice().sort((a,b)=>b[1].o-a[1].o)[0][0])}`:''}. Perbelanjaan direkod ${rm(expT)}.`);
-  R.push(`<b>Pelan:</b> ${DRW?`${DL.length} lukisan dalam Status Pelan — ${drSt['Diluluskan']} diluluskan, ${drSt['Dalam Semakan']} dalam semakan, ${drSt['Penyediaan Plan']} dalam penyediaan, ${drSt['Belum Mula']} belum mula${drOver.length?`, ${drOver.length} melepasi sasaran`:''}.`:'tiada data Status Pelan dalam browser ini.'}${EXT.ck?` Checklist: ${CKS.length} helaian — ${ckN.APPROVED} lulus, ${ckN.PENDING_CHECK} menunggu semakan, ${ckN.RETURNED} dipulangkan, ${ckN.DRAFT} draf${ckMulti.length?`, ${ckMulti.length} dah 3 round ke atas`:''}.`:''}${ckFirstRate!=null?` Kadar lulus pusingan 1: ${ckFirstRate}%.`:''}`);
+  if(billed>0||expT>0)R.push(`<b>Kewangan:</b> ${rm(billed)} telah diinvois, ${rm(paid)} diterima (${billed?Math.round(paid/billed*100):0}%). Baki belum dikutip ${rm(outst)}${clients.length?`, terbesar dari ${esc(clients.slice().sort((a,b)=>b[1].o-a[1].o)[0][0])}`:''}. Perbelanjaan direkod ${rm(expT)}.`);else R_empty.push('Kewangan');
+  R.push(`<b>Pelan:</b> ${DRW?`${DL.length} lukisan dalam Status Pelan — ${drSt['Diluluskan']} diluluskan, ${drSt['Dalam Semakan']} dalam semakan, ${drSt['Penyediaan Plan']} dalam penyediaan, ${drSt['Belum Mula']} belum mula${drOver.length?`, ${drOver.length} melepasi sasaran`:''}. `:''}${EXT.ck?`Checklist: ${CKS.length} helaian — ${ckN.APPROVED} lulus, ${ckN.PENDING_CHECK} menunggu semakan, ${ckN.RETURNED} dipulangkan, ${ckN.DRAFT} draf${ckMulti.length?`, ${ckMulti.length} dah 3 round ke atas`:''}.`:''}${ckFirstRate!=null?` Kadar lulus pusingan 1: ${ckFirstRate}%.`:''}`);
   if(QX.length)R.push(`<b>Kualiti pelan (QC):</b> ${QX.length} fail — ${qxPass} lulus, ${qxProg} dalam proses, ${qxRw.length} perlu rework; kadar rework keseluruhan ${qxRwRate}%.`);
-  R.push(`<b>Sumber manusia:</b> ${ST.length} kakitangan, purata kehadiran ${avgAtt}%, ${pendLeave.length} permohonan cuti menunggu kelulusan.`);
+  if(ST.length)R.push(`<b>Sumber manusia:</b> ${ST.length} kakitangan, purata kehadiran ${avgAtt}%, ${pendLeave.length} permohonan cuti menunggu kelulusan.`);else R_empty.push('HR');
   if(EXT.inv)R.push(`<b>Peralatan:</b> ${invTot} unit dipegang ${invTeams.length} orang — ${invOk} baik, ${invWarn} belum lengkap, ${invBad} ada kerosakan${badItems.length?` (${badItems.slice(0,3).map(x=>esc(x.it.name)+' / '+esc(x.team)).join(', ')}${badItems.length>3?', …':''})`:''}.${EXT.inv.hasCal?` ${calItems.length} alat perlu kalibrasi.`:''}`);
-  R.push(`<b>Fail tracking:</b> ${trk.length?`${trk.length} fail, ${trkActive.length} aktif, ${trkClosed.length} ditutup, purata kemajuan ${trkAvg}%${trkOver.length?`, ${trkOver.length} melepasi tarikh tamat`:''}.`:'belum ada fail direkod.'}`);
+  if(trk.length)R.push(`<b>Fail tracking:</b> ${trk.length} fail, ${trkActive.length} aktif, ${trkClosed.length} ditutup, purata kemajuan ${trkAvg}%${trkOver.length?`, ${trkOver.length} melepasi tarikh tamat`:''}.`);else R_empty.push('Fail Tracking');
   if(q)R.push(`<b>Sebut harga semasa:</b> ${esc(q.ref)} untuk ${esc(q.client)} bernilai RM ${q.total.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})} (termasuk SST ${q.taxRate}%).`);
   if(pl)R.push(`<b>Ramalan kerja:</b> ${pl.td.toFixed(1)} team-days${pl.days!=null?`, anggaran ${pl.days} hari kerja dengan ${pl.teams} team`:''}; kos ${rm(pl.cost)}, sebut harga ${rm(pl.quote)}, margin ${pl.margin.toFixed(1)}%.`);
+  if(R_empty.length)R.push(`<b>Nota modul:</b> Rekod bagi ${R_empty.join(', ')} belum diisi atau diimport dalam browser ini.`);
+
   LAST_REPORT='LAPORAN RINGKAS OPERASI — JURUKUR MAHABOB & CO. SDN. BHD.\nTarikh: '+dmy(new Date())+'\n\n'+R.map((r,i)=>(i+1)+'. '+stripHTML(r).textContent).join('\n');
   h+=`<div class="report"><div class="ph"><h3>Laporan ringkas</h3><span class="src">Dijana automatik · ${dmy(new Date())}</span><div class="sp"></div><button class="btn" id="btnCopy"><i class="fa-solid fa-copy"></i>Salin teks</button></div><ol>${R.map(r=>`<li>${r}</li>`).join('')}</ol></div>`;
 
   $('#home').innerHTML=h;
   const cp=$('#btnCopy');if(cp)cp.onclick=copyReport;
+  applyHomeFilters();
 }
 function copyReport(){
   const done=()=>toast('Laporan disalin');
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(LAST_REPORT).then(done,fallback);}else fallback();
   function fallback(){const ta=document.createElement('textarea');ta.value=LAST_REPORT;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('Tak dapat salin — pilih teks secara manual');}ta.remove();}
 }
-$('#home').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go);});
+$('#home').addEventListener('click',e=>{
+  const ft=e.target.closest('.ftab');if(ft){HOME_TAB=ft.dataset.tab;applyHomeFilters();return;}
+  const af=e.target.closest('.af-btn');if(af){ALERT_FILTER=af.dataset.af;applyHomeFilters();return;}
+  const b=e.target.closest('[data-go]');if(b)show(b.dataset.go);
+});
 
 /* ================= TOOLTIP ================= */
 const tip=$('#tip');
