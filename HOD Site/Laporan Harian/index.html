@@ -244,7 +244,7 @@
                             </div>
                             <div>
                                 <label for="f_nama" class="form-label">Nama <span class="text-red-600">*</span></label>
-                                <select id="f_nama" class="form-input">
+                                <select id="f_nama" onchange="syncTemplateWithNama()" class="form-input">
                                     <option value="">Pilih nama...</option>
                                 </select>
                             </div>
@@ -2036,20 +2036,12 @@ function reorderColumns() {
             try { if (key) localStorage.setItem(TEMPLATE_PREF_KEY, key); } catch (e) {}
         }
 
-        // Nama paparan khas dalam dropdown. Semua variasi nama yang mengandungi perkataan ni
-        // (contoh "M.BADRUL", "Mohd Badrul") digabung jadi SATU pilihan dengan label ini sahaja.
-        // Tambah di sini jika mahu nama lain diringkaskan juga, contoh: HELMI: 'Helmi'.
-        const TEMPLATE_ALIASES = { BADRUL: 'Badrul' };
-
+        // Kunci contoh ikut nama surveyor dalam SURVEYOR_ORDER (sama dengan dropdown Nama).
+        // Semua variasi nama ("M.BADRUL", "Mohd Badrul") digabung jadi satu: "NAMA:BADRUL".
         function templateKey(nama) {
             const tokens = surveyorKey(nama).split(/[^A-Z]+/).filter(Boolean);
-            const alias = Object.keys(TEMPLATE_ALIASES).find(k => tokens.includes(k));
-            return alias ? 'ALIAS:' + alias : surveyorKey(nama);
-        }
-
-        function templateLabel(key, r) {
-            if (key.startsWith('ALIAS:')) return TEMPLATE_ALIASES[key.slice(6)];
-            return `${String(r.nama).trim()} • ${r.tarikh || '-'} • ${r.noFile || '-'}`;
+            const hit = SURVEYOR_ORDER.find(n => tokens.includes(n.toUpperCase()));
+            return hit ? 'NAMA:' + hit.toUpperCase() : surveyorKey(nama);
         }
 
         // reportsData tersusun ikut masa hantar (pending dahulu, kemudian Sheet terbaru dahulu),
@@ -2091,21 +2083,37 @@ function reorderColumns() {
             return lines.join('\n');
         }
 
+        // Dropdown Contoh Laporan Saya: lima nama ikut susunan dropdown Nama.
+        // Nama yang belum ada laporan dipapar tapi tak boleh dipilih.
         function refreshTemplateOptions() {
             const select = document.getElementById('templateSelect');
             if (!select) return;
             const templates = getTemplates();
-            // Pilihan lama mungkin tersimpan sebagai "M.BADRUL", jadi normalkan ikut alias
+            // Pilihan lama mungkin tersimpan sebagai "ALIAS:BADRUL" / "M.BADRUL": normalkan
             const raw = getTemplatePref() || select.value;
             const current = templates.has(raw) ? raw : templateKey(raw);
 
-            const items = [...templates.entries()]
-                .map(([key, r]) => ({ key, label: templateLabel(key, r) }))
+            const known = SURVEYOR_ORDER.map(n => {
+                const key = 'NAMA:' + n.toUpperCase();
+                return { key, label: n, has: templates.has(key) };
+            });
+            // Nama di luar senarai yang ada laporan (jarang): letak di hujung
+            const others = [...templates.entries()]
+                .filter(([key]) => !key.startsWith('NAMA:'))
+                .map(([key, r]) => ({ key, label: String(r.nama).trim(), has: true }))
                 .sort((a, b) => a.label.localeCompare(b.label));
-            select.innerHTML = `<option value="">Pilih nama...</option>` + items.map(({ key, label }) =>
-                `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`
+
+            select.innerHTML = `<option value="">Pilih nama...</option>` + [...known, ...others].map(o =>
+                `<option value="${escapeHtml(o.key)}"${o.has ? '' : ' disabled'}>${escapeHtml(o.label)}${o.has ? '' : ' (belum ada laporan)'}</option>`
             ).join('');
             select.value = templates.has(current) ? current : '';
+        }
+
+        // Tukar Nama dalam borang -> dropdown Contoh ikut sekali (tak isi borang)
+        function syncTemplateWithNama() {
+            const select = document.getElementById('templateSelect');
+            const key = templateKey(getField('f_nama'));
+            if ([...select.options].some(o => o.value === key && !o.disabled)) select.value = key;
         }
 
         function applyTemplate() {
