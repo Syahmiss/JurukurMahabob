@@ -238,7 +238,7 @@
                             </div>
                             <div>
                                 <label for="f_kawasan" class="form-label">Kawasan <span class="text-red-600">*</span></label>
-                                <select id="f_kawasan" class="form-input">
+                                <select id="f_kawasan" onchange="refreshTaskOptions()" class="form-input">
                                     <option value="">Pilih kawasan...</option>
                                 </select>
                             </div>
@@ -256,29 +256,21 @@
                         <legend class="text-[11px] font-bold uppercase tracking-wider text-jm-royal flex items-center gap-2 mb-1">
                             <span class="w-5 h-5 rounded-md bg-jm-navy text-jm-gold flex items-center justify-center text-[10px]">2</span> Tugas &amp; Waktu
                         </legend>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="col-span-2">
-                                <label for="f_tugasan" class="form-label">Tugas <span class="text-red-600">*</span></label>
-                                <textarea id="f_tugasan" rows="3" placeholder="Satu tugas satu baris. Contoh:&#10;Topo sungai&#10;Pasang batu sempadan" class="form-input"></textarea>
+
+                        <div>
+                            <div class="hidden sm:grid grid-cols-6 gap-2 pl-5 pr-10 mb-1">
+                                <span class="col-span-3 form-label mb-0">Tugas <span class="text-red-600">*</span></span>
+                                <span class="col-span-1 form-label mb-0">Kuantiti</span>
+                                <span class="col-span-2 form-label mb-0">Unit</span>
                             </div>
-                            <div>
-                                <label for="f_kuantiti" class="form-label">Kuantiti</label>
-                                <input type="number" id="f_kuantiti" inputmode="decimal" min="0" step="any" placeholder="0" class="form-input" />
-                            </div>
-                            <div>
-                                <label for="f_unit" class="form-label">Unit</label>
-                                <input type="text" id="f_unit" list="unitList" autocomplete="off" placeholder="m, lot, titik..." class="form-input" />
-                                <datalist id="unitList">
-                                    <option value="m"></option>
-                                    <option value="km"></option>
-                                    <option value="hektar"></option>
-                                    <option value="ekar"></option>
-                                    <option value="lot"></option>
-                                    <option value="titik"></option>
-                                    <option value="batu sempadan"></option>
-                                    <option value="unit"></option>
-                                </datalist>
-                            </div>
+                            <div class="sm:hidden"><span class="form-label">Tugas <span class="text-red-600">*</span></span></div>
+                            <ul id="taskList" class="space-y-3"></ul>
+                            <button type="button" onclick="addTaskRow()" class="mt-3 inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-white hover:bg-blue-50 text-jm-navy border border-dashed border-jm-blue/50 font-semibold transition-colors">
+                                <i class="fa-solid fa-plus text-jm-goldDark"></i> Tambah Tugas
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-2">
                             <div>
                                 <label for="f_waktuMula" class="form-label">Masa Mula <span class="text-red-600">*</span></label>
                                 <input type="time" id="f_waktuMula" class="form-input" />
@@ -380,7 +372,6 @@
                                 <th class="py-3.5 px-3 font-semibold">Nama</th>
                                 <th class="py-3.5 px-3 font-semibold">Masa</th>
                                 <th class="py-3.5 px-3 font-semibold">Tugas</th>
-                                <th class="py-3.5 px-3 font-semibold text-center">Kuantiti</th>
                                 <th class="py-3.5 px-3 font-semibold">Jangka Siap</th>
                                 <th class="py-3.5 px-3 font-semibold">Isu</th>
                                 <th class="py-3.5 px-3 font-semibold">Perancangan</th>
@@ -1309,8 +1300,8 @@ function reorderColumns() {
             { key: 'kawasan', label: 'Kawasan' },
             { key: 'nama', label: 'Nama' },
             { key: 'tugasan', label: 'Tugas', wide: true, multiline: true },
-            { key: 'kuantiti', label: 'Kuantiti' },
-            { key: 'unit', label: 'Unit' },
+            { key: 'kuantiti', label: 'Kuantiti (satu baris setiap tugas)', multiline: true },
+            { key: 'unit', label: 'Unit (satu baris setiap tugas)', multiline: true },
             { key: 'waktuMula', label: 'Masa Mula' },
             { key: 'waktuTamat', label: 'Masa Tamat' },
             { key: 'jangkaAsal', label: 'Jangka Siap Asal' },
@@ -1321,9 +1312,13 @@ function reorderColumns() {
 
         // Senarai No File & Kawasan (sheet master, published CSV)
         const MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW5BxrFQw07_bCiTfbARTgXh8qYvbMnLo4Uur7iM6ROw42DMmluHxrxXd3bKxVADyj_dLu_pCoEob8/pub?gid=1800236702&single=true&output=csv";
-        const MASTER_CACHE_KEY = 'drafter_master_files_v1';
+        const MASTER_CACHE_KEY = 'drafter_master_files_v2';
         const NAMA_PREF_KEY = 'drafter_last_nama';
-        let masterRows = [];      // [{ noFile, kawasan }]
+        let masterRows = [];      // [{ noFile, kawasan, tugas, kuantiti, unit }]
+
+        // Pilihan Unit dalam dropdown tugas
+        const UNITS = ['m', 'km', 'meter persegi', 'ekar', 'stesen', 'point'];
+        const TASK_OTHER = '__lain__';
         let masterLoading = false;
 
         function generateId() {
@@ -1461,38 +1456,44 @@ function reorderColumns() {
 
         // ============================================================================
         // SENARAI NO FILE & KAWASAN (MASTER CSV)
-        // Lajur dikesan ikut nama header (No File / Fail / Rujukan, Kawasan / Lokasi / Daerah).
-        // Jika header tak dikenali: lajur 1 = No File, lajur 2 = Kawasan.
+        // Lajur dibaca ikut header: No File, Kawasan, Tugas, Kuantiti, Unit.
         // Disimpan dalam pelayar supaya dropdown tetap ada bila line lemah di tapak.
         // ============================================================================
         function normHeader(h) {
             return String(h || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
         }
 
-        function detectMasterColumns(header) {
-            const h = header.map(normHeader);
-            let fi = h.findIndex(x => /\b(no|nombor|num)\b.*\b(file|fail)\b/.test(x));
-            if (fi === -1) fi = h.findIndex(x => /\b(file|fail|rujukan|ref)\b/.test(x));
-            const ki = h.findIndex(x => /\b(kawasan|lokasi|area|daerah|tempat|mukim)\b/.test(x));
-            return { fi, ki };
-        }
+        const sameText = (a, b) => String(a || '').trim().toUpperCase() === String(b || '').trim().toUpperCase();
+
+        // Header sheet master: No File | Kawasan | Tugas | Kuantiti | Unit (tak kira huruf besar/kecil)
+        const MASTER_HEADERS = { noFile: 'no file', kawasan: 'kawasan', tugas: 'tugas', kuantiti: 'kuantiti', unit: 'unit' };
 
         function parseMasterRows(rows) {
             if (!Array.isArray(rows) || rows.length === 0) return [];
-            let { fi, ki } = detectMasterColumns(rows[0]);
-            if (fi === -1 && ki === -1) { fi = 0; ki = rows[0].length > 1 ? 1 : -1; }
-            else if (fi === -1) fi = ki === 0 ? 1 : 0;
+            const header = rows[0].map(normHeader);
+            const col = {};
+            Object.entries(MASTER_HEADERS).forEach(([k, h]) => { col[k] = header.indexOf(h); });
+            if (col.noFile === -1) {
+                console.warn('Sheet master tiada header "No File". Header dijumpai:', rows[0]);
+                return [];
+            }
+            const cell = (r, k) => col[k] >= 0 ? String(r[col[k]] ?? '').trim() : '';
 
             const out = [];
             const seen = new Set();
             rows.slice(1).forEach(r => {
-                const noFile = String(r[fi] ?? '').trim();
-                const kawasan = ki >= 0 ? String(r[ki] ?? '').trim() : '';
-                if (!noFile && !kawasan) return;
-                const key = noFile.toUpperCase() + '||' + kawasan.toUpperCase();
+                const row = {
+                    noFile: cell(r, 'noFile'),
+                    kawasan: cell(r, 'kawasan'),
+                    tugas: cell(r, 'tugas'),
+                    kuantiti: cell(r, 'kuantiti'),
+                    unit: cell(r, 'unit')
+                };
+                if (!row.noFile && !row.kawasan && !row.tugas) return;
+                const key = [row.noFile, row.kawasan, row.tugas].join('||').toUpperCase();
                 if (seen.has(key)) return;
                 seen.add(key);
-                out.push({ noFile, kawasan });
+                out.push(row);
             });
             return out;
         }
@@ -1524,10 +1525,11 @@ function reorderColumns() {
         function masterSummary(at) {
             const files = uniqueSorted(masterRows.map(r => r.noFile)).length;
             const areas = uniqueSorted(masterRows.map(r => r.kawasan)).length;
+            const tasks = uniqueSorted(masterRows.map(r => r.tugas)).length;
             const when = at ? new Date(at) : null;
             const p = n => String(n).padStart(2, '0');
             const stamp = when ? ` • dikemas kini ${formatTarikh(when)} ${p(when.getHours())}:${p(when.getMinutes())}` : '';
-            return `${files} No File • ${areas} Kawasan${stamp}`;
+            return `${files} No File • ${areas} Kawasan • ${tasks} Tugas${stamp}`;
         }
 
         function loadMasterData(manual) {
@@ -1552,7 +1554,7 @@ function reorderColumns() {
                     if (icon) icon.classList.remove('fa-spin');
                     const rows = parseMasterRows(results && results.data);
                     if (rows.length === 0) {
-                        setMasterStatus('Senarai No File kosong atau format tak dikenali. Semak sheet master.', true);
+                        setMasterStatus('Senarai kosong atau header tak dijumpai. Sheet master perlu header: No File, Kawasan, Tugas, Kuantiti, Unit.', true);
                         if (manual) showToast('warning', 'Senarai Kosong', 'Tiada No File dijumpai dalam sheet master.');
                         return;
                     }
@@ -1582,7 +1584,8 @@ function reorderColumns() {
         function setSelectValue(sel, value) {
             const v = String(value || '').trim();
             if (!v) { sel.value = ''; return; }
-            const found = [...sel.options].find(o => o.value.toUpperCase() === v.toUpperCase());
+            const norm = x => String(x).replace(/\s+/g, '').toUpperCase();
+            const found = [...sel.options].find(o => o.value && norm(o.value) === norm(v));
             if (found) { sel.value = found.value; return; }
             const opt = document.createElement('option');
             opt.value = v;
@@ -1601,13 +1604,30 @@ function reorderColumns() {
                 files.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
             if (current) setSelectValue(sel, current);
             renderKawasanOptions(document.getElementById('f_kawasan').value);
+            refreshTaskOptions();
         }
 
         // Kawasan ikut No File dipilih. Jika No File tiada kawasan khusus, papar semua kawasan.
         function kawasanFor(noFile) {
-            const nf = String(noFile || '').toUpperCase();
-            const linked = nf ? masterRows.filter(r => r.noFile.toUpperCase() === nf && r.kawasan).map(r => r.kawasan) : [];
+            const linked = noFile ? masterRows.filter(r => sameText(r.noFile, noFile) && r.kawasan).map(r => r.kawasan) : [];
             return { list: uniqueSorted(linked.length ? linked : masterRows.map(r => r.kawasan)), linked: linked.length > 0 };
+        }
+
+        // Baris master yang padan dengan No File & Kawasan dipilih (paling khusus dahulu)
+        function masterTasksForSelection() {
+            const nf = getField('f_noFile');
+            const kw = getField('f_kawasan');
+            const withTask = masterRows.filter(r => r.tugas);
+            const byFile = nf ? withTask.filter(r => sameText(r.noFile, nf)) : [];
+            const byArea = kw ? byFile.filter(r => !r.kawasan || sameText(r.kawasan, kw)) : byFile;
+            if (byArea.length) return byArea;
+            if (byFile.length) return byFile;
+            return withTask;
+        }
+
+        function masterTaskInfo(tugas) {
+            if (!tugas) return null;
+            return masterTasksForSelection().find(r => sameText(r.tugas, tugas)) || null;
         }
 
         function renderKawasanOptions(preferred) {
@@ -1624,6 +1644,159 @@ function reorderColumns() {
             renderKawasanOptions('');
             markInvalid('f_noFile', false);
             markInvalid('f_kawasan', false);
+            refreshTaskOptions();
+        }
+
+        // ============================================================================
+        // SENARAI TUGAS (satu baris = satu bullet: Tugas + Kuantiti + Unit)
+        // ============================================================================
+        function taskOptionsHtml() {
+            const tasks = uniqueSorted(masterTasksForSelection().map(r => r.tugas));
+            return `<option value="">${tasks.length ? 'Pilih tugas...' : 'Tiada senarai tugas'}</option>` +
+                tasks.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('') +
+                `<option value="${TASK_OTHER}">Lain-lain (taip sendiri)</option>`;
+        }
+
+        function unitOptionsHtml() {
+            return `<option value="">Unit...</option>` + UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+        }
+
+        function taskRows() {
+            return [...document.querySelectorAll('#taskList [data-task-row]')];
+        }
+
+        function rowParts(row) {
+            return {
+                tugas: row.querySelector('.task-tugas'),
+                lain: row.querySelector('.task-lain'),
+                skop: row.querySelector('.task-skop'),
+                kuantiti: row.querySelector('.task-kuantiti'),
+                unit: row.querySelector('.task-unit')
+            };
+        }
+
+        function rowValue(row) {
+            const p = rowParts(row);
+            const tugas = p.tugas.value === TASK_OTHER ? p.lain.value.trim() : p.tugas.value.trim();
+            return { tugas, kuantiti: p.kuantiti.value.trim(), unit: p.unit.value.trim() };
+        }
+
+        // Papar skop dari sheet master & isi Unit automatik jika kosong
+        function onTaskChange(row, fromUser) {
+            const p = rowParts(row);
+            const isOther = p.tugas.value === TASK_OTHER;
+            p.lain.classList.toggle('hidden', !isOther);
+            if (isOther && fromUser) p.lain.focus();
+
+            const info = isOther ? null : masterTaskInfo(p.tugas.value);
+            if (info && info.unit && !p.unit.value) setSelectValue(p.unit, info.unit);
+            if (info && info.kuantiti) {
+                p.skop.textContent = `Skop: ${info.kuantiti} ${info.unit || ''}`.trim();
+                p.skop.classList.remove('hidden');
+            } else {
+                p.skop.classList.add('hidden');
+            }
+            [p.tugas, p.lain].forEach(el => el.classList.remove('is-invalid'));
+        }
+
+        function addTaskRow(task, focus = true) {
+            const list = document.getElementById('taskList');
+            const li = document.createElement('li');
+            li.dataset.taskRow = '1';
+            li.className = 'flex gap-2 items-start';
+            li.innerHTML = `
+                <span class="mt-[15px] w-2 h-2 rounded-full bg-jm-gold ring-2 ring-jm-gold/30 shrink-0"></span>
+                <div class="flex-1 min-w-0 grid grid-cols-6 gap-2">
+                    <div class="col-span-6 sm:col-span-3 min-w-0">
+                        <select class="form-input task-tugas" aria-label="Tugas">${taskOptionsHtml()}</select>
+                        <input type="text" class="form-input task-lain hidden mt-2" placeholder="Taip tugas" aria-label="Tugas lain" />
+                        <p class="task-skop hidden text-[11px] text-slate-500 mt-1"></p>
+                    </div>
+                    <input type="number" class="form-input task-kuantiti col-span-3 sm:col-span-1 self-start" inputmode="decimal" min="0" step="any" placeholder="Kuantiti" aria-label="Kuantiti" />
+                    <select class="form-input task-unit col-span-3 sm:col-span-2 self-start" aria-label="Unit">${unitOptionsHtml()}</select>
+                </div>
+                <button type="button" title="Buang tugas" class="task-remove mt-1.5 w-8 h-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>`;
+            list.appendChild(li);
+
+            const p = rowParts(li);
+            p.tugas.addEventListener('change', () => onTaskChange(li, true));
+            [p.lain, p.kuantiti, p.unit].forEach(el => {
+                el.addEventListener('input', () => el.classList.remove('is-invalid'));
+                el.addEventListener('change', () => el.classList.remove('is-invalid'));
+            });
+            li.querySelector('.task-remove').addEventListener('click', () => removeTaskRow(li));
+
+            if (task) {
+                const inList = [...p.tugas.options].some(o => o.value && sameText(o.value, task.tugas));
+                if (task.tugas && !inList) {
+                    p.tugas.value = TASK_OTHER;
+                    p.lain.value = task.tugas;
+                } else {
+                    setSelectValue(p.tugas, task.tugas);
+                }
+                const q = parseFloat(String(task.kuantiti || '').replace(',', '.'));
+                p.kuantiti.value = Number.isFinite(q) ? String(q) : '';
+                setSelectValue(p.unit, task.unit);
+                onTaskChange(li, false);
+            }
+            updateTaskRemoveButtons();
+            if (focus && !task) p.tugas.focus();
+            return li;
+        }
+
+        function removeTaskRow(row) {
+            row.remove();
+            if (taskRows().length === 0) addTaskRow(null, false);
+            updateTaskRemoveButtons();
+        }
+
+        // Sorok butang buang bila tinggal satu baris
+        function updateTaskRemoveButtons() {
+            const rows = taskRows();
+            rows.forEach(r => r.querySelector('.task-remove').classList.toggle('invisible', rows.length === 1));
+        }
+
+        function setTaskRows(tasks) {
+            document.getElementById('taskList').innerHTML = '';
+            const list = (tasks || []).filter(t => t.tugas);
+            if (list.length === 0) addTaskRow(null, false);
+            else list.forEach(t => addTaskRow(t, false));
+        }
+
+        // Bila No File / Kawasan bertukar: kemas kini pilihan tugas, kekalkan pilihan sedia ada
+        function refreshTaskOptions() {
+            taskRows().forEach(row => {
+                const p = rowParts(row);
+                const current = p.tugas.value;
+                p.tugas.innerHTML = taskOptionsHtml();
+                const inList = v => [...p.tugas.options].some(o => o.value && o.value !== TASK_OTHER && sameText(o.value, v));
+                if (current === TASK_OTHER) {
+                    // Tugas taip sendiri yang kini ada dalam senarai: pilih terus
+                    if (p.lain.value && inList(p.lain.value)) { setSelectValue(p.tugas, p.lain.value); p.lain.value = ''; }
+                    else p.tugas.value = TASK_OTHER;
+                } else if (current && inList(current)) {
+                    setSelectValue(p.tugas, current);
+                } else if (current) {
+                    // Tugas tiada untuk No File / Kawasan baharu: kosongkan baris
+                    p.tugas.value = '';
+                    p.kuantiti.value = '';
+                    p.unit.value = '';
+                }
+                onTaskChange(row, false);
+            });
+        }
+
+        // Rekod -> senarai tugas. Tugas, Kuantiti & Unit disimpan berbilang baris, sejajar ikut baris.
+        function reportTasks(item) {
+            const lines = v => String(clean(v) || '').split('\n').map(x => x.trim());
+            const t = lines(item.tugasan), q = lines(item.kuantiti), u = lines(item.unit);
+            return t.map((tugas, i) => ({
+                tugas: tugas.replace(/^[-•\s]+/, ''),
+                kuantiti: clean(q[i]),
+                unit: clean(u[i])
+            })).filter(x => x.tugas);
         }
 
         // ============================================================================
@@ -1697,8 +1870,9 @@ function reorderColumns() {
         }
 
         function formHasContent() {
-            return ['f_noFile', 'f_tugasan', 'f_kuantiti', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat']
-                .some(id => getField(id)) || !!attachedImageData;
+            return ['f_noFile', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat'].some(id => getField(id))
+                || taskRows().some(r => { const v = rowValue(r); return v.tugas || v.kuantiti; })
+                || !!attachedImageData;
         }
 
         // Isi borang dari rekod. today=true: TARIKH jadi hari ini (untuk contoh laporan)
@@ -1712,11 +1886,7 @@ function reorderColumns() {
             if (clean(rec.nama)) setField('f_nama', clean(rec.nama));
             setField('f_waktuMula', toInputTime(rec.waktuMula));
             setField('f_waktuTamat', toInputTime(rec.waktuTamat));
-            setField('f_tugasan', tugasItems(rec).join('\n'));
-
-            const q = parseFloat(String(clean(rec.kuantiti)).replace(',', '.'));
-            setField('f_kuantiti', Number.isFinite(q) ? String(q) : '');
-            setField('f_unit', clean(rec.unit));
+            setTaskRows(reportTasks(rec));
             setField('f_jangkaAsal', toInputDate(clean(rec.jangkaAsal)));
             setField('f_jangkaSemasa', toInputDate(clean(rec.jangkaSemasa)));
             setField('f_isu', clean(rec.isu));
@@ -1730,8 +1900,9 @@ function reorderColumns() {
         // Kosongkan borang. Nama dikekalkan (orang sama biasanya hantar dari phone sama).
         function resetReportForm(askFirst) {
             if (askFirst && formHasContent() && !confirm('Kosongkan semua isi borang?')) return;
-            ['f_tugasan', 'f_kuantiti', 'f_unit', 'f_jangkaAsal', 'f_jangkaSemasa', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat']
+            ['f_jangkaAsal', 'f_jangkaSemasa', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat']
                 .forEach(id => setField(id, ''));
+            setTaskRows([]);
             setField('f_tarikh', toInputDate(new Date()));
             document.getElementById('f_noFile').value = '';
             [...document.getElementById('f_noFile').options].filter(o => o.dataset.custom).forEach(o => o.remove());
@@ -1743,6 +1914,18 @@ function reorderColumns() {
             updateDelayHint();
         }
 
+        // Senarai tugas -> medan Tugas / Kuantiti / Unit (berbilang baris, sejajar)
+        function tasksToFields(tasks) {
+            if (!tasks.length) return { tugasan: '-', kuantiti: '-', unit: '-' };
+            const anyQty = tasks.some(t => t.kuantiti);
+            const anyUnit = tasks.some(t => t.unit);
+            return {
+                tugasan: tasks.map(t => t.tugas).join('\n'),
+                kuantiti: anyQty ? tasks.map(t => t.kuantiti || '-').join('\n') : '-',
+                unit: anyUnit ? tasks.map(t => t.unit || '-').join('\n') : '-'
+            };
+        }
+
         function collectReportForm() {
             const v = id => getField(id) || '-';
             return {
@@ -1752,9 +1935,7 @@ function reorderColumns() {
                 nama: v('f_nama'),
                 waktuMula: v('f_waktuMula'),
                 waktuTamat: v('f_waktuTamat'),
-                tugasan: v('f_tugasan'),
-                kuantiti: v('f_kuantiti'),
-                unit: v('f_unit'),
+                ...tasksToFields(taskRows().map(rowValue).filter(t => t.tugas)),
                 jangkaAsal: fromInputDate(getField('f_jangkaAsal')) || '-',
                 jangkaSemasa: fromInputDate(getField('f_jangkaSemasa')) || '-',
                 isu: v('f_isu'),
@@ -1778,10 +1959,24 @@ function reorderColumns() {
             need('f_waktuMula', 'Masa Mula');
             const a = timeToMin(getField('f_waktuMula')), b = timeToMin(getField('f_waktuTamat'));
             need('f_waktuTamat', 'Masa Tamat (mesti selepas masa mula)', b === null || (a !== null && b <= a));
-            need('f_tugasan', 'Tugas');
-            const q = getField('f_kuantiti');
-            need('f_kuantiti', 'Kuantiti (nombor sahaja)', q !== '' && !(Number(q) >= 0));
-            need('f_unit', 'Unit (wajib bila ada kuantiti)', q !== '' && !getField('f_unit'));
+
+            // Tugas: sekurang-kurangnya satu; setiap baris yang ada kuantiti mesti ada unit
+            const rows = taskRows();
+            const filled = rows.filter(r => { const v = rowValue(r); return v.tugas || v.kuantiti || v.unit; });
+            const flag = (el, bad, label) => {
+                el.classList.toggle('is-invalid', bad);
+                if (bad) errors.push({ el, label });
+            };
+            if (filled.length === 0) {
+                flag(rowParts(rows[0]).tugas, true, 'Tugas');
+            }
+            filled.forEach((r, i) => {
+                const p = rowParts(r), v = rowValue(r), n = filled.length > 1 ? ` ${i + 1}` : '';
+                if (p.tugas.value === TASK_OTHER) flag(p.lain, !v.tugas, `Tugas${n}`);
+                else flag(p.tugas, !v.tugas, `Tugas${n}`);
+                flag(p.kuantiti, v.kuantiti !== '' && !(Number(v.kuantiti) >= 0), `Kuantiti${n} (nombor sahaja)`);
+                flag(p.unit, v.kuantiti !== '' && !v.unit, `Unit${n} (wajib bila ada kuantiti)`);
+            });
             return errors;
         }
 
@@ -1803,6 +1998,7 @@ function reorderColumns() {
                 if (last && !getField('f_nama')) setField('f_nama', last);
             } catch (e) {}
             ['f_waktuMula', 'f_waktuTamat'].forEach(id => document.getElementById(id).addEventListener('input', updateHoursHint));
+            setTaskRows([]);
             // Buang tanda merah sebaik pengguna isi
             document.querySelectorAll('#reportForm .form-input').forEach(el => {
                 el.addEventListener('input', () => el.classList.remove('is-invalid'));
@@ -1859,8 +2055,7 @@ function reorderColumns() {
         // Bina teks laporan (disimpan dalam lajur Teks Asal, dan boleh disalin ke WhatsApp)
         function buildReportText(r) {
             const v = k => clean(r[k]) || '-';
-            const bullet = k => (clean(r[k]) || '-').split('\n').map(l => l.trim()).filter(Boolean).map(l => `- ${l}`).join('\n') || '-';
-            const kuantiti = clean(r.kuantiti);
+            const bullet = k => clean(r[k]).split('\n').map(l => l.trim()).filter(Boolean).map(l => `- ${l}`).join('\n') || '-';
             const lines = [
                 'Laporan Harian',
                 '',
@@ -1874,11 +2069,9 @@ function reorderColumns() {
                 `Tamat : ${v('waktuTamat')}`,
                 '',
                 'TUGAS :',
-                bullet('tugasan'),
-                '',
-                `KUANTITI : ${kuantiti || '-'}`,
-                `UNIT : ${v('unit')}`
+                ...(reportTasks(r).map(t => `- ${t.tugas}${t.kuantiti ? ` — ${t.kuantiti} ${t.unit}`.trimEnd() : ''}`)),
             ];
+            if (!reportTasks(r).length) lines.push('-');
             lines.push('', 'DATELINE PROJEK :', `- Jangka siap asal : ${v('jangkaAsal')}`, `- Jangka siap semasa : ${v('jangkaSemasa')}`);
             lines.push('', 'ISU / HALANGAN :', bullet('isu'));
             lines.push('', 'PERANCANGAN :', bullet('perancangan'));
@@ -1924,7 +2117,8 @@ function reorderColumns() {
             const hint = document.getElementById('templateHint');
             hint.textContent = `Diisi dari laporan ${rec.tarikh || '-'} (${rec.noFile || '-'}). Tarikh dah ditukar ke hari ini. Semak masa, kuantiti & isu sebelum hantar.`;
             hint.classList.remove('hidden');
-            document.getElementById('f_tugasan').focus();
+            const firstTask = document.querySelector('#taskList .task-tugas');
+            if (firstTask) firstTask.focus();
         }
 
         // Kecilkan gambar (maks 1600px) dan mampatkan berperingkat jika masih terlalu besar
@@ -2035,6 +2229,17 @@ function reorderColumns() {
 
         // Hurai Teks Asal (format buildReportText) kepada medan laporan.
         // Dipakai oleh butang "Hurai Semula" dalam Edit Laporan.
+        // "Topo sungai — 350 m" -> { tugas, kuantiti, unit }
+        function parseTaskLines(text) {
+            const tasks = String(clean(text) || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+                const i = l.lastIndexOf(' — ');
+                if (i === -1) return { tugas: l, kuantiti: '', unit: '' };
+                const m = l.slice(i + 3).trim().match(/^([\d.,]+)\s*(.*)$/);
+                return m ? { tugas: l.slice(0, i).trim(), kuantiti: m[1], unit: m[2].trim() } : { tugas: l, kuantiti: '', unit: '' };
+            });
+            return tasksToFields(tasks);
+        }
+
         function parseReportText(rawText) {
             const clean = String(rawText || '').replace(/\r\n/g, '\n').trim();
 
@@ -2045,7 +2250,7 @@ function reorderColumns() {
             };
 
             // Seksyen berbilang baris: dari header hingga header seterusnya (mesti di awal baris)
-            const NEXT_HDR = /^[ \t]*(TARIKH|NO FILE|KAWASAN|NAMA|WAKTU|TUGAS|KUANTITI|UNIT|DATELINE PROJEK|ISU \/ HALANGAN|PERANCANGAN)[ \t]*:/im;
+            const NEXT_HDR = /^[ \t]*(TARIKH|NO FILE|KAWASAN|NAMA|WAKTU|TUGAS|DATELINE PROJEK|ISU \/ HALANGAN|PERANCANGAN)[ \t]*:/im;
             const section = (headerRegex) => {
                 const start = clean.match(headerRegex);
                 if (!start) return '-';
@@ -2065,9 +2270,7 @@ function reorderColumns() {
                 nama: line('NAMA'),
                 waktuMula: line('Mula kerja'),
                 waktuTamat: line('Tamat'),
-                tugasan: section(/^[ \t]*TUGAS[ \t]*:/im),
-                kuantiti: line('KUANTITI'),
-                unit: line('UNIT'),
+                ...parseTaskLines(section(/^[ \t]*TUGAS[ \t]*:/im)),
                 jangkaAsal: line('Jangka siap asal'),
                 jangkaSemasa: line('Jangka siap semasa'),
                 isu: section(/^[ \t]*ISU \/ HALANGAN[ \t]*:/im),
@@ -2090,7 +2293,7 @@ function reorderColumns() {
 
             const errors = validateReportForm();
             if (errors.length) {
-                document.getElementById(errors[0].id).focus();
+                (errors[0].el || document.getElementById(errors[0].id)).focus();
                 showToast('warning', 'Borang Belum Lengkap', `Semak: ${errors.map(e => e.label).join(', ')}.`);
                 return;
             }
@@ -2578,16 +2781,14 @@ function reorderColumns() {
             }
         }
 
-        // Pecahkan tugasan kepada senarai item (satu tugas satu baris)
-        function tugasItems(item) {
-            return clean(item.tugasan).split(/\n+/).map(x => x.replace(/^[-•\s]+/, '').trim()).filter(Boolean);
-        }
-
         function tugasCell(item) {
-            const items = tugasItems(item);
-            if (!items.length) return '<span class="text-slate-400">-</span>';
-            return `<ul class="space-y-1">${items.map(x => `
-                <li class="flex gap-1.5 leading-snug"><span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-jm-gold ring-2 ring-jm-gold/30 shrink-0"></span><span>${escapeHtml(x)}</span></li>`).join('')}
+            const tasks = reportTasks(item);
+            if (!tasks.length) return '<span class="text-slate-400">-</span>';
+            return `<ul class="space-y-1">${tasks.map(t => `
+                <li class="flex gap-1.5 leading-snug">
+                    <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-jm-gold ring-2 ring-jm-gold/30 shrink-0"></span>
+                    <span>${escapeHtml(t.tugas)}${t.kuantiti ? ` <span class="ml-1 whitespace-nowrap px-1.5 py-0.5 rounded bg-jm-light text-jm-navy text-[10px] font-bold">${escapeHtml(t.kuantiti)} ${escapeHtml(t.unit)}</span>` : ''}</span>
+                </li>`).join('')}
             </ul>`;
         }
 
@@ -2608,10 +2809,6 @@ function reorderColumns() {
             badge.textContent = `${renderedData.length} Rekod`;
 
             tbody.innerHTML = renderedData.map((item, idx) => {
-                const qty = clean(item.kuantiti);
-                const qtyCell = qty
-                    ? `<span class="font-bold text-jm-navy">${escapeHtml(qty)}</span> <span class="text-slate-500">${escapeHtml(clean(item.unit))}</span>`
-                    : `<span class="text-slate-400">-</span>`;
 
                 const img = safeImageSrc(item.image);
                 const thumb = safeImageSrc(item.imageThumb) || img;
@@ -2653,8 +2850,7 @@ function reorderColumns() {
                         <td class="py-3.5 px-3 text-slate-700 min-w-[110px]">${escapeHtml(item.kawasan || '-')}</td>
                         <td class="py-3.5 px-3 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(item.nama || '-')}</td>
                         <td class="py-3.5 px-3 font-mono text-[11px] whitespace-nowrap text-slate-600">${escapeHtml(item.waktuMula || '-')} - ${escapeHtml(item.waktuTamat || '-')}</td>
-                        <td class="py-3.5 px-3 min-w-[180px] text-slate-800">${tugasCell(item)}</td>
-                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${qtyCell}</td>
+                        <td class="py-3.5 px-3 min-w-[220px] text-slate-800">${tugasCell(item)}</td>
                         <td class="py-3.5 px-3 text-[11px] whitespace-nowrap">
                             <div class="text-slate-500">Asal: <span class="font-mono">${escapeHtml(item.jangkaAsal || '-')}</span></div>
                             <div class="text-jm-navy font-semibold">Kini: <span class="font-mono">${escapeHtml(item.jangkaSemasa || '-')}</span></div>
