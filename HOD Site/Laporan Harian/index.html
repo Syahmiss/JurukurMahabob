@@ -244,8 +244,9 @@
                             </div>
                             <div>
                                 <label for="f_nama" class="form-label">Nama <span class="text-red-600">*</span></label>
-                                <input type="text" id="f_nama" list="namaList" autocomplete="off" placeholder="Taip atau pilih nama" class="form-input" />
-                                <datalist id="namaList"></datalist>
+                                <select id="f_nama" class="form-input">
+                                    <option value="">Pilih nama...</option>
+                                </select>
                             </div>
                         </div>
                         <p id="masterStatus" class="text-[11px] text-slate-400"></p>
@@ -1883,7 +1884,7 @@ function reorderColumns() {
             setSelectValue(document.getElementById('f_noFile'), clean(rec.noFile));
             renderKawasanOptions(clean(rec.kawasan));
 
-            if (clean(rec.nama)) setField('f_nama', clean(rec.nama));
+            if (clean(rec.nama)) setNama(rec.nama);
             setField('f_waktuMula', toInputTime(rec.waktuMula));
             setField('f_waktuTamat', toInputTime(rec.waktuTamat));
             setTaskRows(reportTasks(rec));
@@ -1984,18 +1985,30 @@ function reorderColumns() {
             try { if (clean(nama)) localStorage.setItem(NAMA_PREF_KEY, clean(nama)); } catch (e) {}
         }
 
-        function refreshNamaList() {
-            const dl = document.getElementById('namaList');
-            if (!dl) return;
-            const names = uniqueSorted([...SURVEYOR_ORDER, ...reportsData.map(r => clean(r.nama))]);
-            dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+        // Dropdown Nama: senarai tetap dari SURVEYOR_ORDER (tambah/buang nama di situ)
+        function renderNamaOptions() {
+            const sel = document.getElementById('f_nama');
+            sel.innerHTML = `<option value="">Pilih nama...</option>` +
+                SURVEYOR_ORDER.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        }
+
+        // Padankan nama dalam laporan dengan pilihan dropdown, contoh "M.BADRUL" / "Mohd Badrul" -> "Badrul".
+        // Nama yang tiada dalam senarai dipapar sebagai "(tiada dalam senarai)".
+        function setNama(nama) {
+            const v = clean(nama);
+            const sel = document.getElementById('f_nama');
+            if (!v) { sel.value = ''; return; }
+            const tokens = surveyorKey(v).split(/[^A-Z]+/).filter(Boolean);
+            const match = SURVEYOR_ORDER.find(n => n.toUpperCase() === v.toUpperCase() || tokens.includes(n.toUpperCase()));
+            setSelectValue(sel, match || v);
         }
 
         function initReportForm() {
             setField('f_tarikh', toInputDate(new Date()));
+            renderNamaOptions();
             try {
                 const last = localStorage.getItem(NAMA_PREF_KEY);
-                if (last && !getField('f_nama')) setField('f_nama', last);
+                if (last) setNama(last);
             } catch (e) {}
             ['f_waktuMula', 'f_waktuTamat'].forEach(id => document.getElementById(id).addEventListener('input', updateHoursHint));
             setTaskRows([]);
@@ -2093,7 +2106,6 @@ function reorderColumns() {
                 `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`
             ).join('');
             select.value = templates.has(current) ? current : '';
-            refreshNamaList();
         }
 
         function applyTemplate() {
