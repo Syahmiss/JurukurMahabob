@@ -390,6 +390,45 @@ tbody tr:hover td{background:rgba(239,246,255,.6)}
 .del-row .spacer{flex:1 1 0}
 .del-box .msg{margin:0}.del-box .msg:empty{display:none}
 @media (max-width:620px){.del-row input{max-width:none;flex-basis:100%}.del-row .spacer{display:none}.del-row .btn{flex:1}}
+/* Gambar alat */
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.item .c-eq{display:flex;align-items:center;gap:12px;min-width:0}
+.c-eq .eq-t{min-width:0}
+.thumb{all:unset;box-sizing:border-box;width:46px;height:46px;flex:none;border-radius:10px;overflow:hidden;background:var(--line2);border:1px solid var(--line);display:grid;place-items:center;color:#94A3B8}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb svg,.ph-drop svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+button.thumb{cursor:zoom-in}
+button.thumb:hover{border-color:var(--ind-600)}
+button.thumb:focus-visible,.ph-big:focus-visible{outline:2px solid var(--ind-600);outline-offset:2px}
+.thumb.sm{width:30px;height:30px;border-radius:7px}
+.thumb.broken img,.ph-big.broken img{display:none}
+.eqc-in{display:flex;align-items:center;gap:8px}
+.ph-box{margin:0 14px 12px;display:flex;gap:14px;align-items:flex-start;padding:12px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);transition:border-color .15s,background .15s}
+.ph-box.drag{border-color:var(--ind-600);background:var(--ind-50)}
+.ph-big{all:unset;box-sizing:border-box;cursor:zoom-in;width:180px;aspect-ratio:4/3;flex:none;border-radius:10px;overflow:hidden;background:var(--line2);border:1px solid var(--line)}
+.ph-big img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-big.broken{display:grid;place-items:center}
+.ph-big.broken::after{content:"Gambar tak dapat dipapar";font-size:12px;color:var(--muted);padding:8px;text-align:center}
+.ph-drop{box-sizing:border-box;width:180px;aspect-ratio:4/3;flex:none;border-radius:10px;border:1.5px dashed #CBD5E1;background:var(--bg);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:600;text-align:center;padding:8px;cursor:pointer}
+.ph-drop .hint{font-weight:400;font-size:11px}
+.ph-drop:hover,.ph-drop:focus-within{border-color:var(--ind-600);color:var(--ind-600)}
+.ph-side{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.ph-side .t{margin:0;font-size:13px;font-weight:700;color:var(--ind-950)}
+.ph-side .s{margin:0;font-size:12px;color:var(--muted)}
+.ph-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ph-act input{flex:1 1 160px;max-width:220px;min-width:0;background:var(--surface);border:1px solid #CBD5E1;border-radius:12px;padding:7px 10px;font-size:13px}
+.ph-act input:focus{outline:none;border-color:var(--ind-600);box-shadow:0 0 0 2px var(--ind-600)}
+.ph-act label.btn{cursor:pointer}
+.ph-act label.btn:focus-within{border-color:var(--ind-600);box-shadow:0 0 0 2px var(--ind-600)}
+.ph-box .msg{margin:0}.ph-box .msg:empty{display:none}
+.ph-box.busy .ph-act,.ph-box.busy .ph-drop{opacity:.55;pointer-events:none}
+dialog.lb{border:0;padding:0;background:transparent;max-width:min(1100px,94vw);max-height:94vh;overflow:visible}
+dialog.lb::backdrop{background:rgba(10,37,64,.82)}
+.lb-in{position:relative;display:flex;flex-direction:column;gap:10px;align-items:center}
+.lb-in img{max-width:94vw;max-height:80vh;border-radius:12px;background:#fff;object-fit:contain;display:block}
+.lb-cap{display:flex;align-items:center;gap:10px;color:#fff;font-size:13px;flex-wrap:wrap;justify-content:center;text-align:center}
+.lb-x{position:absolute;top:-14px;right:-14px;width:36px;height:36px;border-radius:50%;border:0;background:var(--yel);color:var(--ind-950);font-size:20px;line-height:1;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+@media (max-width:620px){.ph-box{flex-direction:column}.ph-big,.ph-drop{width:100%}.ph-act input{max-width:none;flex-basis:100%}.lb-x{top:6px;right:6px}}
 @media (max-width:1320px){.hero .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.hero .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
@@ -466,6 +505,7 @@ html,body{max-width:100%;overflow-x:hidden}
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
 </svg>
 
 
@@ -523,6 +563,7 @@ html,body{max-width:100%;overflow-x:hidden}
             <option value="nota">Bernota</option>
             <option value="baik">Baik</option>
             <option value="kal">Kalibrasi tamat / hampir</option>
+            <option value="nogam">Tiada gambar</option>
           </select>
           <button id="toggleAll" class="btn" type="button">Buka semua</button>
           <div class="seg" role="group" aria-label="Paparan">
@@ -543,6 +584,14 @@ html,body{max-width:100%;overflow-x:hidden}
       <span>Status komponen dikira terus dari lajur Status dalam sheet.</span>
     </div>
 </div>
+
+<dialog class="lb" id="lb" aria-label="Gambar alat">
+  <div class="lb-in">
+    <button type="button" class="lb-x" data-lbx aria-label="Tutup">×</button>
+    <img id="lbImg" alt="">
+    <div class="lb-cap" id="lbCap"></div>
+  </div>
+</dialog>
 
 <!-- Snapshot sandaran (10/11/2026). Dipakai bila fetch live gagal, contohnya dalam preview artifact. -->
 <script type="text/csv" id="snapshot">Nama,Peralatan,S/N,Detail,Status,Catatan
@@ -829,6 +878,12 @@ const STATUS_OPTIONS = ['Baik', 'Tidak Baik'];
 const CAL_VALID_MONTHS = 12;
 const CAL_WARN_DAYS = 30;
 const CAL_STATUS_SUGGEST = ['Sah', 'Tamat', 'Dalam kalibrasi', 'Tidak perlu'];
+// Gambar alat: fail disimpan dalam Google Drive (folder dibina auto oleh Apps Script),
+// link disimpan dalam lajur "Gambar" pada baris pertama setiap alat.
+const PHOTO_MAX_PX = 1600;      // sisi paling panjang selepas dimampatkan
+const PHOTO_QUALITY = 0.82;     // kualiti JPEG
+const PHOTO_MAX_MB = 25;        // had saiz fail asal sebelum dimampatkan
+const PHOTO_TIMEOUT_MS = 60000;
 
 const CATEGORIES = [
   ['GNSS', /gnss/i],
@@ -913,6 +968,41 @@ function calInfo(it){
 const calNeedsAction = it => !!(it.cal && (it.cal.state==='tamat'||it.cal.state==='hampir'));
 const catOf = name => (CATEGORIES.find(([,re])=>re.test(name))||[CAT_OTHER])[0];
 
+/* ===== Gambar: URL, thumbnail & fallback ===== */
+// Thumbnail Drive perlukan fail dikongsi "Anyone with the link". Kalau tak boleh (polisi domain / thumbnail
+// belum siap lepas upload), dashboard ambil gambar terus melalui Apps Script (action=photo).
+const PHOTO_DATA=new Map(), PHOTO_PEND=new Map(), PHOTO_FAIL=new Set();
+const driveId = v => { v=String(v||'').trim(); const m=/(?:\/d\/|[?&]id=)([\w-]{20,})/.exec(v) || /^([\w-]{25,})$/.exec(v); return m?m[1]:''; };
+function photoSrc(v, w=600){
+  const id=driveId(v);
+  if(id) return PHOTO_DATA.get(id) || `https://drive.google.com/thumbnail?id=${id}&sz=w${w}`;
+  return /^https:\/\//i.test(String(v||'').trim()) ? String(v).trim() : '';
+}
+const photoOpenUrl = v => { const id=driveId(v); return id ? `https://drive.google.com/file/d/${id}/view` : photoSrc(v); };
+const photoImg = (it,w) => `<img src="${esc(photoSrc(it.gambar,w))}" alt="Gambar ${esc(it.peralatan)}" loading="lazy" decoding="async" data-pid="${esc(driveId(it.gambar))}">`;
+const hasPhoto = it => !!photoSrc(it.gambar);
+const CAM='<svg aria-hidden="true"><use href="#i-cam"/></svg>';
+function thumbHTML(it, sm){
+  const c='thumb'+(sm?' sm':'');
+  if(hasPhoto(it)) return `<button type="button" class="${c}" data-zoom="${it.id}" title="Lihat gambar" aria-label="Lihat gambar ${esc(it.peralatan)}">${photoImg(it,sm?120:200)}</button>`;
+  return sm ? '' : `<span class="${c}" title="Tiada gambar" aria-hidden="true">${CAM}</span>`;
+}
+function photoFallback(img){
+  const id=img.dataset.pid, holder=()=>img.closest('.thumb,.ph-big');
+  if(!id || !SCRIPT_URL || PHOTO_FAIL.has(id)){ holder()?.classList.add('broken'); return; }
+  if(!PHOTO_PEND.has(id)) PHOTO_PEND.set(id,
+    fetchTimeout(SCRIPT_URL+'?action=photo&id='+encodeURIComponent(id),{cache:'no-store'},20000)
+      .then(r=>r.json())
+      .then(d=>{ if(!d.ok || !/^image\//.test(d.mime||'')) throw new Error(d.error||'Bukan gambar'); const u=`data:${d.mime};base64,${d.data}`; PHOTO_DATA.set(id,u); return u; })
+      .catch(err=>{ PHOTO_FAIL.add(id); console.warn('Gambar gagal dimuatkan:',err); throw err; })
+      .finally(()=>PHOTO_PEND.delete(id)));
+  PHOTO_PEND.get(id).then(u=>{ img.src=u; holder()?.classList.remove('broken'); }, ()=>holder()?.classList.add('broken'));
+}
+document.addEventListener('error',e=>{
+  const t=e.target;
+  if(t && t.tagName==='IMG' && t.dataset.pid!==undefined && !t.src.startsWith('data:')) photoFallback(t);
+},true);
+
 /* Sheet guna gaya "merged": Nama & Peralatan hanya diisi pada baris pertama.
    Baris dengan Peralatan baru = unit baru. rowNums[i] = nombor baris sebenar dalam sheet. */
 function buildModel(rows, rowNums){
@@ -920,7 +1010,7 @@ function buildModel(rows, rowNums){
   const head=rows[0].map(h=>String(h).trim().toLowerCase());
   const idx=k=>head.indexOf(k);
   const I={nama:idx('nama'),per:idx('peralatan'),sn:idx('s/n'),det:idx('detail'),st:idx('status'),cat:idx('catatan'),
-           upd:idx('kemaskini terakhir'),oleh:idx('dikemaskini oleh'),calSt:idx('status kalibrasi'),calTgl:idx('tarikh kalibrasi')};
+           upd:idx('kemaskini terakhir'),oleh:idx('dikemaskini oleh'),calSt:idx('status kalibrasi'),calTgl:idx('tarikh kalibrasi'),gam:idx('gambar')};
   HAS_CAL = I.calSt>=0 || I.calTgl>=0;
   if(I.nama<0||I.per<0) throw new Error('Header Nama/Peralatan tidak dijumpai');
   const cell=(r,i)=>i<0?'':String(r[i]??'').trim();
@@ -931,9 +1021,10 @@ function buildModel(rows, rowNums){
     const n=cell(r,I.nama), p=cell(r,I.per);
     if(n) nama=n;
     if(n && !p){ cur=null; continue; }
-    if(p){ cur={id:items.length, nama, peralatan:p, sn:cell(r,I.sn), kategori:catOf(p), komponen:[], firstRow:rowNums[i], calRow:rowNums[i], calStatus:'', calDate:''}; items.push(cur); }
+    if(p){ cur={id:items.length, nama, peralatan:p, sn:cell(r,I.sn), kategori:catOf(p), komponen:[], firstRow:rowNums[i], calRow:rowNums[i], calStatus:'', calDate:'', gambar:''}; items.push(cur); }
     if(!cur) continue;
     cur.lastRow=rowNums[i];
+    { const g=cell(r,I.gam); if(g && !cur.gambar) cur.gambar=g; }
     { const cs=cell(r,I.calSt), cd=cell(r,I.calTgl);
       if((cs||cd) && !cur.calStatus && !cur.calDate) cur.calRow=rowNums[i];
       if(cs && !cur.calStatus) cur.calStatus=cs;
@@ -1115,6 +1206,7 @@ function matches(it){
   if(F.cat && it.kategori!==F.cat) return false;
   if(F.st==='nota'){ if(!it.nota) return false; }
   else if(F.st==='kal'){ if(!calNeedsAction(it)) return false; }
+  else if(F.st==='nogam'){ if(hasPhoto(it)) return false; }
   else if(F.st && it.state!==F.st) return false;
   if(F.q){
     const hay=[it.nama,it.peralatan,it.sn,it.kategori,it.calStatus,it.calDate,...it.komponen.flatMap(c=>[c.detail,c.catatan,c.raw])].join(' ').toLowerCase();
@@ -1147,7 +1239,7 @@ function renderList(){
     const open=isEdit||isDel||openAll||OPEN.has(it.key)||(F.q&&it.komponen.some(c=>(c.detail+' '+c.catatan).toLowerCase().includes(F.q)));
     return `<details class="item${isEdit?' is-edit':''}${isDel?' is-del':''}" data-id="${it.id}" ${open?'open':''}>
       <summary>
-        <div class="c-eq"><div class="eq">${esc(it.peralatan)}</div><div class="kt">${esc(it.kategori)}</div></div>
+        <div class="c-eq">${thumbHTML(it)}<div class="eq-t"><div class="eq">${esc(it.peralatan)}</div><div class="kt">${esc(it.kategori)}</div></div></div>
         <div class="c-sv">${esc(it.nama)}</div>
         <div class="c-sn">${it.sn?`<span class="sn">${esc(it.sn)}${it.dup?'<span class="dup">S/N berulang</span>':''}</span>`:'<span class="sn none">Tiada S/N</span>'}${it.cal?`<span class="cal"><span class="pill p-${CAL_PILL[it.cal.state]}">Kal: ${esc(it.cal.label)}</span></span>`:''}</div>
         <div class="c-cm cmp"><span class="num">${it.baik}/${it.komponen.length} baik${it.nota?` · ${it.nota} catatan`:''}</span>
@@ -1155,7 +1247,7 @@ function renderList(){
         <div class="c-st"><span class="pill p-${it.state}">${STATE_LABEL[it.state]}</span></div>
         ${CHEV}
       </summary>
-      ${isEdit ? slot(()=>editorView(it)) : `<ul class="comps">${it.komponen.map(compView).join('')}</ul>
+      ${isEdit ? slot(()=>editorView(it)) : `${photoBox(it)}<ul class="comps">${it.komponen.map(compView).join('')}</ul>
       ${isDel ? deleteBox(it) : `<div class="item-act">${SCRIPT_URL
         ? `<button type="button" class="btn sm danger" data-act="del">Padam alat</button><button type="button" class="btn sm" data-act="edit">Edit alat</button>`
         : `<span class="hint">Edit belum aktif. Isi SCRIPT_URL dalam index.html selepas deploy Apps Script.</span>`}</div>`}`}
@@ -1226,10 +1318,10 @@ async function load(){
 }
 
 /* ===== Editor alat (edit penuh & tambah baru) ===== */
-let RENAMING=null, DELETING=null, NEW_PRESET=null, UID=0;
+let RENAMING=null, DELETING=null, NEW_PRESET=null, UID=0, UPLOADING=false;
 const EDIT_INIT=new Map();
 const personNames = () => [...new Set(ITEMS.map(i=>i.nama))];
-const isBusy = () => EDITING!==null || RENAMING!==null || DELETING!==null;
+const isBusy = () => EDITING!==null || RENAMING!==null || DELETING!==null || UPLOADING;
 
 function compRow(c){
   const u=++UID;
@@ -1296,8 +1388,8 @@ function collectEditor(box){
     calStatus: ks ? ks.value.trim() : null, calDate, komponen };
 }
 
-async function postScript(payload){
-  const res=await fetchTimeout(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)},SAVE_TIMEOUT_MS);
+async function postScript(payload, ms=SAVE_TIMEOUT_MS){
+  const res=await fetchTimeout(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)},ms);
   const d=await res.json();
   if(!d.ok) throw new Error(d.error||'Gagal menyimpan.');
   return d;
@@ -1330,7 +1422,7 @@ async function saveFull(box, btn){
     store.set('inv_oleh',oleh);
     if(it && F.surv===it.nama && data.nama!==it.nama) F.surv=data.nama;
     EDITING=null; NEW_PRESET=null; EDIT_INIT.clear();
-    toast(isNew ? `${data.peralatan} ditambah di bawah ${data.nama}.` : res.updated===0 ? 'Tiada perubahan.' : `${data.peralatan} (${data.nama}) dikemas kini.`);
+    toast(isNew ? `${data.peralatan} ditambah di bawah ${data.nama}. Buka alat tu untuk letak gambar.` : res.updated===0 ? 'Tiada perubahan.' : `${data.peralatan} (${data.nama}) dikemas kini.`);
     await load();
   }catch(err){
     say(errMsg(err), true); btn.disabled=false;
@@ -1437,6 +1529,122 @@ async function deleteItem(box, btn){
   }
 }
 
+/* ===== Gambar alat: paparan, upload, buang ===== */
+function photoBox(it){
+  const has=hasPhoto(it);
+  if(!SCRIPT_URL && !has) return '';
+  const u=++UID, needOleh=!store.get('inv_oleh');
+  const pick=(cls,inner)=>`<label class="${cls}">${inner}<input type="file" accept="image/*" class="vh ph-file" aria-label="${has?'Tukar':'Tambah'} gambar ${esc(it.peralatan)}"></label>`;
+  const media = has
+    ? `<button type="button" class="ph-big" data-zoom="${it.id}" aria-label="Besarkan gambar ${esc(it.peralatan)}">${photoImg(it,600)}</button>`
+    : pick('ph-drop', `${CAM}<span>Tambah gambar</span><span class="hint">Klik, ambil foto, atau seret fail ke sini</span>`);
+  return `<div class="ph-box" data-id="${it.id}">
+    ${media}
+    <div class="ph-side">
+      <p class="t">Gambar alat</p>
+      <p class="s">${has?'Klik gambar untuk besarkan.':'Belum ada gambar untuk alat ni.'}${SCRIPT_URL?' Gambar dikecilkan secara auto sebelum disimpan dalam Google Drive.':''}</p>
+      ${SCRIPT_URL?`<div class="ph-act">
+        ${needOleh?`<input id="po-${u}" class="p-oleh" maxlength="60" placeholder="Nama anda" aria-label="Nama anda">`:''}
+        ${pick('btn sm', has?'Tukar gambar':'Pilih gambar')}
+        ${has?'<button type="button" class="btn sm danger" data-act="rmphoto">Buang gambar</button>':''}
+      </div>`:''}
+      <p class="msg" role="status" aria-live="polite"></p>
+    </div>
+  </div>`;
+}
+
+const photoExpect = it => ({firstRow:it.firstRow, lastRow:it.lastRow, nama:it.nama, peralatan:it.peralatan, sn:it.sn});
+
+// Kecilkan & tukar ke JPEG dalam browser: jimat kuota Drive dan laju bila upload dari site guna data telefon.
+async function shrinkImage(file){
+  let src, w, h, cleanup=()=>{};
+  try{
+    src=await createImageBitmap(file,{imageOrientation:'from-image'}); w=src.width; h=src.height; cleanup=()=>src.close&&src.close();
+  }catch{
+    const url=URL.createObjectURL(file);
+    src=await new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>rej(new Error('Gambar tak dapat dibaca. Cuba format JPG atau PNG.')); im.src=url; });
+    w=src.naturalWidth; h=src.naturalHeight; cleanup=()=>URL.revokeObjectURL(url);
+  }
+  try{
+    const s=Math.min(1, PHOTO_MAX_PX/Math.max(w,h));
+    const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(w*s)); c.height=Math.max(1,Math.round(h*s));
+    const ctx=c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height); ctx.drawImage(src,0,0,c.width,c.height);
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',PHOTO_QUALITY));
+    if(!blob) throw new Error('Gagal memproses gambar.');
+    const data=await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(blob); });
+    return {data, mime:'image/jpeg', bytes:blob.size};
+  }finally{ cleanup(); }
+}
+
+function photoCtx(pb){
+  const it=ITEMS[+pb.dataset.id], msg=pb.querySelector('.msg');
+  const say=(t,bad)=>{ msg.textContent=t; msg.className='msg'+(bad?' bad':''); };
+  const oi=pb.querySelector('.p-oleh');
+  const oleh=(oi?oi.value:store.get('inv_oleh')).trim();
+  return {it, say, oleh, oi};
+}
+// Lepas load(): kalau sumber data lambat kemas kini (cth. CSV cache), betulkan nilai gambar dalam memori.
+function patchPhoto(key, url){
+  const n=ITEMS.find(i=>i.key===key);
+  if(n && n.gambar!==url){ n.gambar=url; renderList(); }
+}
+
+async function uploadPhoto(pb, file){
+  const {it, say, oleh, oi}=photoCtx(pb);
+  if(!it || !SCRIPT_URL) return;
+  if(UPLOADING) return say('Tunggu gambar sebelum ni siap dimuat naik dulu.', true);
+  if(isBusy()) return say('Simpan atau batal edit yang sedang dibuka dulu.', true);
+  if(!/^image\//i.test(file.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) return say('Fail ni bukan gambar.', true);
+  if(file.size>PHOTO_MAX_MB*1024*1024) return say(`Gambar terlalu besar (had ${PHOTO_MAX_MB} MB).`, true);
+  if(!oleh){ say('Isi nama anda dulu supaya rekod audit lengkap.', true); oi?.focus(); return; }
+  UPLOADING=true; pb.classList.add('busy'); say('Memproses gambar…');
+  try{
+    const img=await shrinkImage(file);
+    say(`Memuat naik ${Math.max(1,Math.round(img.bytes/1024))} KB…`);
+    const res=await postScript({oleh, action:'uploadPhoto', expect:photoExpect(it),
+      image:{data:img.data, mime:img.mime, name:`${it.nama}_${it.peralatan}${it.sn?'_'+it.sn:''}.jpg`}}, PHOTO_TIMEOUT_MS);
+    store.set('inv_oleh',oleh); OPEN.add(it.key);
+    UPLOADING=false;
+    toast(`Gambar ${it.peralatan} (${it.nama}) disimpan.`);
+    await load(); patchPhoto(it.key, res.url);
+  }catch(err){
+    say(errMsg(err), true);
+  }finally{
+    UPLOADING=false; pb.classList.remove('busy');
+  }
+}
+
+async function removePhoto(pb, btn){
+  const {it, say, oleh, oi}=photoCtx(pb);
+  if(!it || !SCRIPT_URL || UPLOADING) return;
+  if(btn.dataset.confirm!=='1'){
+    btn.dataset.confirm='1'; btn.textContent='Klik lagi untuk buang'; btn.classList.add('solid');
+    setTimeout(()=>{ if(btn.isConnected){ btn.dataset.confirm=''; btn.textContent='Buang gambar'; btn.classList.remove('solid'); } },4000);
+    return;
+  }
+  if(!oleh){ say('Isi nama anda dulu supaya rekod audit lengkap.', true); oi?.focus(); return; }
+  UPLOADING=true; pb.classList.add('busy'); say('Membuang gambar…');
+  try{
+    await postScript({oleh, action:'removePhoto', expect:photoExpect(it)});
+    store.set('inv_oleh',oleh); OPEN.add(it.key);
+    UPLOADING=false;
+    toast('Gambar dibuang. Fail asal ada dalam Trash Drive selama 30 hari.');
+    await load(); patchPhoto(it.key, '');
+  }catch(err){
+    say(errMsg(err), true);
+  }finally{
+    UPLOADING=false; pb.classList.remove('busy');
+  }
+}
+
+function openPhoto(id){
+  const it=ITEMS[id]; if(!it || !hasPhoto(it)) return;
+  const dlg=$('#lb'), img=$('#lbImg'), open=photoOpenUrl(it.gambar);
+  img.dataset.pid=driveId(it.gambar); img.alt=`Gambar ${it.peralatan}`; img.src=photoSrc(it.gambar,1600);
+  $('#lbCap').innerHTML=`<span><b>${esc(it.peralatan)}</b> · ${esc(it.nama)}${it.sn?' · <span class="mono">'+esc(it.sn)+'</span>':''}</span>${open?`<a class="btn sm y" href="${esc(open)}" target="_blank" rel="noopener">Buka fail asal</a>`:''}`;
+  if(typeof dlg.showModal==='function') dlg.showModal(); else if(open) window.open(open,'_blank','noopener');
+}
+
 /* ===== Paparan jadual & Export PDF ===== */
 const PDF_LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
@@ -1464,7 +1672,7 @@ function renderTable(items){
     comps.forEach((c,i)=>{
       html+=`<tr class="${i===0?'grp':''}${i===0&&newPerson?' person':''}">`;
       if(i===0&&newPerson) html+=`<td rowspan="${runSpan[it.id]}" class="nm">${esc(it.nama)}</td>`;
-      if(i===0) html+=`<td rowspan="${n}" class="eqc"><button type="button" class="lnk" data-goto="${it.id}" title="Buka dalam paparan senarai">${esc(it.peralatan)}</button></td><td rowspan="${n}" class="snc">${it.sn?esc(it.sn):'<span class="mut">-</span>'}</td>`;
+      if(i===0) html+=`<td rowspan="${n}" class="eqc"><div class="eqc-in">${thumbHTML(it,true)}<button type="button" class="lnk" data-goto="${it.id}" title="Buka dalam paparan senarai">${esc(it.peralatan)}</button></div></td><td rowspan="${n}" class="snc">${it.sn?esc(it.sn):'<span class="mut">-</span>'}</td>`;
       html+=`<td>${c?esc(c.detail):'<span class="mut">Tiada komponen direkod</span>'}</td>`;
       if(HAS_CAL && i===0){
         html+=`<td rowspan="${n}" class="eqc">${it.cal?`<span class="pill p-${CAL_PILL[it.cal.state]}">${esc(it.calStatus||it.cal.label)}</span>`:'<span class="mut">-</span>'}</td>`
@@ -1495,7 +1703,7 @@ function filterLabel(){
   const p=[];
   if(F.surv) p.push('Pemegang: '+F.surv);
   if(F.cat) p.push('Kategori: '+F.cat);
-  if(F.st) p.push('Status: '+({rosak:'Ada kerosakan',semak:'Belum lengkap',nota:'Bernota',baik:'Baik',kal:'Kalibrasi tamat / hampir tamat'}[F.st]));
+  if(F.st) p.push('Status: '+({rosak:'Ada kerosakan',semak:'Belum lengkap',nota:'Bernota',baik:'Baik',kal:'Kalibrasi tamat / hampir tamat',nogam:'Tiada gambar'}[F.st]));
   if(F.q) p.push('Carian: "'+F.q+'"');
   return p.length ? p.join('  |  ') : 'Semua peralatan';
 }
@@ -1653,6 +1861,7 @@ $('#list').addEventListener('toggle',e=>{
 },true);
 
 $('#list').addEventListener('click',e=>{
+  const z=e.target.closest('[data-zoom]'); if(z){ e.preventDefault(); openPhoto(+z.dataset.zoom); return; }
   const g=e.target.closest('[data-goto]'); if(g){ goTo(+g.dataset.goto); return; }
   const b=e.target.closest('[data-act]'); if(!b) return;
   const box=b.closest('.edit.full'), item=b.closest('.item');
@@ -1674,6 +1883,7 @@ $('#list').addEventListener('click',e=>{
     }
     case 'delcancel': DELETING=null; renderList(); break;
     case 'delok': deleteItem(b.closest('.del-box'), b); break;
+    case 'rmphoto': removePhoto(b.closest('.ph-box'), b); break;
     case 'cancel': EDITING=null; NEW_PRESET=null; EDIT_INIT.clear(); renderList(); break;
     case 'allbaik': box.querySelectorAll('.crow').forEach(r=>{ if(r.querySelector('.c-det').value.trim()) r.querySelector('.c-st').value='Baik'; }); break;
     case 'addcomp': box.querySelector('.ed-comps').insertAdjacentHTML('beforeend',compRow()); box.querySelector('.ed-comps .crow:last-child .c-det').focus(); break;
@@ -1682,6 +1892,12 @@ $('#list').addEventListener('click',e=>{
   }
 });
 $('#list').addEventListener('change',e=>{
+  if(e.target.classList.contains('ph-file')){
+    const f=e.target.files&&e.target.files[0], pb=e.target.closest('.ph-box');
+    e.target.value='';
+    if(f && pb) uploadPhoto(pb,f);
+    return;
+  }
   const t=e.target, box=t.closest('.edit.full'); if(!box) return;
   if(t.classList.contains('f-nama')){
     const nb=box.querySelector('.f-nama-baru'); nb.hidden=t.value!=='__baru'; if(!nb.hidden) nb.focus();
@@ -1696,6 +1912,19 @@ $('#list').addEventListener('change',e=>{
   }
 });
 $('#list').addEventListener('input',e=>{ if(e.target.classList.contains('f-sn')) snWarn(e.target.closest('.edit.full')); });
+// Seret & lepas gambar ke kotak gambar (desktop)
+const hasFiles = e => [...((e.dataTransfer&&e.dataTransfer.types)||[])].includes('Files');
+['dragenter','dragover'].forEach(ev=>$('#list').addEventListener(ev,e=>{
+  const pb=e.target.closest('.ph-box'); if(!pb || !SCRIPT_URL || !hasFiles(e)) return;
+  e.preventDefault(); pb.classList.add('drag');
+}));
+$('#list').addEventListener('dragleave',e=>{ const pb=e.target.closest('.ph-box'); if(pb && !pb.contains(e.relatedTarget)) pb.classList.remove('drag'); });
+$('#list').addEventListener('drop',e=>{
+  const pb=e.target.closest('.ph-box'); if(!pb || !SCRIPT_URL) return;
+  e.preventDefault(); pb.classList.remove('drag');
+  const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) uploadPhoto(pb,f);
+});
+$('#lb').addEventListener('click',e=>{ if(e.target===e.currentTarget || e.target.closest('[data-lbx]')) e.currentTarget.close(); });
 $('#list').addEventListener('keydown',e=>{
   if(e.key==='Escape' && DELETING!==null && e.target.closest('.del-box')){ DELETING=null; renderList(); }
   if(e.key==='Enter' && e.target.classList.contains('d-oleh')){ e.preventDefault(); e.target.closest('.del-box').querySelector('[data-act="delok"]').click(); }
