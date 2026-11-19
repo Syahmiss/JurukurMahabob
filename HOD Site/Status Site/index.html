@@ -216,6 +216,7 @@ button.mini:hover{background:var(--ind-50);border-color:var(--ind-100)}
 .ck > input:checked{background:var(--ok);border-color:var(--ok)}
 .ck > input:checked::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
 .ck > input:disabled{cursor:not-allowed;opacity:.5}
+.ck > input:disabled:checked{opacity:1;cursor:default}
 .ck > input:focus-visible{outline:2px solid var(--ind-600);outline-offset:2px}
 .ck-b{flex:1;min-width:0}
 .ck.done .cr-n > span{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
@@ -1983,10 +1984,19 @@ html,body{max-width:100%;overflow-x:hidden}
                         tp.replacedCount ? `${tp.replacedCount} laporan berganda diganti dengan yang terkini` : ''
                     ].filter(Boolean);
                     const siapTxt = tp.siap ? formatSiapPada(tp.siap) : '';
-                    const ckTitle = !tp.id ? 'Rekod belum ada ID. Muat semula selepas rekod disimpan.' : tp.siap ? 'Tanda belum siap' : 'Tanda siap';
+                    // Tick auto bila laporan harian dah dipadankan ke tugasan ni. Dikira dari data laporan
+                    // (bukan disimpan), jadi checkbox dikunci: tak boleh nyahtanda selagi laporan wujud.
+                    const autoTick = tp.reportCount > 0;
+                    const ticked = Boolean(tp.siap) || autoTick;
+                    const ckTitle = autoTick ? 'Ditanda auto: laporan harian diterima untuk tugasan ini'
+                        : !tp.id ? 'Rekod belum ada ID. Muat semula selepas rekod disimpan.'
+                        : tp.siap ? 'Tanda belum siap' : 'Tanda siap';
+                    const autoTxt = autoTick
+                        ? `✓ Laporan harian diterima${tp.lastDate ? ` · terkini ${formatSiapPada(tp.lastDate)}` : ''} (${tp.reportCount} laporan)`
+                        : '';
                     return `
-                        <div class="cr ck${tp.siap ? ' done' : ''}">
-                            <input type="checkbox" ${tp.siap ? 'checked' : ''} ${tp.id ? '' : 'disabled'} title="${ckTitle}"
+                        <div class="cr ck${ticked ? ' done' : ''}">
+                            <input type="checkbox" ${ticked ? 'checked' : ''} ${tp.id && !autoTick ? '' : 'disabled'} title="${ckTitle}"
                                 aria-label="${escapeHtml(tp.tugas)}${tp.kawasan ? ' di ' + escapeHtml(tp.kawasan) : ''}"
                                 onchange="toggleTugasSiap('${escapeHtml(tp.id)}', this)">
                             <div class="ck-b">
@@ -1995,6 +2005,7 @@ html,body{max-width:100%;overflow-x:hidden}
                                     <span class="cr-v">${right}</span>
                                 </div>
                                 <div class="bar sm"><i style="width:${tp.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0}%;background:${cBarColor}"></i></div>
+                                ${autoTxt ? `<p class="ck-when">${escapeHtml(autoTxt)}</p>` : ''}
                                 ${siapTxt ? `<p class="ck-when">✓ Ditanda siap ${escapeHtml(siapTxt)}</p>` : ''}
                                 ${notes.length ? `<p class="meta warn-t" style="margin-top:4px">${notes.map(escapeHtml).join(' · ')}</p>` : ''}
                             </div>
@@ -2007,10 +2018,10 @@ html,body{max-width:100%;overflow-x:hidden}
                     ckGroups.get(k).items.push(tp);
                 });
                 const taskBarsHtml = Array.from(ckGroups.values()).map(g => {
-                    const siapN = g.items.filter(t => t.siap).length;
+                    const siapN = g.items.filter(t => t.siap || t.reportCount > 0).length;
                     return `
                         <div class="ck-grp">
-                            <div class="ck-h"><i data-lucide="map-pin" class="i12"></i><span>${escapeHtml(g.label)}</span><b>${siapN}/${g.items.length} tugasan siap</b></div>
+                            <div class="ck-h"><i data-lucide="map-pin" class="i12"></i><span>${escapeHtml(g.label)}</span><b>${siapN}/${g.items.length} tugasan ditanda</b></div>
                             ${g.items.map(taskItemHtml).join('')}
                         </div>`;
                 }).join('');
