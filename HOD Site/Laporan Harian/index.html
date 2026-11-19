@@ -39,6 +39,18 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Borang Laporan Harian */
+        .form-label { display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+        .form-input {
+            width: 100%; border-radius: 0.5rem; background: #fff; border: 1px solid #cbd5e1;
+            font-size: 0.8125rem; color: #0f172a; padding: 0.55rem 0.75rem; transition: border-color .15s, box-shadow .15s;
+            min-height: 40px;
+        }
+        .form-input:focus { outline: none; border-color: #1E40AF; box-shadow: 0 0 0 3px rgba(30, 64, 175, .18); }
+        .form-input.is-invalid { border-color: #dc2626; background: #fef2f2; }
+        .form-input.is-invalid:focus { box-shadow: 0 0 0 3px rgba(220, 38, 38, .18); }
+        select.form-input:disabled { background: #f8fafc; color: #94a3b8; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-jm-gold selection:text-jm-navy">
@@ -53,7 +65,7 @@
                 <div>
                     <h1 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                         Laporan Harian Kerja Lapangan
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v2.9</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v3.1</span>
                     </h1>
                     <p class="text-xs text-blue-200">Copy-paste laporan WhatsApp/Telegram &amp; pantau kemajuan kerja ukur tapak</p>
                 </div>
@@ -171,91 +183,188 @@
         </section>
 
         <!-- Workspace: Input (kiri) & Jadual (kanan) -->
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <section class="space-y-6">
 
-            <!-- Input Laporan -->
-            <div class="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between gap-3">
+            <!-- Borang Laporan Harian -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                         <h3 class="font-bold text-jm-navy text-base flex items-center gap-2">
-                            <i class="fa-solid fa-paste text-jm-blue"></i>
-                            Input Laporan Lapangan
+                            <i class="fa-solid fa-clipboard-list text-jm-blue"></i>
+                            Borang Laporan Harian
                         </h3>
-                        <p class="text-xs text-slate-500 mt-0.5">Copy &amp; paste dari WhatsApp/Telegram</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Medan bertanda <span class="text-red-600 font-bold">*</span> wajib diisi</p>
                     </div>
-                    <button type="button" onclick="fillSampleText()" class="text-xs px-3 py-1.5 rounded-lg bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 font-semibold transition-colors whitespace-nowrap">
-                        Contoh Teks
-                    </button>
-                </div>
-
-                <div class="p-5 space-y-4">
                     <!-- Contoh ikut nama: laporan terakhir setiap surveyor -->
-                    <div class="p-3.5 rounded-xl bg-yellow-50/70 border border-yellow-200 space-y-2">
-                        <label for="templateSelect" class="text-xs font-semibold text-jm-navy flex items-center gap-1.5">
-                            <i class="fa-solid fa-user-pen text-jm-goldDark"></i>
-                            Contoh Laporan Saya
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 lg:max-w-xl w-full lg:w-auto">
+                        <label for="templateSelect" class="text-xs font-semibold text-jm-navy flex items-center gap-1.5 whitespace-nowrap">
+                            <i class="fa-solid fa-user-pen text-jm-goldDark"></i> Contoh Laporan Saya
                         </label>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-1">
                             <select id="templateSelect" onchange="applyTemplate()" class="flex-1 min-w-0 pl-3 pr-8 py-2 text-xs font-semibold text-jm-navy bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
                                 <option value="">Pilih nama...</option>
                             </select>
-                            <button type="button" onclick="applyTemplate()" class="shrink-0 text-xs px-3 py-2 rounded-lg bg-jm-navy hover:bg-jm-blue text-white font-semibold transition-colors">
-                                Guna
+                            <button type="button" onclick="applyTemplate()" class="shrink-0 text-xs px-3 py-2 rounded-lg bg-jm-navy hover:bg-jm-blue text-white font-semibold transition-colors">Guna</button>
+                            <button type="button" onclick="resetReportForm(true)" title="Kosongkan borang" class="shrink-0 text-xs px-3 py-2 rounded-lg bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-300 font-semibold transition-colors">
+                                <i class="fa-solid fa-eraser"></i>
                             </button>
                         </div>
-                        <p id="templateHint" class="text-[11px] text-slate-500">Laporan terakhir yang dihantar jadi contoh untuk nama tu. TARIKH ditukar ke hari ini secara automatik.</p>
                     </div>
+                </div>
+                <p id="templateHint" class="hidden px-5 pt-3 text-[11px] text-amber-800"></p>
 
-                    <div>
-                        <label for="rawReportInput" class="block text-xs font-semibold text-slate-600 mb-1.5">Teks Laporan Harian Kerja Lapangan:</label>
-                        <textarea id="rawReportInput" rows="12" placeholder="Paste laporan harian kerja lapangan di sini...&#10;&#10;Laporan Harian&#10;TARIKH : 12/11/2026&#10;NAMA : M.BADRUL&#10;NO FILE : MCP058/26 SMHB KEMAMAN A..." class="w-full rounded-xl bg-slate-50 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs font-mono text-slate-700 p-3.5 transition-all leading-relaxed"></textarea>
-                    </div>
+                <form id="reportForm" onsubmit="event.preventDefault(); submitReportForm();" novalidate class="p-5 space-y-6">
 
-                    <!-- Lampiran Gambar -->
-                    <div class="p-4 rounded-xl bg-jm-light border border-blue-100 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <label class="text-xs font-semibold text-jm-navy flex items-center gap-1.5">
-                                <i class="fa-solid fa-image text-jm-blue"></i>
-                                Lampiran Gambar Tapak (Pilihan)
-                            </label>
-                            <button type="button" id="removeImgBtn" onclick="clearAttachedImage()" class="hidden text-[11px] font-semibold text-red-600 hover:underline">
-                                Buang Gambar
-                            </button>
-                        </div>
-
-                        <input type="file" id="imageFileInput" accept="image/*" onchange="handleImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
-
-                        <input type="text" id="imageUrlInput" placeholder="Atau tampal URL gambar terus (https://...)" oninput="handleImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
-
-                        <p class="text-[11px] text-slate-500"><i class="fa-brands fa-google-drive text-jm-blue mr-1"></i>Gambar disimpan dalam Google Drive (folder Gambar_Laporan_Lapangan). Sheet simpan link sahaja.</p>
-
-                        <div id="imagePreviewContainer" class="hidden">
-                            <div class="rounded-lg overflow-hidden border border-slate-200 bg-white max-h-44 flex items-center justify-center">
-                                <img id="imagePreview" src="" alt="Pratonton Lampiran" class="max-h-44 w-auto object-contain" />
+                    <!-- 1. Maklumat Kerja -->
+                    <fieldset class="space-y-3">
+                        <legend class="text-[11px] font-bold uppercase tracking-wider text-jm-royal flex items-center gap-2 mb-1">
+                            <span class="w-5 h-5 rounded-md bg-jm-navy text-jm-gold flex items-center justify-center text-[10px]">1</span> Maklumat Kerja
+                        </legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label for="f_tarikh" class="form-label">Tarikh <span class="text-red-600">*</span></label>
+                                <input type="date" id="f_tarikh" class="form-input" />
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <label for="f_noFile" class="form-label">No File <span class="text-red-600">*</span></label>
+                                    <button type="button" onclick="loadMasterData(true)" title="Muat semula senarai No File &amp; Kawasan" class="text-[10px] font-semibold text-jm-blue hover:underline mb-1">
+                                        <i id="masterReloadIcon" class="fa-solid fa-rotate"></i> Muat semula
+                                    </button>
+                                </div>
+                                <select id="f_noFile" onchange="onNoFileChange()" class="form-input">
+                                    <option value="">Memuatkan senarai...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="f_kawasan" class="form-label">Kawasan <span class="text-red-600">*</span></label>
+                                <select id="f_kawasan" class="form-input">
+                                    <option value="">Pilih kawasan...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="f_nama" class="form-label">Nama <span class="text-red-600">*</span></label>
+                                <input type="text" id="f_nama" list="namaList" autocomplete="off" placeholder="Taip atau pilih nama" class="form-input" />
+                                <datalist id="namaList"></datalist>
                             </div>
                         </div>
-                    </div>
+                        <p id="masterStatus" class="text-[11px] text-slate-400"></p>
+                    </fieldset>
 
-                    <button type="button" id="submitReportBtn" onclick="parseAndGenerateReport()" class="w-full py-3 px-4 bg-jm-navy hover:bg-jm-blue disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
-                        <i class="fa-solid fa-paper-plane text-jm-gold" id="submitIcon"></i>
-                        <span id="submitBtnText">Generate &amp; Simpan Ke Google Sheet</span>
-                    </button>
-                </div>
+                    <!-- 2. Tugas & Waktu -->
+                    <fieldset class="space-y-3 pt-5 border-t border-slate-100">
+                        <legend class="text-[11px] font-bold uppercase tracking-wider text-jm-royal flex items-center gap-2 mb-1">
+                            <span class="w-5 h-5 rounded-md bg-jm-navy text-jm-gold flex items-center justify-center text-[10px]">2</span> Tugas &amp; Waktu
+                        </legend>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label for="f_tugasan" class="form-label">Tugas <span class="text-red-600">*</span></label>
+                                <textarea id="f_tugasan" rows="3" placeholder="Satu tugas satu baris. Contoh:&#10;Topo sungai&#10;Pasang batu sempadan" class="form-input"></textarea>
+                            </div>
+                            <div>
+                                <label for="f_kuantiti" class="form-label">Kuantiti</label>
+                                <input type="number" id="f_kuantiti" inputmode="decimal" min="0" step="any" placeholder="0" class="form-input" />
+                            </div>
+                            <div>
+                                <label for="f_unit" class="form-label">Unit</label>
+                                <input type="text" id="f_unit" list="unitList" autocomplete="off" placeholder="m, lot, titik..." class="form-input" />
+                                <datalist id="unitList">
+                                    <option value="m"></option>
+                                    <option value="km"></option>
+                                    <option value="hektar"></option>
+                                    <option value="ekar"></option>
+                                    <option value="lot"></option>
+                                    <option value="titik"></option>
+                                    <option value="batu sempadan"></option>
+                                    <option value="unit"></option>
+                                </datalist>
+                            </div>
+                            <div>
+                                <label for="f_waktuMula" class="form-label">Masa Mula <span class="text-red-600">*</span></label>
+                                <input type="time" id="f_waktuMula" class="form-input" />
+                            </div>
+                            <div>
+                                <label for="f_waktuTamat" class="form-label">Masa Tamat <span class="text-red-600">*</span></label>
+                                <input type="time" id="f_waktuTamat" class="form-input" />
+                            </div>
+                        </div>
+                        <p id="hoursHint" class="hidden text-[11px] text-slate-500"></p>
+                    </fieldset>
+
+                    <!-- 3. Jangka Siap -->
+                    <fieldset class="space-y-3 pt-5 border-t border-slate-100">
+                        <legend class="text-[11px] font-bold uppercase tracking-wider text-jm-royal flex items-center gap-2 mb-1">
+                            <span class="w-5 h-5 rounded-md bg-jm-navy text-jm-gold flex items-center justify-center text-[10px]">3</span> Jangka Siap
+                        </legend>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label for="f_jangkaAsal" class="form-label">Jangka Siap Asal</label>
+                                <input type="date" id="f_jangkaAsal" onchange="updateDelayHint()" class="form-input" />
+                            </div>
+                            <div>
+                                <label for="f_jangkaSemasa" class="form-label">Jangka Siap Semasa</label>
+                                <input type="date" id="f_jangkaSemasa" onchange="updateDelayHint()" class="form-input" />
+                            </div>
+                            <p id="delayHint" class="hidden col-span-2 self-end text-[11px] font-semibold text-amber-700 bg-yellow-50 rounded-lg px-3 py-2"></p>
+                        </div>
+                    </fieldset>
+
+                    <!-- 4. Gambar, Isu & Perancangan -->
+                    <fieldset class="space-y-3 pt-5 border-t border-slate-100">
+                        <legend class="text-[11px] font-bold uppercase tracking-wider text-jm-royal flex items-center gap-2 mb-1">
+                            <span class="w-5 h-5 rounded-md bg-jm-navy text-jm-gold flex items-center justify-center text-[10px]">4</span> Gambar, Isu &amp; Perancangan
+                        </legend>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <!-- Gambar -->
+                            <div class="p-4 rounded-xl bg-jm-light border border-blue-100 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <label for="imageFileInput" class="text-xs font-semibold text-jm-navy flex items-center gap-1.5">
+                                        <i class="fa-solid fa-image text-jm-blue"></i> Gambar
+                                    </label>
+                                    <button type="button" id="removeImgBtn" onclick="clearAttachedImage()" class="hidden text-[11px] font-semibold text-red-600 hover:underline">Buang Gambar</button>
+                                </div>
+                                <input type="file" id="imageFileInput" accept="image/*" onchange="handleImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
+                                <input type="text" id="imageUrlInput" placeholder="Atau tampal URL gambar (https://...)" oninput="handleImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
+                                <div id="imagePreviewContainer" class="hidden">
+                                    <div class="rounded-lg overflow-hidden border border-slate-200 bg-white max-h-44 flex items-center justify-center">
+                                        <img id="imagePreview" src="" alt="Pratonton Lampiran" class="max-h-44 w-auto object-contain" />
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-slate-500"><i class="fa-brands fa-google-drive text-jm-blue mr-1"></i>Disimpan dalam Google Drive.</p>
+                            </div>
+                            <div>
+                                <label for="f_isu" class="form-label">Isu</label>
+                                <textarea id="f_isu" rows="5" placeholder="Tiada" class="form-input"></textarea>
+                            </div>
+                            <div>
+                                <label for="f_perancangan" class="form-label">Perancangan</label>
+                                <textarea id="f_perancangan" rows="5" placeholder="Kerja esok / seterusnya" class="form-input"></textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <div class="flex flex-col sm:flex-row gap-3 pt-1">
+                        <button type="submit" id="submitReportBtn" class="flex-1 py-3 px-4 bg-jm-navy hover:bg-jm-blue disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+                            <i class="fa-solid fa-paper-plane text-jm-gold" id="submitIcon"></i>
+                            <span id="submitBtnText">Hantar Laporan</span>
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <!-- Jadual Laporan -->
-            <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h3 class="font-bold text-jm-navy text-lg flex items-center gap-2">
                             <span>Senarai Laporan Harian</span>
                             <span id="recordCountBadge" class="text-xs font-bold bg-jm-navy text-jm-gold px-2.5 py-0.5 rounded-full">0 Rekod</span>
                         </h3>
-                        <p class="text-xs text-slate-500 mt-0.5">Cari mengikut nama, no fail atau tugasan</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Cari mengikut nama, no file, kawasan atau tugas</p>
                     </div>
                     <div class="relative">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                        <input type="text" id="searchInput" oninput="filterReports()" placeholder="Cari Nama, No Fail, Tugasan..."
+                        <input type="text" id="searchInput" oninput="filterReports()" placeholder="Cari Nama, No File, Kawasan, Tugas..."
                             class="w-full sm:w-64 pl-9 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
                     </div>
                 </div>
@@ -266,16 +375,14 @@
                             <tr class="bg-jm-navy text-white text-[11px] uppercase tracking-wider">
                                 <th class="py-3.5 px-3 font-semibold text-center">Tindakan</th>
                                 <th class="py-3.5 px-3 font-semibold">Tarikh</th>
-                                <th class="py-3.5 px-3 font-semibold">Nama</th>
                                 <th class="py-3.5 px-3 font-semibold">No File</th>
-                                <th class="py-3.5 px-3 font-semibold">Tugasan / Output</th>
-                                <th class="py-3.5 px-3 font-semibold text-center">Hari Ini</th>
-                                <th class="py-3.5 px-3 font-semibold text-center">Total Siap</th>
-                                <th class="py-3.5 px-3 font-semibold">Jangka Asal / Semasa</th>
-                                <th class="py-3.5 px-3 font-semibold text-center">Status</th>
-                                <th class="py-3.5 px-3 font-semibold">Waktu</th>
-                                <th class="py-3.5 px-3 font-semibold">Isu / Halangan</th>
-                                <th class="py-3.5 px-3 font-semibold">Maklumat Tambahan</th>
+                                <th class="py-3.5 px-3 font-semibold">Kawasan</th>
+                                <th class="py-3.5 px-3 font-semibold">Nama</th>
+                                <th class="py-3.5 px-3 font-semibold">Masa</th>
+                                <th class="py-3.5 px-3 font-semibold">Tugas</th>
+                                <th class="py-3.5 px-3 font-semibold text-center">Kuantiti</th>
+                                <th class="py-3.5 px-3 font-semibold">Jangka Siap</th>
+                                <th class="py-3.5 px-3 font-semibold">Isu</th>
                                 <th class="py-3.5 px-3 font-semibold">Perancangan</th>
                                 <th class="py-3.5 px-3 font-semibold text-center">Gambar</th>
                             </tr>
@@ -287,7 +394,7 @@
                     <div id="emptyState" class="hidden py-12 text-center text-slate-500">
                         <i class="fa-solid fa-folder-open text-3xl text-slate-300 mb-2"></i>
                         <p class="font-semibold text-slate-600">Tiada Rekod Laporan Dijumpai</p>
-                        <p class="text-xs mt-1">Paste teks laporan di sebelah kiri atau klik Sync Data Sheet.</p>
+                        <p class="text-xs mt-1">Isi borang di atas atau klik Sync Data Sheet.</p>
                     </div>
                 </div>
             </div>
@@ -522,7 +629,7 @@
                         <i class="fa-solid fa-file-code"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v2.9 (Auto-Tab, Edit &amp; Google Drive)</h3>
+                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v3.1 (Auto-Tab, Edit &amp; Google Drive)</h3>
                         <p class="text-[11px] text-blue-200">Guna Active Spreadsheet • Tetapkan MACRO_URL dalam index.html sebelum push ke GitHub</p>
                     </div>
                 </div>
@@ -544,6 +651,7 @@
                         <li>Buka fail <code>index.html</code> dan gantikan nilai <code>const MACRO_URL = "...";</code> sebelum push ke GitHub.</li>
                         <li>Kali pertama deploy v2.8, Google akan minta kebenaran <b>Google Drive</b>. Klik <b>Allow</b> (untuk simpan gambar dalam folder <code>Gambar_Laporan_Lapangan</code>).</li>
                         <li>Ada gambar lama dalam Sheet? Dalam editor Apps Script, pilih fungsi <b>migrateImagesToDrive</b> &rarr; <b>Run</b> sekali. Boleh run semula jika belum habis.</li>
+                        <li><b>v3.1:</b> Untuk susun lajur Sheet ikut Borang Laporan Harian, pilih fungsi <b>reorderColumns</b> &rarr; <b>Run</b> sekali. Backup tab dibuat dahulu (tab tersembunyi <code>Backup_Laporan_...</code>).</li>
                         <li><b>Bila update kod sedia ada:</b> klik <b>Deploy &gt; Manage deployments</b> &rarr; ikon pensel &rarr; <b>Version: New version</b> &rarr; <b>Deploy</b>. URL kekal sama. Kalau skip langkah ni, URL masih jalankan kod lama.</li>
                     </ol>
                 </div>
@@ -562,9 +670,10 @@
  * v2.7: Fungsi EDIT laporan (ikut ID + semakan versi) dan Log_Edit untuk jejak audit.
  * v2.8: Gambar disimpan sebagai fail dalam Google Drive. Sheet hanya simpan link.
  *       Jalankan migrateImagesToDrive() sekali untuk pindah gambar lama (Base64) ke Drive.
- * v2.9: Lajur 'Edit Token' (token unik setiap simpan) supaya dashboard boleh sahkan
- *       simpanan SENDIRI yang masuk, bukan simpanan orang lain yang kebetulan sama versi.
- *       Respons POST kini dibaca terus oleh dashboard (tiada lagi no-cors).
+ * v2.9: Lajur 'Edit Token' supaya dashboard boleh sahkan simpanan SENDIRI yang masuk.
+ * v3.1: Susunan lajur ikut Borang Laporan Harian. Lajur dibaca ikut NAMA HEADER
+ *       (bukan nombor kedudukan), jadi sheet lama tetap jalan sebelum disusun semula.
+ *       Jalankan reorderColumns() SEKALI untuk susun semula data lama (backup dibuat dahulu).
  */
 
 const SHEET_NAME = 'Laporan_Lapangan';
@@ -578,53 +687,83 @@ const DRIVE_FOLDER_NAME = 'Gambar_Laporan_Lapangan';
 // true = fail dikongsi "Anyone with the link (Viewer)" supaya gambar boleh dipapar di dashboard
 const SHARE_IMAGES_PUBLIC = true;
 
-const HEADERS = [
-  'Timestamp',
-  'Tarikh',
-  'Nama',
-  'No File',
-  'Tugasan / Output',
-  'Progress Hari Ini',
-  'Total Dah Siap',
-  'Jangka Siap Asal',
-  'Jangka Siap Semasa',
-  'Status',
-  'Waktu Mula',
-  'Waktu Tamat',
-  'Isu / Halangan',
-  'Maklumat Tambahan',
-  'Perancangan',
-  'Gambar',
-  'Teks Asal',
-  'ID',
-  'Versi',
-  'Kemaskini Terakhir',
-  'Edit Token'
+// Susunan lajur dalam Sheet (ikut Borang Laporan Harian).
+// aliases = nama header versi lama, supaya sheet lama masih dikenali sebelum reorderColumns().
+const COLUMNS = [
+  // --- Borang Laporan Harian ---
+  { key: 'tarikh',          header: 'Tarikh' },
+  { key: 'noFile',          header: 'No File' },
+  { key: 'kawasan',         header: 'Kawasan' },
+  { key: 'nama',            header: 'Nama' },
+  { key: 'tugasan',         header: 'Tugas', aliases: ['Tugasan / Output'] },
+  { key: 'kuantiti',        header: 'Kuantiti' },
+  { key: 'unit',            header: 'Unit' },
+  { key: 'waktuMula',       header: 'Masa Mula', aliases: ['Waktu Mula'] },
+  { key: 'waktuTamat',      header: 'Masa Tamat', aliases: ['Waktu Tamat'] },
+  { key: 'jangkaAsal',      header: 'Jangka Siap Asal' },
+  { key: 'jangkaSemasa',    header: 'Jangka Siap Semasa' },
+  { key: 'gambar',          header: 'Gambar' },
+  { key: 'isu',             header: 'Isu', aliases: ['Isu / Halangan'] },
+  { key: 'perancangan',     header: 'Perancangan' },
+  // --- Medan laporan format lama (WhatsApp v2) ---
+  { key: 'progressHariIni', header: 'Progress Hari Ini' },
+  { key: 'totalSiap',       header: 'Total Dah Siap' },
+  { key: 'status',          header: 'Status' },
+  { key: 'maklumat',        header: 'Maklumat Tambahan' },
+  // --- Sistem ---
+  { key: 'timestamp',       header: 'Timestamp' },
+  { key: 'rawText',         header: 'Teks Asal' },
+  { key: 'id',              header: 'ID' },
+  { key: 'versi',           header: 'Versi' },
+  { key: 'kemaskini',       header: 'Kemaskini Terakhir' },
+  { key: 'editToken',       header: 'Edit Token' }
 ];
+const HEADERS = COLUMNS.map(c =&gt; c.header);
 const LOG_HEADERS = ['Masa Edit', 'ID', 'Versi Lama', 'Data Lama (JSON)'];
 
-// Medan laporan yang boleh diedit (ikut susunan lajur 2 hingga 15)
+// Medan teks laporan yang ditulis dari payload dashboard
 const FIELD_KEYS = [
-  'tarikh', 'nama', 'noFile', 'tugasan', 'progressHariIni', 'totalSiap',
-  'jangkaAsal', 'jangkaSemasa', 'status', 'waktuMula', 'waktuTamat',
-  'isu', 'maklumat', 'perancangan'
+  'tarikh', 'noFile', 'kawasan', 'nama', 'tugasan', 'kuantiti', 'unit',
+  'waktuMula', 'waktuTamat', 'jangkaAsal', 'jangkaSemasa', 'isu', 'perancangan',
+  'progressHariIni', 'totalSiap', 'status', 'maklumat'
 ];
 const FIELD_DEFAULTS = { totalSiap: '0%', status: 'DALAM PROSES' };
 
-// Nombor lajur (1-based)
-const COL = {
-  TIMESTAMP: 1,
-  FIRST_FIELD: 2,
-  TARIKH: 2,
-  NAMA: 3,
-  NO_FILE: 4,
-  GAMBAR: HEADERS.indexOf('Gambar') + 1,
-  TEKS_ASAL: HEADERS.indexOf('Teks Asal') + 1,
-  ID: HEADERS.indexOf('ID') + 1,
-  VERSI: HEADERS.indexOf('Versi') + 1,
-  KEMASKINI: HEADERS.indexOf('Kemaskini Terakhir') + 1,
-  EDIT_TOKEN: HEADERS.indexOf('Edit Token') + 1
-};
+function normHeader(h) {
+  return String(h || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Peta key -&gt; nombor lajur (1-based) ikut header SEBENAR dalam sheet.
+ * Lajur yang tiada (contoh: sheet lama) ditambah di hujung.
+ */
+function getColumnMap(sheet) {
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const header = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+  const lookup = {};
+  header.forEach((h, i) =&gt; { const n = normHeader(h); if (n &amp;&amp; !(n in lookup)) lookup[n] = i + 1; });
+
+  const map = {};
+  const missing = [];
+  COLUMNS.forEach(c =&gt; {
+    const names = [c.header].concat(c.aliases || []);
+    const found = names.map(normHeader).find(n =&gt; n in lookup);
+    if (found) map[c.key] = lookup[found];
+    else missing.push(c);
+  });
+
+  if (missing.length) {
+    const width = header.some(h =&gt; String(h).trim() !== '') ? lastCol : 0;
+    const range = sheet.getRange(1, width + 1, 1, missing.length);
+    range.setValues([missing.map(c =&gt; c.header)]);
+    styleHeader(range);
+    if (width === 0) sheet.setFrozenRows(1);
+    missing.forEach((c, i) =&gt; { map[c.key] = width + 1 + i; });
+  }
+
+  map._width = Math.max.apply(null, COLUMNS.map(c =&gt; map[c.key]));
+  return map;
+}
 
 /**
  * Paksa nilai disimpan sebagai TEKS.
@@ -644,8 +783,8 @@ function jsonOutput(obj) {
 
 function styleHeader(range) {
   range.setFontWeight('bold');
-  range.setBackground('#0f172a');
-  range.setFontColor('#38bdf8');
+  range.setBackground('#0A2540');
+  range.setFontColor('#FACC15');
 }
 
 // ============================================================================
@@ -780,8 +919,7 @@ function imageUrlsForClient(cell) {
 // ============================================================================
 
 /**
- * Dapatkan Sheet utama. Bina Tab &amp; Header jika tiada.
- * Jika header lama (versi sebelum ini) kurang lajur, lajur baharu ditambah di hujung.
+ * Dapatkan Sheet utama. Bina Tab &amp; Header (susunan COLUMNS) jika tiada.
  */
 function getOrCreateSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -789,25 +927,11 @@ function getOrCreateSheet() {
 
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
-  }
-
-  const headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
-  const current = headerRange.getValues()[0];
-  let changed = false;
-
-  for (let i = 0; i &lt; HEADERS.length; i++) {
-    if (String(current[i]).trim() === '') {
-      current[i] = HEADERS[i];
-      changed = true;
-    }
-  }
-
-  if (changed) {
-    headerRange.setValues([current]);
-    styleHeader(headerRange);
+    const range = sheet.getRange(1, 1, 1, HEADERS.length);
+    range.setValues([HEADERS]);
+    styleHeader(range);
     sheet.setFrozenRows(1);
   }
-
   return sheet;
 }
 
@@ -827,26 +951,27 @@ function getOrCreateLogSheet() {
 /**
  * Isi ID &amp; Versi untuk rekod lama yang belum ada (rekod sebelum v2.7).
  */
-function ensureIds(sheet) {
+function ensureIds(sheet, map) {
   const lastRow = sheet.getLastRow();
   if (lastRow &lt; 2) return;
 
-  const range = sheet.getRange(2, COL.ID, lastRow - 1, 2); // ID + Versi
-  const values = range.getValues();
-  let changed = false;
+  const idRange = sheet.getRange(2, map.id, lastRow - 1, 1);
+  const verRange = sheet.getRange(2, map.versi, lastRow - 1, 1);
+  const ids = idRange.getValues();
+  const vers = verRange.getValues();
+  let idChanged = false, verChanged = false;
 
-  values.forEach(v =&gt; {
-    if (String(v[0]).trim() === '') { v[0] = Utilities.getUuid(); changed = true; }
-    if (!Number(v[1])) { v[1] = 1; changed = true; }
-  });
+  ids.forEach(v =&gt; { if (String(v[0]).trim() === '') { v[0] = Utilities.getUuid(); idChanged = true; } });
+  vers.forEach(v =&gt; { if (!Number(v[0])) { v[0] = 1; verChanged = true; } });
 
-  if (changed) range.setValues(values);
+  if (idChanged) idRange.setValues(ids);
+  if (verChanged) verRange.setValues(vers);
 }
 
-function findRowById(sheet, id) {
+function findRowById(sheet, map, id) {
   const lastRow = sheet.getLastRow();
   if (lastRow &lt; 2 || !id) return -1;
-  const ids = sheet.getRange(2, COL.ID, lastRow - 1, 1).getDisplayValues();
+  const ids = sheet.getRange(2, map.id, lastRow - 1, 1).getDisplayValues();
   const idx = ids.findIndex(r =&gt; r[0] === id);
   return idx === -1 ? -1 : idx + 2;
 }
@@ -856,20 +981,23 @@ function findRowById(sheet, id) {
  * rekod tidak ditambah semula.
  */
 function createReport(sheet, payload, imageCell) {
+  const map = getColumnMap(sheet);
   const id = payload.id;
 
-  if (findRowById(sheet, id) !== -1) {
+  if (findRowById(sheet, map, id) !== -1) {
     return { status: 'success', message: 'Rekod sudah wujud', id: id, duplicate: true };
   }
 
-  const row = [new Date()];
-  FIELD_KEYS.forEach(k =&gt; row.push(asText(payload[k] || FIELD_DEFAULTS[k] || '-')));
-  row.push(asText(imageCell || ''));
-  row.push(asText(payload.rawText || ''));
-  row.push(id);
-  row.push(1);
-  row.push('');
-  row.push(asText(payload.editToken || ''));
+  const row = new Array(map._width).fill('');
+  const set = (key, value) =&gt; { row[map[key] - 1] = value; };
+  FIELD_KEYS.forEach(k =&gt; set(k, asText(payload[k] || FIELD_DEFAULTS[k] || '-')));
+  set('gambar', asText(imageCell || ''));
+  set('timestamp', new Date());
+  set('rawText', asText(payload.rawText || ''));
+  set('id', id);
+  set('versi', 1);
+  set('kemaskini', '');
+  set('editToken', asText(payload.editToken || ''));
 
   sheet.appendRow(row);
   return { status: 'success', message: 'Data berjaya disimpan ke dalam ' + SHEET_NAME, id: id, versi: 1 };
@@ -885,12 +1013,15 @@ function updateReport(sheet, payload, imageCell) {
   const id = String(payload.id || '').trim();
   if (!id) throw new Error('ID laporan tiada.');
 
-  const rowNum = findRowById(sheet, id);
+  const map = getColumnMap(sheet);
+  const rowNum = findRowById(sheet, map, id);
   if (rowNum === -1) throw new Error('Rekod dengan ID ' + id + ' tidak dijumpai.');
 
-  const range = sheet.getRange(rowNum, 1, 1, HEADERS.length);
+  const range = sheet.getRange(rowNum, 1, 1, map._width);
   const row = range.getValues()[0];
-  const currentVersi = Number(row[COL.VERSI - 1]) || 1;
+  const get = key =&gt; row[map[key] - 1];
+  const set = (key, value) =&gt; { row[map[key] - 1] = value; };
+  const currentVersi = Number(get('versi')) || 1;
 
   if (Number(payload.baseVersi) !== currentVersi) {
     throw new Error('Konflik versi: laporan ini telah dikemaskini oleh orang lain. Sync semula dan cuba lagi.');
@@ -898,8 +1029,9 @@ function updateReport(sheet, payload, imageCell) {
 
   // Jejak audit: simpan salinan data lama (gambar disimpan sebagai link sahaja)
   const oldData = {};
-  HEADERS.forEach((h, i) =&gt; {
-    oldData[h] = (h === 'Gambar' &amp;&amp; isDataImage(row[i])) ? '[Base64]' : row[i];
+  COLUMNS.forEach(c =&gt; {
+    const v = get(c.key);
+    oldData[c.header] = (c.key === 'gambar' &amp;&amp; isDataImage(v)) ? '[Base64]' : v;
   });
   getOrCreateLogSheet().appendRow([
     new Date(),
@@ -908,18 +1040,15 @@ function updateReport(sheet, payload, imageCell) {
     JSON.stringify(oldData).slice(0, 49000)
   ]);
 
-  FIELD_KEYS.forEach((k, i) =&gt; {
-    row[COL.FIRST_FIELD - 1 + i] = asText(payload[k] || FIELD_DEFAULTS[k] || '-');
+  // Medan yang tiada dalam payload (contoh: dashboard versi lama) tidak disentuh
+  FIELD_KEYS.forEach(k =&gt; {
+    if (payload[k] !== undefined) set(k, asText(payload[k] || FIELD_DEFAULTS[k] || '-'));
   });
-  if (payload.imageChanged) {
-    row[COL.GAMBAR - 1] = asText(imageCell || '');
-  }
-  if (payload.rawText !== undefined) {
-    row[COL.TEKS_ASAL - 1] = asText(payload.rawText || '');
-  }
-  row[COL.VERSI - 1] = currentVersi + 1;
-  row[COL.KEMASKINI - 1] = new Date();
-  row[COL.EDIT_TOKEN - 1] = asText(payload.editToken || '');
+  if (payload.imageChanged) set('gambar', asText(imageCell || ''));
+  if (payload.rawText !== undefined) set('rawText', asText(payload.rawText || ''));
+  set('versi', currentVersi + 1);
+  set('kemaskini', new Date());
+  set('editToken', asText(payload.editToken || ''));
 
   range.setValues([row]);
   return { status: 'success', message: 'Laporan dikemaskini', id: id, versi: currentVersi + 1 };
@@ -989,7 +1118,8 @@ function doGet(e) {
 
   try {
     const sheet = getOrCreateSheet();
-    ensureIds(sheet);
+    const map = getColumnMap(sheet);
+    ensureIds(sheet, map);
     const rows = sheet.getDataRange().getDisplayValues();
 
     if (rows.length &lt;= 1) {
@@ -997,32 +1127,21 @@ function doGet(e) {
     }
 
     const data = rows.slice(1).reverse().map(r =&gt; {
-      const img = imageUrlsForClient(r[15]);
-      return {
-        timestamp: r[0] || '',
-        tarikh: r[1] || '-',
-        nama: r[2] || '-',
-        noFile: r[3] || '-',
-        tugasan: r[4] || '-',
-        progressHariIni: r[5] || '-',
-        totalSiap: r[6] || '0%',
-        jangkaAsal: r[7] || '-',
-        jangkaSemasa: r[8] || '-',
-        status: r[9] || 'DALAM PROSES',
-        waktuMula: r[10] || '-',
-        waktuTamat: r[11] || '-',
-        isu: r[12] || '-',
-        maklumat: r[13] || '-',
-        perancangan: r[14] || '-',
+      const get = key =&gt; r[map[key] - 1] || '';
+      const img = imageUrlsForClient(get('gambar'));
+      const rec = {
+        timestamp: get('timestamp'),
         image: img.image,
         imageThumb: img.imageThumb,
         imageLink: img.imageLink,
-        rawText: r[16] || '',
-        id: r[17] || '',
-        versi: Number(r[18]) || 1,
-        updatedAt: r[19] || '',
-        editToken: r[COL.EDIT_TOKEN - 1] || ''
+        rawText: get('rawText'),
+        id: get('id'),
+        versi: Number(get('versi')) || 1,
+        updatedAt: get('kemaskini'),
+        editToken: get('editToken')
       };
+      FIELD_KEYS.forEach(k =&gt; { rec[k] = get(k) || FIELD_DEFAULTS[k] || '-'; });
+      return rec;
     });
 
     return jsonOutput({ status: 'success', data: data });
@@ -1049,26 +1168,27 @@ function migrateImagesToDrive() {
   const lastRow = sheet.getLastRow();
   if (lastRow &lt; 2) { console.log('Tiada rekod.'); return; }
 
-  ensureIds(sheet);
+  const map = getColumnMap(sheet);
+  ensureIds(sheet, map);
   const startTime = Date.now();
-  const values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, map._width).getDisplayValues();
   let moved = 0, failed = 0, pending = 0;
 
   for (let i = 0; i &lt; values.length; i++) {
     const r = values[i];
-    const cell = r[COL.GAMBAR - 1];
+    const cell = r[map.gambar - 1];
     if (!isDataImage(cell)) continue;
 
     if (Date.now() - startTime &gt; 5 * 60 * 1000) { pending++; continue; }
 
     try {
       const saved = saveImageToDrive(cell, {
-        tarikh: r[COL.TARIKH - 1],
-        nama: r[COL.NAMA - 1],
-        noFile: r[COL.NO_FILE - 1],
-        id: r[COL.ID - 1]
+        tarikh: r[map.tarikh - 1],
+        nama: r[map.nama - 1],
+        noFile: r[map.noFile - 1],
+        id: r[map.id - 1]
       });
-      sheet.getRange(i + 2, COL.GAMBAR).setValue(asText(saved.url));
+      sheet.getRange(i + 2, map.gambar).setValue(asText(saved.url));
       moved++;
     } catch (err) {
       failed++;
@@ -1080,7 +1200,78 @@ function migrateImagesToDrive() {
     (pending ? ', ' + pending + ' belum diproses (jalankan semula fungsi ini)' : '') + '.';
   console.log(msg);
   return msg;
-}</pre>
+}
+
+// ============================================================================
+// MIGRASI SEKALI: SUSUN SEMULA LAJUR IKUT BORANG LAPORAN HARIAN
+// ============================================================================
+
+/**
+ * Jalankan fungsi ini SEKALI dari editor Apps Script (pilih reorderColumns &gt; Run).
+ * 1. Salinan penuh tab dibuat dahulu (Backup_Laporan_yyyyMMdd_HHmm, tab tersembunyi).
+ * 2. Data disusun semula ikut COLUMNS, header lama ditukar ke nama baharu
+ *    (contoh 'Tugasan / Output' -&gt; 'Tugas', 'Waktu Mula' -&gt; 'Masa Mula').
+ * 3. Lajur tambahan yang anda buat sendiri (bukan dalam COLUMNS) dikekalkan di hujung.
+ * Selamat dijalankan semula: jika susunan dah betul, tiada apa diubah.
+ */
+function reorderColumns() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) throw new Error('Server sibuk. Cuba lagi sebentar.');
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = getOrCreateSheet();
+    const map = getColumnMap(sheet);
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    const header = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+
+    const used = {};
+    COLUMNS.forEach(c =&gt; { used[map[c.key]] = true; });
+    const otherCols = [];
+    for (let c = 1; c &lt;= lastCol; c++) {
+      if (!used[c] &amp;&amp; String(header[c - 1]).trim() !== '') otherCols.push(c);
+    }
+
+    const alreadyOk = COLUMNS.every((c, i) =&gt; map[c.key] === i + 1 &amp;&amp; header[i] === c.header) &amp;&amp;
+      otherCols.every((c, i) =&gt; c === COLUMNS.length + 1 + i);
+    if (alreadyOk) {
+      console.log('Susunan lajur dah betul. Tiada perubahan.');
+      return 'Susunan lajur dah betul.';
+    }
+
+    // 1. Backup
+    const stamp = Utilities.formatDate(new Date(), 'Asia/Kuala_Lumpur', 'yyyyMMdd_HHmm');
+    const backup = sheet.copyTo(ss).setName('Backup_Laporan_' + stamp);
+    backup.hideSheet();
+
+    // 2. Bina semula data. Teks diletak semula dengan awalan ' supaya Sheets tak tukar
+    //    tarikh/peratus ikut locale. Date (Timestamp, Kemaskini) dan nombor (Versi) kekal jenis asal.
+    const values = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
+    const keep = v =&gt; (v instanceof Date || typeof v === 'number' || typeof v === 'boolean') ? v : asText(v);
+    const newHeader = HEADERS.concat(otherCols.map(c =&gt; header[c - 1]));
+    const newRows = values.map(r =&gt;
+      COLUMNS.map(c =&gt; keep(r[map[c.key] - 1])).concat(otherCols.map(c =&gt; keep(r[c - 1])))
+    );
+
+    // 3. Tulis semula
+    sheet.clear();
+    sheet.getRange(1, 1, 1, newHeader.length).setValues([newHeader]);
+    styleHeader(sheet.getRange(1, 1, 1, newHeader.length));
+    sheet.setFrozenRows(1);
+    if (newRows.length) sheet.getRange(2, 1, newRows.length, newHeader.length).setValues(newRows);
+    if (sheet.getMaxColumns() &gt; newHeader.length) {
+      sheet.deleteColumns(newHeader.length + 1, sheet.getMaxColumns() - newHeader.length);
+    }
+
+    const msg = 'Siap: ' + newRows.length + ' rekod disusun semula. Backup: ' + backup.getName() + ' (tab tersembunyi).';
+    console.log(msg);
+    return msg;
+  } finally {
+    lock.releaseLock();
+  }
+}
+</pre>
                 </div>
             </div>
         </div>
@@ -1111,23 +1302,29 @@ function migrateImagesToDrive() {
         let editImageData = "";
         let editImageChanged = false;
 
-        // Medan yang boleh diedit dalam modal
+        // Medan yang boleh diedit dalam modal (susunan ikut Borang Laporan Harian)
         const EDIT_FIELDS = [
             { key: 'tarikh', label: 'Tarikh' },
-            { key: 'nama', label: 'Nama' },
             { key: 'noFile', label: 'No File' },
-            { key: 'tugasan', label: 'Tugasan / Output', wide: true },
-            { key: 'progressHariIni', label: 'Progress Hari Ini' },
-            { key: 'totalSiap', label: 'Total Dah Siap' },
-            { key: 'status', label: 'Status' },
+            { key: 'kawasan', label: 'Kawasan' },
+            { key: 'nama', label: 'Nama' },
+            { key: 'tugasan', label: 'Tugas', wide: true, multiline: true },
+            { key: 'kuantiti', label: 'Kuantiti' },
+            { key: 'unit', label: 'Unit' },
+            { key: 'waktuMula', label: 'Masa Mula' },
+            { key: 'waktuTamat', label: 'Masa Tamat' },
             { key: 'jangkaAsal', label: 'Jangka Siap Asal' },
             { key: 'jangkaSemasa', label: 'Jangka Siap Semasa' },
-            { key: 'waktuMula', label: 'Waktu Mula' },
-            { key: 'waktuTamat', label: 'Waktu Tamat' },
-            { key: 'isu', label: 'Isu / Halangan', wide: true, multiline: true },
-            { key: 'maklumat', label: 'Maklumat Tambahan', wide: true, multiline: true },
+            { key: 'isu', label: 'Isu', wide: true, multiline: true },
             { key: 'perancangan', label: 'Perancangan', wide: true, multiline: true }
         ];
+
+        // Senarai No File & Kawasan (sheet master, published CSV)
+        const MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW5BxrFQw07_bCiTfbARTgXh8qYvbMnLo4Uur7iM6ROw42DMmluHxrxXd3bKxVADyj_dLu_pCoEob8/pub?gid=1800236702&single=true&output=csv";
+        const MASTER_CACHE_KEY = 'drafter_master_files_v1';
+        const NAMA_PREF_KEY = 'drafter_last_nama';
+        let masterRows = [];      // [{ noFile, kawasan }]
+        let masterLoading = false;
 
         function generateId() {
             if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
@@ -1172,6 +1369,7 @@ function migrateImagesToDrive() {
 
         window.addEventListener('DOMContentLoaded', () => {
             loadStoredData();
+            initReportForm();
             if (location.hash === '#statistik') switchView('statistik');
             if (reportsData.length === 0) {
                 fetchGoogleSheetData();
@@ -1261,47 +1459,356 @@ function migrateImagesToDrive() {
             setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
         }
 
-        function fillSampleText() {
-            const sample = `*Laporan Harian*
+        // ============================================================================
+        // SENARAI NO FILE & KAWASAN (MASTER CSV)
+        // Lajur dikesan ikut nama header (No File / Fail / Rujukan, Kawasan / Lokasi / Daerah).
+        // Jika header tak dikenali: lajur 1 = No File, lajur 2 = Kawasan.
+        // Disimpan dalam pelayar supaya dropdown tetap ada bila line lemah di tapak.
+        // ============================================================================
+        function normHeader(h) {
+            return String(h || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        }
 
-*TARIKH* : 12/11/2026
-*NAMA* : M.BADRUL
-*NO FILE* : MCP058/26 SMHB KEMAMAN A
+        function detectMasterColumns(header) {
+            const h = header.map(normHeader);
+            let fi = h.findIndex(x => /\b(no|nombor|num)\b.*\b(file|fail)\b/.test(x));
+            if (fi === -1) fi = h.findIndex(x => /\b(file|fail|rujukan|ref)\b/.test(x));
+            const ki = h.findIndex(x => /\b(kawasan|lokasi|area|daerah|tempat|mukim)\b/.test(x));
+            return { fi, ki };
+        }
 
-*TUGASAN / OUTPUT :*
-- Topo ±300m
+        function parseMasterRows(rows) {
+            if (!Array.isArray(rows) || rows.length === 0) return [];
+            let { fi, ki } = detectMasterColumns(rows[0]);
+            if (fi === -1 && ki === -1) { fi = 0; ki = rows[0].length > 1 ? 1 : -1; }
+            else if (fi === -1) fi = ki === 0 ? 1 : 0;
 
+            const out = [];
+            const seen = new Set();
+            rows.slice(1).forEach(r => {
+                const noFile = String(r[fi] ?? '').trim();
+                const kawasan = ki >= 0 ? String(r[ki] ?? '').trim() : '';
+                if (!noFile && !kawasan) return;
+                const key = noFile.toUpperCase() + '||' + kawasan.toUpperCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                out.push({ noFile, kawasan });
+            });
+            return out;
+        }
 
-*PROGRESS (%) :*
-- Hari ini : 8%
+        function uniqueSorted(arr) {
+            const seen = new Map();
+            arr.forEach(v => {
+                const s = String(v || '').trim();
+                if (s && !seen.has(s.toUpperCase())) seen.set(s.toUpperCase(), s);
+            });
+            return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        }
 
-- Total dah siap : 100%
+        function loadMasterCache() {
+            try {
+                const c = JSON.parse(localStorage.getItem(MASTER_CACHE_KEY) || 'null');
+                if (c && Array.isArray(c.rows)) return c;
+            } catch (e) {}
+            return null;
+        }
 
+        function setMasterStatus(text, isWarn) {
+            const el = document.getElementById('masterStatus');
+            if (!el) return;
+            el.textContent = text;
+            el.className = `text-[11px] ${isWarn ? 'text-amber-700' : 'text-slate-400'}`;
+        }
 
-*DATELINE PROJEK :*
-- Jangka siap asal : 12/11/26
+        function masterSummary(at) {
+            const files = uniqueSorted(masterRows.map(r => r.noFile)).length;
+            const areas = uniqueSorted(masterRows.map(r => r.kawasan)).length;
+            const when = at ? new Date(at) : null;
+            const p = n => String(n).padStart(2, '0');
+            const stamp = when ? ` • dikemas kini ${formatTarikh(when)} ${p(when.getHours())}:${p(when.getMinutes())}` : '';
+            return `${files} No File • ${areas} Kawasan${stamp}`;
+        }
 
-- Jangka siap semasa : 13/11/26
+        function loadMasterData(manual) {
+            if (masterLoading) return;
+            const cache = loadMasterCache();
+            if (!manual && cache && masterRows.length === 0) {
+                masterRows = cache.rows;
+                renderNoFileOptions();
+                setMasterStatus(masterSummary(cache.at));
+            }
 
-- Status :
+            masterLoading = true;
+            const icon = document.getElementById('masterReloadIcon');
+            if (icon) icon.classList.add('fa-spin');
 
+            Papa.parse(MASTER_CSV_URL, {
+                download: true,
+                header: false,
+                skipEmptyLines: 'greedy',
+                complete: (results) => {
+                    masterLoading = false;
+                    if (icon) icon.classList.remove('fa-spin');
+                    const rows = parseMasterRows(results && results.data);
+                    if (rows.length === 0) {
+                        setMasterStatus('Senarai No File kosong atau format tak dikenali. Semak sheet master.', true);
+                        if (manual) showToast('warning', 'Senarai Kosong', 'Tiada No File dijumpai dalam sheet master.');
+                        return;
+                    }
+                    masterRows = rows;
+                    const at = Date.now();
+                    try { localStorage.setItem(MASTER_CACHE_KEY, JSON.stringify({ at, rows })); } catch (e) {}
+                    renderNoFileOptions();
+                    setMasterStatus(masterSummary(at));
+                    if (manual) showToast('success', 'Senarai Dikemas Kini', masterSummary());
+                },
+                error: (err) => {
+                    masterLoading = false;
+                    if (icon) icon.classList.remove('fa-spin');
+                    console.warn('Gagal muat senarai No File:', err);
+                    if (masterRows.length) {
+                        setMasterStatus(`Offline: guna senarai simpanan (${masterSummary(cache && cache.at)})`, true);
+                    } else {
+                        renderNoFileOptions();
+                        setMasterStatus('Gagal muat senarai No File. Semak internet dan tekan Muat semula.', true);
+                    }
+                    if (manual) showToast('error', 'Gagal Muat Senarai', 'Tak dapat baca sheet No File & Kawasan.');
+                }
+            });
+        }
 
-*WAKTU :*
-Mula kerja : 7.30am
-Tamat : 3.00pm
+        // Pilih nilai dalam <select>. Jika tiada dalam senarai (contoh: laporan lama), tambah sebagai pilihan khas.
+        function setSelectValue(sel, value) {
+            const v = String(value || '').trim();
+            if (!v) { sel.value = ''; return; }
+            const found = [...sel.options].find(o => o.value.toUpperCase() === v.toUpperCase());
+            if (found) { sel.value = found.value; return; }
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = `${v} (tiada dalam senarai)`;
+            opt.dataset.custom = '1';
+            sel.appendChild(opt);
+            sel.value = v;
+        }
 
-*ISU / HALANGAN :*
-- Kawasan paya dalam
+        function renderNoFileOptions() {
+            const sel = document.getElementById('f_noFile');
+            if (!sel) return;
+            const current = sel.value;
+            const files = uniqueSorted(masterRows.map(r => r.noFile));
+            sel.innerHTML = `<option value="">${files.length ? 'Pilih No File...' : 'Tiada senarai No File'}</option>` +
+                files.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+            if (current) setSelectValue(sel, current);
+            renderKawasanOptions(document.getElementById('f_kawasan').value);
+        }
 
+        // Kawasan ikut No File dipilih. Jika No File tiada kawasan khusus, papar semua kawasan.
+        function kawasanFor(noFile) {
+            const nf = String(noFile || '').toUpperCase();
+            const linked = nf ? masterRows.filter(r => r.noFile.toUpperCase() === nf && r.kawasan).map(r => r.kawasan) : [];
+            return { list: uniqueSorted(linked.length ? linked : masterRows.map(r => r.kawasan)), linked: linked.length > 0 };
+        }
 
-*MAKLUMAT TAMBAHAN :*
-- Semua siap 100% kecuali Apache sungai.
+        function renderKawasanOptions(preferred) {
+            const sel = document.getElementById('f_kawasan');
+            if (!sel) return;
+            const { list, linked } = kawasanFor(document.getElementById('f_noFile').value);
+            sel.innerHTML = `<option value="">${list.length ? 'Pilih kawasan...' : 'Tiada senarai kawasan'}</option>` +
+                list.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+            if (preferred) setSelectValue(sel, preferred);
+            else if (linked && list.length === 1) sel.value = list[0];
+        }
 
+        function onNoFileChange() {
+            renderKawasanOptions('');
+            markInvalid('f_noFile', false);
+            markInvalid('f_kawasan', false);
+        }
 
-*PERANCANGAN :*
-- PKNP - IKS Gebeng`;
-            // TARIKH dalam contoh ikut tarikh hari ini
-            document.getElementById('rawReportInput').value = stripStars(withTodayDate(sample));
+        // ============================================================================
+        // BORANG LAPORAN HARIAN
+        // ============================================================================
+        const clean = v => (v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '-') ? String(v).trim() : '';
+
+        function getField(id) {
+            const el = document.getElementById(id);
+            return el ? String(el.value || '').trim() : '';
+        }
+
+        function setField(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.value = value ?? '';
+        }
+
+        // Date / "dd/mm/yyyy" -> "yyyy-mm-dd" (untuk <input type="date">)
+        function toInputDate(v) {
+            const dt = v instanceof Date ? v : parseTarikh(v);
+            if (!dt) return '';
+            const p = n => String(n).padStart(2, '0');
+            return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+        }
+
+        // "yyyy-mm-dd" -> "dd/mm/yyyy" (format simpanan Sheet)
+        function fromInputDate(s) {
+            const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+        }
+
+        // Nilai masa yang disimpan borang ialah "HH:MM"
+        function toInputTime(str) {
+            return /^\d{2}:\d{2}$/.test(String(str || '').trim()) ? String(str).trim() : '';
+        }
+
+        function timeToMin(hhmm) {
+            const m = String(hhmm || '').match(/^(\d{2}):(\d{2})$/);
+            return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+        }
+
+        function updateHoursHint() {
+            const el = document.getElementById('hoursHint');
+            const a = timeToMin(getField('f_waktuMula'));
+            const b = timeToMin(getField('f_waktuTamat'));
+            if (a === null || b === null) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+            if (b <= a) {
+                el.className = 'text-[11px] font-semibold text-red-600';
+                el.textContent = 'Masa tamat mesti selepas masa mula.';
+            } else {
+                const jam = (b - a) / 60;
+                el.className = 'text-[11px] text-slate-500';
+                el.innerHTML = `<i class="fa-regular fa-clock text-jm-blue mr-1"></i>Tempoh kerja: <strong class="text-jm-navy">${Number.isInteger(jam) ? jam : jam.toFixed(1)} jam</strong>`;
+            }
+        }
+
+        function updateDelayHint() {
+            const el = document.getElementById('delayHint');
+            const a = parseTarikh(fromInputDate(getField('f_jangkaAsal')));
+            const b = parseTarikh(fromInputDate(getField('f_jangkaSemasa')));
+            if (!a || !b || b <= a) { el.classList.add('hidden'); return; }
+            const hari = Math.round((b - a) / 86400000);
+            el.textContent = `Lewat ${hari} hari dari jangka siap asal.`;
+            el.classList.remove('hidden');
+        }
+
+        function markInvalid(id, bad) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('is-invalid', !!bad);
+        }
+
+        function formHasContent() {
+            return ['f_noFile', 'f_tugasan', 'f_kuantiti', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat']
+                .some(id => getField(id)) || !!attachedImageData;
+        }
+
+        // Isi borang dari rekod. today=true: TARIKH jadi hari ini (untuk contoh laporan)
+        function fillReportForm(rec, opts = {}) {
+            const tarikh = opts.today ? toInputDate(new Date()) : (toInputDate(rec.tarikh) || toInputDate(new Date()));
+            setField('f_tarikh', tarikh);
+
+            setSelectValue(document.getElementById('f_noFile'), clean(rec.noFile));
+            renderKawasanOptions(clean(rec.kawasan));
+
+            if (clean(rec.nama)) setField('f_nama', clean(rec.nama));
+            setField('f_waktuMula', toInputTime(rec.waktuMula));
+            setField('f_waktuTamat', toInputTime(rec.waktuTamat));
+            setField('f_tugasan', tugasItems(rec).join('\n'));
+
+            const q = parseFloat(String(clean(rec.kuantiti)).replace(',', '.'));
+            setField('f_kuantiti', Number.isFinite(q) ? String(q) : '');
+            setField('f_unit', clean(rec.unit));
+            setField('f_jangkaAsal', toInputDate(clean(rec.jangkaAsal)));
+            setField('f_jangkaSemasa', toInputDate(clean(rec.jangkaSemasa)));
+            setField('f_isu', clean(rec.isu));
+            setField('f_perancangan', clean(rec.perancangan));
+
+            document.querySelectorAll('#reportForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            updateHoursHint();
+            updateDelayHint();
+        }
+
+        // Kosongkan borang. Nama dikekalkan (orang sama biasanya hantar dari phone sama).
+        function resetReportForm(askFirst) {
+            if (askFirst && formHasContent() && !confirm('Kosongkan semua isi borang?')) return;
+            ['f_tugasan', 'f_kuantiti', 'f_unit', 'f_jangkaAsal', 'f_jangkaSemasa', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat']
+                .forEach(id => setField(id, ''));
+            setField('f_tarikh', toInputDate(new Date()));
+            document.getElementById('f_noFile').value = '';
+            [...document.getElementById('f_noFile').options].filter(o => o.dataset.custom).forEach(o => o.remove());
+            renderKawasanOptions('');
+            clearAttachedImage();
+            document.querySelectorAll('#reportForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.getElementById('templateHint').classList.add('hidden');
+            updateHoursHint();
+            updateDelayHint();
+        }
+
+        function collectReportForm() {
+            const v = id => getField(id) || '-';
+            return {
+                tarikh: fromInputDate(getField('f_tarikh')) || '-',
+                noFile: v('f_noFile'),
+                kawasan: v('f_kawasan'),
+                nama: v('f_nama'),
+                waktuMula: v('f_waktuMula'),
+                waktuTamat: v('f_waktuTamat'),
+                tugasan: v('f_tugasan'),
+                kuantiti: v('f_kuantiti'),
+                unit: v('f_unit'),
+                jangkaAsal: fromInputDate(getField('f_jangkaAsal')) || '-',
+                jangkaSemasa: fromInputDate(getField('f_jangkaSemasa')) || '-',
+                isu: v('f_isu'),
+                perancangan: v('f_perancangan')
+            };
+        }
+
+        // Pulangkan senarai label medan yang salah (kosong = sah)
+        function validateReportForm() {
+            const errors = [];
+            const need = (id, label, bad) => {
+                const isBad = bad !== undefined ? bad : !getField(id);
+                markInvalid(id, isBad);
+                if (isBad) errors.push({ id, label });
+            };
+            need('f_tarikh', 'Tarikh');
+            need('f_noFile', 'No File');
+            const kawasanAda = document.getElementById('f_kawasan').options.length > 1;
+            need('f_kawasan', 'Kawasan', kawasanAda && !getField('f_kawasan'));
+            need('f_nama', 'Nama');
+            need('f_waktuMula', 'Masa Mula');
+            const a = timeToMin(getField('f_waktuMula')), b = timeToMin(getField('f_waktuTamat'));
+            need('f_waktuTamat', 'Masa Tamat (mesti selepas masa mula)', b === null || (a !== null && b <= a));
+            need('f_tugasan', 'Tugas');
+            const q = getField('f_kuantiti');
+            need('f_kuantiti', 'Kuantiti (nombor sahaja)', q !== '' && !(Number(q) >= 0));
+            need('f_unit', 'Unit (wajib bila ada kuantiti)', q !== '' && !getField('f_unit'));
+            return errors;
+        }
+
+        function rememberNama(nama) {
+            try { if (clean(nama)) localStorage.setItem(NAMA_PREF_KEY, clean(nama)); } catch (e) {}
+        }
+
+        function refreshNamaList() {
+            const dl = document.getElementById('namaList');
+            if (!dl) return;
+            const names = uniqueSorted([...SURVEYOR_ORDER, ...reportsData.map(r => clean(r.nama))]);
+            dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+        }
+
+        function initReportForm() {
+            setField('f_tarikh', toInputDate(new Date()));
+            try {
+                const last = localStorage.getItem(NAMA_PREF_KEY);
+                if (last && !getField('f_nama')) setField('f_nama', last);
+            } catch (e) {}
+            ['f_waktuMula', 'f_waktuTamat'].forEach(id => document.getElementById(id).addEventListener('input', updateHoursHint));
+            // Buang tanda merah sebaik pengguna isi
+            document.querySelectorAll('#reportForm .form-input').forEach(el => {
+                el.addEventListener('input', () => el.classList.remove('is-invalid'));
+                el.addEventListener('change', () => el.classList.remove('is-invalid'));
+            });
+            loadMasterData(false);
         }
 
         // ============================================================================
@@ -1349,53 +1856,33 @@ Tamat : 3.00pm
             return map;
         }
 
-        // Untuk rekod tanpa Teks Asal (contoh: CSV fallback), bina semula teks format WhatsApp
+        // Bina teks laporan (disimpan dalam lajur Teks Asal, dan boleh disalin ke WhatsApp)
         function buildReportText(r) {
-            const v = k => (r[k] && r[k] !== '-' ? r[k] : '');
-            return `*Laporan Harian*
-
-*TARIKH* : ${v('tarikh')}
-*NAMA* : ${v('nama')}
-*NO FILE* : ${v('noFile')}
-
-*TUGASAN / OUTPUT :*
-- ${v('tugasan')}
-
-*PROGRESS (%) :*
-- Hari ini : ${v('progressHariIni')}
-
-- Total dah siap : ${v('totalSiap')}
-
-*DATELINE PROJEK :*
-- Jangka siap asal : ${v('jangkaAsal')}
-
-- Jangka siap semasa : ${v('jangkaSemasa')}
-
-- Status : ${v('status')}
-
-*WAKTU :*
-Mula kerja : ${v('waktuMula')}
-Tamat : ${v('waktuTamat')}
-
-*ISU / HALANGAN :*
-- ${v('isu')}
-
-*MAKLUMAT TAMBAHAN :*
-- ${v('maklumat')}
-
-*PERANCANGAN :*
-- ${v('perancangan')}`;
-        }
-
-        // Buang semua tanda * dan ruang lebihan di hujung baris
-        function stripStars(text) {
-            return String(text || '').replace(/\*/g, '').replace(/[ \t]+$/gm, '');
-        }
-
-        // Tukar baris TARIKH kepada tarikh hari ini (format dd/mm/yyyy)
-        function withTodayDate(text) {
-            const today = formatTarikh(new Date());
-            return text.replace(/^([ \t]*\*?[ \t]*TARIKH[ \t]*\*?[ \t]*:[ \t]*)[^\n]*/im, `$1${today}`);
+            const v = k => clean(r[k]) || '-';
+            const bullet = k => (clean(r[k]) || '-').split('\n').map(l => l.trim()).filter(Boolean).map(l => `- ${l}`).join('\n') || '-';
+            const kuantiti = clean(r.kuantiti);
+            const lines = [
+                'Laporan Harian',
+                '',
+                `TARIKH : ${v('tarikh')}`,
+                `NO FILE : ${v('noFile')}`,
+                `KAWASAN : ${v('kawasan')}`,
+                `NAMA : ${v('nama')}`,
+                '',
+                'WAKTU :',
+                `Mula kerja : ${v('waktuMula')}`,
+                `Tamat : ${v('waktuTamat')}`,
+                '',
+                'TUGAS :',
+                bullet('tugasan'),
+                '',
+                `KUANTITI : ${kuantiti || '-'}`,
+                `UNIT : ${v('unit')}`
+            ];
+            lines.push('', 'DATELINE PROJEK :', `- Jangka siap asal : ${v('jangkaAsal')}`, `- Jangka siap semasa : ${v('jangkaSemasa')}`);
+            lines.push('', 'ISU / HALANGAN :', bullet('isu'));
+            lines.push('', 'PERANCANGAN :', bullet('perancangan'));
+            return lines.join('\n');
         }
 
         function refreshTemplateOptions() {
@@ -1413,6 +1900,7 @@ Tamat : ${v('waktuTamat')}
                 `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`
             ).join('');
             select.value = templates.has(current) ? current : '';
+            refreshNamaList();
         }
 
         function applyTemplate() {
@@ -1427,23 +1915,16 @@ Tamat : ${v('waktuTamat')}
                 showToast('warning', 'Tiada Contoh', 'Belum ada laporan untuk nama ni. Sync data dahulu.');
                 return;
             }
+            if (formHasContent() && !confirm('Borang dah ada isi. Ganti dengan laporan terakhir?')) return;
 
-            const source = String(rec.rawText || '').trim() ? rec.rawText : buildReportText(rec);
-            // Buang tanda * (format bold WhatsApp) supaya contoh bersih
-            const text = stripStars(withTodayDate(source));
-            const input = document.getElementById('rawReportInput');
-            if (input.value.trim() && input.value.trim() !== text.trim()
-                && !confirm('Kotak laporan dah ada teks. Ganti dengan contoh laporan terakhir?')) {
-                return;
-            }
-
-            input.value = text;
+            fillReportForm(rec, { today: true });
+            clearAttachedImage();
             setTemplatePref(key);
-            document.getElementById('templateHint').textContent =
-                `Contoh dari laporan ${rec.tarikh || '-'} (${rec.noFile || '-'}). TARIKH dah ditukar ke hari ini. Semak progress, waktu & isu sebelum hantar.`;
-            input.focus();
-            input.setSelectionRange(0, 0);
-            input.scrollTop = 0;
+
+            const hint = document.getElementById('templateHint');
+            hint.textContent = `Diisi dari laporan ${rec.tarikh || '-'} (${rec.noFile || '-'}). Tarikh dah ditukar ke hari ini. Semak masa, kuantiti & isu sebelum hantar.`;
+            hint.classList.remove('hidden');
+            document.getElementById('f_tugasan').focus();
         }
 
         // Kecilkan gambar (maks 1600px) dan mampatkan berperingkat jika masih terlalu besar
@@ -1552,57 +2033,45 @@ Tamat : ${v('waktuTamat')}
             document.getElementById('imageModal').classList.add('hidden');
         }
 
-        // Smart Parser untuk teks laporan WhatsApp/Telegram
+        // Hurai Teks Asal (format buildReportText) kepada medan laporan.
+        // Dipakai oleh butang "Hurai Semula" dalam Edit Laporan.
         function parseReportText(rawText) {
-            const clean = rawText.replace(/\r\n/g, '\n').replace(/\*/g, '').trim();
+            const clean = String(rawText || '').replace(/\r\n/g, '\n').trim();
 
-            const extractLineValue = (regex) => {
-                const match = clean.match(regex);
-                return match && match[1] ? match[1].trim() : '-';
+            const line = (label) => {
+                const m = clean.match(new RegExp('^[ \\t\\-•]*' + label + '[ \\t]*:[ \\t]*([^\\n]*)', 'im'));
+                const v = m ? m[1].trim() : '';
+                return v || '-';
             };
 
-            const extractSection = (headerRegex, nextHeaderRegex) => {
-                const startMatch = clean.match(headerRegex);
-                if (!startMatch) return '-';
-                const startIndex = startMatch.index + startMatch[0].length;
-                const rest = clean.slice(startIndex);
-                const endMatch = nextHeaderRegex ? rest.match(nextHeaderRegex) : null;
-                const sectionContent = endMatch ? rest.slice(0, endMatch.index) : rest;
-                return sectionContent
+            // Seksyen berbilang baris: dari header hingga header seterusnya (mesti di awal baris)
+            const NEXT_HDR = /^[ \t]*(TARIKH|NO FILE|KAWASAN|NAMA|WAKTU|TUGAS|KUANTITI|UNIT|DATELINE PROJEK|ISU \/ HALANGAN|PERANCANGAN)[ \t]*:/im;
+            const section = (headerRegex) => {
+                const start = clean.match(headerRegex);
+                if (!start) return '-';
+                const rest = clean.slice(start.index + start[0].length);
+                const end = rest.match(NEXT_HDR);
+                return (end ? rest.slice(0, end.index) : rest)
                     .split('\n')
                     .map(l => l.replace(/^[-•\s]+/, '').trim())
                     .filter(Boolean)
-                    .join(', ') || '-';
+                    .join('\n') || '-';
             };
 
-            const tarikh = extractLineValue(/TARIKH\s*:\s*([^\n]+)/i);
-            const nama = extractLineValue(/NAMA\s*:\s*([^\n]+)/i);
-            const noFile = extractLineValue(/NO\s*FILE\s*:\s*([^\n]+)/i);
-
-            const tugasan = extractSection(/TUGASAN\s*\/\s*OUTPUT\s*:/i, /PROGRESS|DATELINE|WAKTU|ISU|MAKLUMAT|PERANCANGAN/i);
-            const progressHariIni = extractLineValue(/Hari\s*ini\s*:\s*([^\n]+)/i);
-            const totalSiap = extractLineValue(/Total\s*dah\s*siap\s*:\s*([^\n]+)/i);
-            const jangkaAsal = extractLineValue(/Jangka\s*siap\s*asal\s*:\s*([^\n]+)/i);
-            const jangkaSemasa = extractLineValue(/Jangka\s*siap\s*semasa\s*:\s*([^\n]+)/i);
-            let status = extractLineValue(/Status\s*:[ \t]*([^\n]*)/i);
-
-            const waktuMula = extractLineValue(/Mula\s*kerja\s*:\s*([^\n]+)/i);
-            const waktuTamat = extractLineValue(/Tamat\s*:\s*([^\n]+)/i);
-
-            const isu = extractSection(/ISU\s*\/\s*HALANGAN\s*:/i, /MAKLUMAT\s*TAMBAHAN|PERANCANGAN/i);
-            const maklumat = extractSection(/MAKLUMAT\s*TAMBAHAN\s*:/i, /PERANCANGAN/i);
-            const perancangan = extractSection(/PERANCANGAN\s*:/i, null);
-
-            if (!status || status === '-') {
-                const totalNum = parseFloat(totalSiap);
-                status = totalNum >= 100 ? 'SIAP' : 'DALAM PROSES';
-            }
-
             return {
-                tarikh, nama, noFile, tugasan, progressHariIni, totalSiap,
-                jangkaAsal, jangkaSemasa, status, waktuMula, waktuTamat,
-                isu, maklumat, perancangan,
-                image: attachedImageData || '',
+                tarikh: line('TARIKH'),
+                noFile: line('NO FILE'),
+                kawasan: line('KAWASAN'),
+                nama: line('NAMA'),
+                waktuMula: line('Mula kerja'),
+                waktuTamat: line('Tamat'),
+                tugasan: section(/^[ \t]*TUGAS[ \t]*:/im),
+                kuantiti: line('KUANTITI'),
+                unit: line('UNIT'),
+                jangkaAsal: line('Jangka siap asal'),
+                jangkaSemasa: line('Jangka siap semasa'),
+                isu: section(/^[ \t]*ISU \/ HALANGAN[ \t]*:/im),
+                perancangan: section(/^[ \t]*PERANCANGAN[ \t]*:/im),
                 rawText: rawText
             };
         }
@@ -1612,47 +2081,48 @@ Tamat : ${v('waktuTamat')}
             const text = document.getElementById('submitBtnText');
             const icon = document.getElementById('submitIcon');
             btn.disabled = isBusy;
-            text.textContent = label || 'Generate & Simpan Ke Google Sheet';
+            text.textContent = label || 'Hantar Laporan';
             icon.className = isBusy ? 'fa-solid fa-circle-notch fa-spin text-jm-gold' : 'fa-solid fa-paper-plane text-jm-gold';
         }
 
-        async function parseAndGenerateReport() {
-            const rawInput = document.getElementById('rawReportInput');
-            if (!rawInput.value.trim()) {
-                showToast('warning', 'Input Kosong', 'Sila tampal teks laporan harian terlebih dahulu.');
+        async function submitReportForm() {
+            if (document.getElementById('submitReportBtn').disabled) return;
+
+            const errors = validateReportForm();
+            if (errors.length) {
+                document.getElementById(errors[0].id).focus();
+                showToast('warning', 'Borang Belum Lengkap', `Semak: ${errors.map(e => e.label).join(', ')}.`);
                 return;
             }
 
-            const parsedRecord = parseReportText(rawInput.value);
-            if (parsedRecord.nama === '-' && parsedRecord.noFile === '-' && parsedRecord.tarikh === '-') {
-                showToast('error', 'Format Tidak Dikenali', 'Tak jumpa TARIKH, NAMA atau NO FILE dalam teks. Semak format laporan.');
-                return;
-            }
-            parsedRecord.id = generateId();
-            parsedRecord.versi = 1;
-            parsedRecord.editToken = generateId();
-            parsedRecord.pending = true; // belum disahkan masuk Sheet
+            const record = collectReportForm();
+            record.rawText = buildReportText(record);
+            record.image = attachedImageData || '';
+            record.id = generateId();
+            record.versi = 1;
+            record.editToken = generateId();
+            record.pending = true; // belum disahkan masuk Sheet
 
             // Laporan ni terus jadi contoh untuk nama dia, dan nama dia diingat untuk esok
-            setTemplatePref(templateKey(parsedRecord.nama));
+            setTemplatePref(templateKey(record.nama));
+            rememberNama(record.nama);
 
             // Optimistic UI. Rekod disimpan sebagai "pending" dalam pelayar dan boleh dihantar
-            // semula dengan ID SAMA (server tolak duplikat ikut ID), jadi input boleh terus dikosongkan.
-            reportsData.unshift(parsedRecord);
+            // semula dengan ID SAMA (server tolak duplikat ikut ID), jadi borang boleh terus dikosongkan.
+            reportsData.unshift(record);
             saveStoredData();
             filterReports();
             updateKPIs(reportsData);
-            clearAttachedImage();
-            rawInput.value = '';
+            resetReportForm(false);
 
             if (!isMacroConfigured()) {
-                showToast('info', 'Dijana (Mod Tempatan)', `Laporan ${parsedRecord.nama} ditambah. Masukkan MACRO_URL dalam index.html untuk simpan ke Google Sheet.`);
+                showToast('info', 'Disimpan (Mod Tempatan)', `Laporan ${record.nama} ditambah. Masukkan MACRO_URL dalam index.html untuk simpan ke Google Sheet.`);
                 return;
             }
 
             try {
                 setSubmitting(true, 'Menghantar Ke Google Sheet...');
-                await submitAndReport(parsedRecord);
+                await submitAndReport(record);
             } finally {
                 setSubmitting(false);
             }
@@ -1821,7 +2291,7 @@ Tamat : ${v('waktuTamat')}
         function buildEditFields(item) {
             const grid = document.getElementById('editFieldsGrid');
             grid.innerHTML = EDIT_FIELDS.map(f => {
-                const val = item[f.key] && item[f.key] !== '-' ? item[f.key] : '';
+                const val = clean(item[f.key]);
                 const base = 'w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all';
                 const input = f.multiline
                     ? `<textarea id="edit_${f.key}" rows="2" class="${base}">${escapeHtml(val)}</textarea>`
@@ -1888,9 +2358,7 @@ Tamat : ${v('waktuTamat')}
                 showToast('warning', 'Teks Kosong', 'Tiada teks untuk dihurai.');
                 return;
             }
-            const savedAttached = attachedImageData;
             const parsed = parseReportText(raw);
-            attachedImageData = savedAttached;
 
             EDIT_FIELDS.forEach(f => {
                 const el = document.getElementById(`edit_${f.key}`);
@@ -1983,7 +2451,10 @@ Tamat : ${v('waktuTamat')}
                 const el = document.getElementById(`edit_${f.key}`);
                 updated[f.key] = el && el.value.trim() ? el.value.trim() : '-';
             });
-            updated.rawText = document.getElementById('edit_rawText').value;
+            const rawEdited = document.getElementById('edit_rawText').value;
+            const fieldsChanged = EDIT_FIELDS.some(f => clean(updated[f.key]) !== clean(original[f.key]));
+            const rawUntouched = rawEdited.trim() === String(original.rawText || '').trim();
+            updated.rawText = fieldsChanged && rawUntouched ? buildReportText(updated) : rawEdited;
 
             if (updated.nama === '-' && updated.noFile === '-') {
                 showToast('warning', 'Medan Wajib', 'Sekurang-kurangnya Nama atau No File perlu diisi.');
@@ -2107,6 +2578,19 @@ Tamat : ${v('waktuTamat')}
             }
         }
 
+        // Pecahkan tugasan kepada senarai item (satu tugas satu baris)
+        function tugasItems(item) {
+            return clean(item.tugasan).split(/\n+/).map(x => x.replace(/^[-•\s]+/, '').trim()).filter(Boolean);
+        }
+
+        function tugasCell(item) {
+            const items = tugasItems(item);
+            if (!items.length) return '<span class="text-slate-400">-</span>';
+            return `<ul class="space-y-1">${items.map(x => `
+                <li class="flex gap-1.5 leading-snug"><span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-jm-gold ring-2 ring-jm-gold/30 shrink-0"></span><span>${escapeHtml(x)}</span></li>`).join('')}
+            </ul>`;
+        }
+
         function renderTable(data) {
             const tbody = document.getElementById('reportTableBody');
             const emptyState = document.getElementById('emptyState');
@@ -2124,13 +2608,10 @@ Tamat : ${v('waktuTamat')}
             badge.textContent = `${renderedData.length} Rekod`;
 
             tbody.innerHTML = renderedData.map((item, idx) => {
-                const totalNum = parseFloat(String(item.totalSiap).replace('%', '')) || 0;
-                const isDone = isRecordDone(item);
-                const barWidth = Math.max(0, Math.min(100, totalNum));
-
-                const statusPill = isDone
-                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-100 text-jm-blue"><i class="fa-solid fa-check-circle"></i> SIAP</span>`
-                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-jm-gold/30 text-jm-navy"><i class="fa-solid fa-clock"></i> ${escapeHtml(item.status || 'PROSES')}</span>`;
+                const qty = clean(item.kuantiti);
+                const qtyCell = qty
+                    ? `<span class="font-bold text-jm-navy">${escapeHtml(qty)}</span> <span class="text-slate-500">${escapeHtml(clean(item.unit))}</span>`
+                    : `<span class="text-slate-400">-</span>`;
 
                 const img = safeImageSrc(item.image);
                 const thumb = safeImageSrc(item.imageThumb) || img;
@@ -2168,25 +2649,18 @@ Tamat : ${v('waktuTamat')}
                     <tr class="${isPending ? 'bg-red-50/40 ' : ''}hover:bg-blue-50/50 transition-colors align-top">
                         <td class="py-3.5 px-3 text-center whitespace-nowrap">${editCell}${editedBadge}${pendingCell}</td>
                         <td class="py-3.5 px-3 font-mono whitespace-nowrap text-slate-600">${escapeHtml(item.tarikh || '-')}</td>
-                        <td class="py-3.5 px-3 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(item.nama || '-')}</td>
                         <td class="py-3.5 px-3 font-mono font-semibold text-jm-royal whitespace-nowrap">${escapeHtml(item.noFile || '-')}</td>
-                        <td class="py-3.5 px-3 min-w-[160px] text-slate-800">${escapeHtml(item.tugasan || '-')}</td>
-                        <td class="py-3.5 px-3 text-center font-semibold text-slate-700">${escapeHtml(item.progressHariIni || '-')}</td>
-                        <td class="py-3.5 px-3 text-center">
-                            <div class="font-bold ${isDone ? 'text-jm-royal' : 'text-amber-700'}">${escapeHtml(item.totalSiap || '0%')}</div>
-                            <div class="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden mx-auto mt-1">
-                                <div class="h-full ${isDone ? 'bg-jm-royal' : 'bg-jm-gold'}" style="width:${barWidth}%"></div>
-                            </div>
-                        </td>
+                        <td class="py-3.5 px-3 text-slate-700 min-w-[110px]">${escapeHtml(item.kawasan || '-')}</td>
+                        <td class="py-3.5 px-3 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(item.nama || '-')}</td>
+                        <td class="py-3.5 px-3 font-mono text-[11px] whitespace-nowrap text-slate-600">${escapeHtml(item.waktuMula || '-')} - ${escapeHtml(item.waktuTamat || '-')}</td>
+                        <td class="py-3.5 px-3 min-w-[180px] text-slate-800">${tugasCell(item)}</td>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${qtyCell}</td>
                         <td class="py-3.5 px-3 text-[11px] whitespace-nowrap">
                             <div class="text-slate-500">Asal: <span class="font-mono">${escapeHtml(item.jangkaAsal || '-')}</span></div>
                             <div class="text-jm-navy font-semibold">Kini: <span class="font-mono">${escapeHtml(item.jangkaSemasa || '-')}</span></div>
                         </td>
-                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${statusPill}</td>
-                        <td class="py-3.5 px-3 font-mono text-[11px] whitespace-nowrap text-slate-600">${escapeHtml(item.waktuMula || '-')} - ${escapeHtml(item.waktuTamat || '-')}</td>
-                        <td class="py-3.5 px-3 min-w-[140px] ${rowHasIssue ? 'text-red-700 font-medium' : 'text-slate-400'}">${escapeHtml(item.isu || '-')}</td>
-                        <td class="py-3.5 px-3 min-w-[160px] text-slate-600">${escapeHtml(item.maklumat || '-')}</td>
-                        <td class="py-3.5 px-3 min-w-[140px] text-slate-600">${escapeHtml(item.perancangan || '-')}</td>
+                        <td class="py-3.5 px-3 min-w-[140px] whitespace-pre-line ${rowHasIssue ? 'text-red-700 font-medium' : 'text-slate-400'}">${escapeHtml(item.isu || '-')}</td>
+                        <td class="py-3.5 px-3 min-w-[140px] text-slate-600 whitespace-pre-line">${escapeHtml(item.perancangan || '-')}</td>
                         <td class="py-3.5 px-3 text-center whitespace-nowrap">${imgCell}</td>
                     </tr>
                 `;
@@ -2840,7 +3314,7 @@ Tamat : ${v('waktuTamat')}
             const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
             if (!q) { renderTable(reportsData); return; }
             const filtered = reportsData.filter(item =>
-                ['tarikh', 'nama', 'noFile', 'tugasan', 'status', 'isu', 'maklumat', 'perancangan']
+                ['tarikh', 'nama', 'noFile', 'kawasan', 'tugasan', 'status', 'isu', 'maklumat', 'perancangan']
                     .some(k => String(item[k] || '').toLowerCase().includes(q)) ||
                 surveyorKey(item.nama) === surveyorKey(q)
             );
@@ -2941,18 +3415,11 @@ Tamat : ${v('waktuTamat')}
                                 return foundKey ? row[foundKey] : '';
                             };
 
-                            const firstCell = row[keys[0]] || '';
-                            if (firstCell.includes('TARIKH') && firstCell.includes('NAMA')) {
-                                const rec = parseReportText(firstCell);
-                                rec.image = '';
-                                return rec;
-                            }
-
                             return {
                                 tarikh: getVal('tarikh') || getVal('date') || '-',
                                 nama: getVal('nama') || getVal('drafter') || '-',
                                 noFile: getVal('file') || getVal('fail') || '-',
-                                tugasan: getVal('tugasan') || getVal('output') || '-',
+                                tugasan: getVal('tugas') || getVal('output') || '-',
                                 progressHariIni: getVal('hari ini') || getVal('progress') || '-',
                                 totalSiap: getVal('total') || getVal('siap') || '0%',
                                 jangkaAsal: getVal('asal') || '-',
@@ -2967,7 +3434,10 @@ Tamat : ${v('waktuTamat')}
                                 // Padanan TEPAT (bukan includes) supaya 'ID' tak tersalah padan lajur lain
                                 id: String(row['ID'] || '').trim(),
                                 versi: Number(row['Versi']) || 1,
-                                editToken: String(row['Edit Token'] || '').trim()
+                                editToken: String(row['Edit Token'] || '').trim(),
+                                kawasan: String(row['Kawasan'] || '').trim() || '-',
+                                kuantiti: String(row['Kuantiti'] || '').trim() || '-',
+                                unit: String(row['Unit'] || '').trim() || '-'
                             };
                         });
 
