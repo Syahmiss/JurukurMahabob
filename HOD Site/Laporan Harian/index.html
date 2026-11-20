@@ -261,8 +261,8 @@
                         <div>
                             <div class="hidden sm:grid grid-cols-6 gap-2 pl-5 pr-10 mb-1">
                                 <span class="col-span-3 form-label mb-0">Tugas <span class="text-red-600">*</span></span>
-                                <span class="col-span-1 form-label mb-0">Kuantiti</span>
-                                <span class="col-span-2 form-label mb-0">Unit</span>
+                                <span class="col-span-1 form-label mb-0">Kuantiti <span class="font-normal text-slate-400">(pilihan)</span></span>
+                                <span class="col-span-2 form-label mb-0">Unit <span class="font-normal text-slate-400">(pilihan)</span></span>
                             </div>
                             <div class="sm:hidden"><span class="form-label">Tugas <span class="text-red-600">*</span></span></div>
                             <ul id="taskList" class="space-y-3"></ul>
@@ -1659,7 +1659,7 @@ function reorderColumns() {
         }
 
         function unitOptionsHtml() {
-            return `<option value="">Unit...</option>` + UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+            return `<option value="">Unit (pilihan)</option>` + UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
         }
 
         function taskRows() {
@@ -1713,7 +1713,7 @@ function reorderColumns() {
                         <input type="text" class="form-input task-lain hidden mt-2" placeholder="Taip tugas" aria-label="Tugas lain" />
                         <p class="task-skop hidden text-[11px] text-slate-500 mt-1"></p>
                     </div>
-                    <input type="number" class="form-input task-kuantiti col-span-3 sm:col-span-1 self-start" inputmode="decimal" min="0" step="any" placeholder="Kuantiti" aria-label="Kuantiti" />
+                    <input type="number" class="form-input task-kuantiti col-span-3 sm:col-span-1 self-start" inputmode="decimal" min="0" step="any" placeholder="Kuantiti (pilihan)" aria-label="Kuantiti (pilihan)" />
                     <select class="form-input task-unit col-span-3 sm:col-span-2 self-start" aria-label="Unit">${unitOptionsHtml()}</select>
                 </div>
                 <button type="button" title="Buang tugas" class="task-remove mt-1.5 w-8 h-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
@@ -1870,6 +1870,4 @@ function reorderColumns() {
             if (el) el.classList.toggle('is-invalid', !!bad);
         }
 
-        function formHasContent() {
-            return ['f_noFile', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat'].some(id => getField(id))
-                || taskRow
+        function formHasContent()
