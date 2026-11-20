@@ -268,6 +268,7 @@
                             </div>
                             <div class="sm:hidden"><span class="form-label">Tugas <span class="text-red-600">*</span></span></div>
                             <ul id="taskList" class="space-y-3"></ul>
+                            <p id="taskStatusHint" class="hidden mt-2 text-[11px] text-slate-500"></p>
                             <button type="button" onclick="addTaskRow()" class="mt-3 inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-white hover:bg-blue-50 text-jm-navy border border-dashed border-jm-blue/50 font-semibold transition-colors">
                                 <i class="fa-solid fa-plus text-jm-goldDark"></i> Tambah Tugas
                             </button>
@@ -1630,21 +1631,75 @@ function reorderColumns() {
             return { list: uniqueSorted(linked.length ? linked : masterRows.map(r => r.kawasan)), linked: linked.length > 0 };
         }
 
-        // Baris master yang padan dengan No File & Kawasan dipilih (paling khusus dahulu)
+        // Baris master untuk No File & Kawasan dipilih.
+        // Tiada No File -> tiada tugas. Fail yang ada senarai kawasan -> perlu pilih Kawasan dahulu.
         function masterTasksForSelection() {
             const nf = getField('f_noFile');
             const kw = getField('f_kawasan');
-            const withTask = masterRows.filter(r => r.tugas);
-            const byFile = nf ? withTask.filter(r => sameText(r.noFile, nf)) : [];
-            const byArea = kw ? byFile.filter(r => !r.kawasan || sameText(r.kawasan, kw)) : byFile;
-            if (byArea.length) return byArea;
-            if (byFile.length) return byFile;
-            return withTask;
+            if (!nf) return [];
+            const byFile = masterRows.filter(r => r.tugas && sameText(r.noFile, nf));
+            if (!kw) return kawasanFor(nf).linked ? [] : byFile;
+            return byFile.filter(r => !r.kawasan || sameText(r.kawasan, kw));
+        }
+
+        function taskPlaceholder() {
+            const nf = getField('f_noFile');
+            if (!nf) return 'Pilih No File & Kawasan dahulu';
+            if (!getField('f_kawasan') && kawasanFor(nf).linked) return 'Pilih Kawasan dahulu';
+            return '';
         }
 
         function masterTaskInfo(tugas) {
             if (!tugas) return null;
             return masterTasksForSelection().find(r => sameText(r.tugas, tugas)) || null;
+        }
+
+        const sameUnit = (a, b) => String(a || '').replace(/\s+/g, '').toLowerCase() === String(b || '').replace(/\s+/g, '').toLowerCase();
+        const fmtNum = n => String(Number(Number(n).toFixed(2)));
+
+        // Status satu tugas master: jumlah kuantiti yang dah dilapor (semua laporan, termasuk pending)
+        // untuk No File + Kawasan + Tugas yang sama, berbanding skop (Kuantiti dalam sheet master).
+        // Kuantiti dengan unit lain daripada unit master tidak dikira.
+        function taskProgress(m) {
+            let done = 0, reports = 0;
+            reportsData.forEach(r => {
+                if (!sameText(r.noFile, m.noFile)) return;
+                if (m.kawasan && !sameText(r.kawasan, m.kawasan)) return;
+                reportTasks(r).forEach(t => {
+                    if (!sameText(t.tugas, m.tugas)) return;
+                    reports++;
+                    const q = parseFloat(String(t.kuantiti || '').replace(',', '.'));
+                    if (Number.isFinite(q) && (!t.unit || !m.unit || sameUnit(t.unit, m.unit))) done += q;
+                });
+            });
+            const skop = parseFloat(String(m.kuantiti || '').replace(',', '.'));
+            const hasSkop = Number.isFinite(skop) && skop > 0;
+            return {
+                done, reports, skop: hasSkop ? skop : null,
+                baki: hasSkop ? Math.max(skop - done, 0) : null,
+                siap: hasSkop && done >= skop - 1e-9
+            };
+        }
+
+        // Tugas untuk dropdown: belum mula atau belum siap sahaja
+        function openTasksForSelection() {
+            const seen = new Set();
+            const open = [], done = [];
+            masterTasksForSelection().forEach(m => {
+                const key = m.tugas.toUpperCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                const pr = taskProgress(m);
+                (pr.siap ? done : open).push({ m, pr });
+            });
+            const byName = (a, b) => a.m.tugas.localeCompare(b.m.tugas, undefined, { numeric: true, sensitivity: 'base' });
+            return { open: open.sort(byName), done: done.sort(byName) };
+        }
+
+        function taskOptionLabel(m, pr) {
+            if (pr.reports === 0) return `${m.tugas} — belum mula`;
+            if (pr.skop !== null) return `${m.tugas} — baki ${fmtNum(pr.baki)}/${fmtNum(pr.skop)} ${m.unit || ''}`.trim();
+            return `${m.tugas} — dah lapor ${pr.reports} kali`;
         }
 
         function renderKawasanOptions(preferred) {
@@ -1668,10 +1723,24 @@ function reorderColumns() {
         // SENARAI TUGAS (satu baris = satu bullet: Tugas + Kuantiti + Unit)
         // ============================================================================
         function taskOptionsHtml() {
-            const tasks = uniqueSorted(masterTasksForSelection().map(r => r.tugas));
-            return `<option value="">${tasks.length ? 'Pilih tugas...' : 'Tiada senarai tugas'}</option>` +
-                tasks.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('') +
+            const wait = taskPlaceholder();
+            if (wait) return `<option value="">${wait}</option>`;
+            const { open, done } = openTasksForSelection();
+            const first = open.length ? 'Pilih tugas...' : (done.length ? 'Semua tugas dah siap' : 'Tiada senarai tugas');
+            return `<option value="">${first}</option>` +
+                open.map(({ m, pr }) => `<option value="${escapeHtml(m.tugas)}">${escapeHtml(taskOptionLabel(m, pr))}</option>`).join('') +
                 `<option value="${TASK_OTHER}">Lain-lain (taip sendiri)</option>`;
+        }
+
+        function updateTaskStatusHint() {
+            const el = document.getElementById('taskStatusHint');
+            if (!el) return;
+            if (taskPlaceholder()) { el.classList.add('hidden'); return; }
+            const { open, done } = openTasksForSelection();
+            if (!open.length && !done.length) { el.classList.add('hidden'); return; }
+            el.innerHTML = `<i class="fa-solid fa-list-check text-jm-blue mr-1"></i>${open.length} tugas belum siap` +
+                (done.length ? ` • ${done.length} dah siap disorok (${done.map(d => escapeHtml(d.m.tugas)).join(', ')})` : '');
+            el.classList.remove('hidden');
         }
 
         function unitOptionsHtml() {
@@ -1707,8 +1776,13 @@ function reorderColumns() {
 
             const info = isOther ? null : masterTaskInfo(p.tugas.value);
             if (info && info.unit && !p.unit.value) setSelectValue(p.unit, info.unit);
-            if (info && info.kuantiti) {
-                p.skop.textContent = `Skop: ${info.kuantiti} ${info.unit || ''}`.trim();
+            const pr = info ? taskProgress(info) : null;
+            if (pr && pr.skop !== null) {
+                const u = info.unit || '';
+                p.skop.textContent = `Skop ${fmtNum(pr.skop)} ${u} • Dah buat ${fmtNum(pr.done)} • Baki ${fmtNum(pr.baki)} ${u}`.replace(/\s+/g, ' ').trim();
+                p.skop.classList.remove('hidden');
+            } else if (pr && pr.reports) {
+                p.skop.textContent = `Dah dilapor ${pr.reports} kali (tiada skop dalam sheet master)`;
                 p.skop.classList.remove('hidden');
             } else {
                 p.skop.classList.add('hidden');
@@ -1759,6 +1833,7 @@ function reorderColumns() {
                 onTaskChange(li, false);
             }
             updateTaskRemoveButtons();
+            updateTaskStatusHint();
             if (focus && !task) p.tugas.focus();
             return li;
         }
@@ -1795,6 +1870,13 @@ function reorderColumns() {
                     else p.tugas.value = TASK_OTHER;
                 } else if (current && inList(current)) {
                     setSelectValue(p.tugas, current);
+                } else if (current && masterTaskInfo(current)) {
+                    // Tugas dah siap tapi masih dipilih dalam borang: kekalkan supaya input pengguna tak hilang
+                    const opt = document.createElement('option');
+                    opt.value = current;
+                    opt.textContent = `${current} (dah siap)`;
+                    p.tugas.appendChild(opt);
+                    p.tugas.value = current;
                 } else if (current) {
                     // Tugas tiada untuk No File / Kawasan baharu: kosongkan baris
                     p.tugas.value = '';
@@ -1803,6 +1885,7 @@ function reorderColumns() {
                 }
                 onTaskChange(row, false);
             });
+            updateTaskStatusHint();
         }
 
         // Rekod -> senarai tugas. Tugas, Kuantiti & Unit disimpan berbilang baris, sejajar ikut baris.
@@ -1903,7 +1986,15 @@ function reorderColumns() {
             if (clean(rec.nama)) setNama(rec.nama);
             setField('f_waktuMula', toInputTime(rec.waktuMula));
             setField('f_waktuTamat', toInputTime(rec.waktuTamat));
-            setTaskRows(reportTasks(rec));
+            let tasks = reportTasks(rec);
+            if (opts.today) {
+                // Contoh laporan: buang tugas yang dah siap, dan kosongkan kuantiti semalam
+                // (kuantiti dijumlahkan untuk kira siap, jadi salinan akan terkira dua kali)
+                tasks = tasks
+                    .filter(t => { const m = masterTaskInfo(t.tugas); return !(m && taskProgress(m).siap); })
+                    .map(t => ({ ...t, kuantiti: '' }));
+            }
+            setTaskRows(tasks);
             setField('f_jangkaAsal', toInputDate(clean(rec.jangkaAsal)));
             setField('f_jangkaSemasa', toInputDate(clean(rec.jangkaSemasa)));
             setField('f_isu', clean(rec.isu));
@@ -2920,6 +3011,7 @@ function reorderColumns() {
             document.getElementById('kpiIssues').textContent = issues;
 
             refreshTemplateOptions();
+            refreshTaskOptions();
             renderSurveyorStats();
         }
 
