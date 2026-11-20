@@ -1732,29 +1732,45 @@ html,body{max-width:100%;overflow-x:hidden}
                     const tugasS = get(iTugasS);
                     const qtyRaw = get(iQty);
                     const unitRaw = iUnit !== -1 ? get(iUnit) : '';
+                    const kwRaw = iKawasan !== -1 ? get(iKawasan) : '';
                     if (!fileRaw && !tugasS && !qtyRaw) return;
-                    const q = parseFloat(qtyRaw.replace(/(\d),(\d{3})(?!\d)/g, '$1$2').replace(',', '.'));
-                    const unit = unitRasmi(unitRaw);
-                    // Kuantiti kosong: guna lajur Progress (jika ada) sebagai sandaran
-                    const sandaran = !(q > 0) && progressRaw ? parseProgressValue(progressRaw) : null;
-                    out.push({
-                        idFile: parts.file,
-                        // Lajur Kawasan diutamakan; jika kosong, guna kawasan yang ditulis selepas No File
-                        kawasanHint: (iKawasan !== -1 ? get(iKawasan) : '') || parts.kawasan,
-                        tarikh: get(iTarikh),
-                        tarikhIso: tarikhToIso(get(iTarikh)),
-                        nama: get(iNama),
-                        tugasan: tugasS,
-                        progressRaw: q > 0 ? `${qtyRaw} ${unitRaw}`.trim() : progressRaw,
-                        rowIdx,
-                        berstruktur: true, // jangan pecah: satu baris = satu tugas
-                        total: parseProgressValue(totalRaw),
-                        ...(q > 0
-                            ? { qty: q, pct: null, done: false,
-                                // Unit diisi tapi lain daripada unit target → ditolak dalam computeTaskProgress
-                                ...(unitRaw ? { qtyUnit: unit || unitRaw, qtyDariTeks: true } : {}) }
-                            : (sandaran || { qty: null, pct: null, done: false }))
-                    });
+                    // Satu sel boleh ada beberapa baris (Alt+Enter): Tugas "Topo↵Lidar", Kuantiti "2↵7", Unit "ekar↵ekar".
+                    // Dipasangkan ikut kedudukan. Lajur yang cuma ada SATU nilai dikongsi untuk semua tugas
+                    // (cth. Unit "ekar" sekali untuk semua, atau Kawasan sekali untuk semua).
+                    const tugasL = pecahTeks(tugasS, PEMISAH_KUAT);
+                    const qtyL = pecahTeks(qtyRaw, /\r?\n+|;/);
+                    const unitL = pecahTeks(unitRaw, /\r?\n+|;/);
+                    const kwL = pecahTeks(kwRaw, /\r?\n+|;/);
+                    const n = Math.max(tugasL.length, 1);
+                    const ambil = (list, k) => list.length === 1 ? list[0] : (list[k] ?? '');
+                    for (let k = 0; k < n; k++) {
+                        const tugasK = tugasL[k] ?? tugasS;
+                        const qtyK = ambil(qtyL, k);
+                        const unitK = ambil(unitL, k);
+                        // Kuantiti satu nilai untuk banyak tugas: dikongsi (sama macam laporan teks)
+                        const q = parseFloat(String(qtyK).replace(/(\d),(\d{3})(?!\d)/g, '$1$2').replace(',', '.'));
+                        const unit = unitRasmi(unitK);
+                        const sandaran = !(q > 0) && progressRaw ? parseProgressValue(progressRaw) : null;
+                        out.push({
+                            idFile: parts.file,
+                            // Lajur Kawasan diutamakan; jika kosong, guna kawasan yang ditulis selepas No File
+                            kawasanHint: ambil(kwL, k) || parts.kawasan,
+                            tarikh: get(iTarikh),
+                            tarikhIso: tarikhToIso(get(iTarikh)),
+                            nama: get(iNama),
+                            tugasan: tugasK,
+                            progressRaw: q > 0 ? `${qtyK} ${unitK}`.trim() : progressRaw,
+                            rowIdx, // segmen dari baris sama dijumlahkan, bukan saling ganti
+                            segmen: n > 1 ? `${k + 1}/${n}` : '',
+                            berstruktur: true, // jangan pecah lagi: setiap entri = satu tugas
+                            total: parseProgressValue(totalRaw),
+                            ...(q > 0
+                                ? { qty: q, pct: null, done: false,
+                                    // Unit diisi: ditukar / ditolak dalam computeTaskProgress ikut unit target
+                                    ...(unitK ? { qtyUnit: unit || unitK, qtyDariTeks: true } : {}) }
+                                : (sandaran || { qty: null, pct: null, done: false }))
+                        });
+                    }
                     return;
                 }
                 out.push({
