@@ -1616,6 +1616,8 @@ html,body{max-width:100%;overflow-x:hidden}
             [/^(points?|pts?|titik)\b/i, 'Point'],
             [/^(stesen|stn|stations?)\b/i, 'Stesen'],
             [/^(kawasan)\b/i, 'Kawasan'],
+            [/^(ha|hektar|hectares?)\b/i, 'Hektar'],
+            [/^(km|kilometer|kilometre)\b/i, 'Kilometer'],
             [/^(m|meter|metre|mtr)\b/i, 'Meter'] // paling akhir: "m" jangan telan "m2"
         ];
         function unitDalamTeks(selepasNombor) {
@@ -1639,10 +1641,30 @@ html,body{max-width:100%;overflow-x:hidden}
             }
             return p;
         }
-        // Unit kuantiti dari teks serasi dengan unit target tugas? Unit tak dikenal = tak dikira (elak 4000%).
+        // Nama unit rasmi daripada apa-apa ejaan ("ekar", "acre", "meter persegi", "m2", "ha")
+        function unitRasmi(raw) {
+            const s = String(raw || '').trim();
+            return matchUnit(s) || unitDalamTeks(s) || '';
+        }
+
+        // Faktor ke unit asas: keluasan → m², panjang → meter. Unit lain (Lot, Point...) tak boleh ditukar.
+        const UNIT_LUAS = { 'm²': 1, 'Ekar': 4046.8564224, 'Hektar': 10000 };
+        const UNIT_PANJANG = { 'Meter': 1, 'Kilometer': 1000 };
+
+        // Tukar kuantiti laporan ke unit target. Pulang null jika tak boleh ditukar (cth. m² → Lot, atau 300m → Ekar).
+        function tukarUnit(qty, dari, ke) {
+            if (!dari || !ke) return null;
+            if (dari === ke) return qty;
+            for (const jadual of [UNIT_LUAS, UNIT_PANJANG]) {
+                if (jadual[dari] && jadual[ke]) return qty * jadual[dari] / jadual[ke];
+            }
+            return null;
+        }
+
+        // Unit kuantiti dari laporan serasi dengan unit target? Unit tak dikenal = tak dikira (elak 4000%).
         function unitSerasi(unitTeks, unitTarget) {
-            const t = matchUnit(unitTarget);
-            return Boolean(unitTeks) && (!t || unitTeks === t);
+            const t = matchUnit(unitTarget) || unitRasmi(unitTarget);
+            return Boolean(unitTeks) && (!t || tukarUnit(1, unitTeks, t) !== null);
         }
         const adaNilai = p => p.qty !== null || p.pct !== null || p.done;
 
@@ -1712,7 +1734,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     const unitRaw = iUnit !== -1 ? get(iUnit) : '';
                     if (!fileRaw && !tugasS && !qtyRaw) return;
                     const q = parseFloat(qtyRaw.replace(/(\d),(\d{3})(?!\d)/g, '$1$2').replace(',', '.'));
-                    const unit = matchUnit(unitRaw);
+                    const unit = unitRasmi(unitRaw);
                     // Kuantiti kosong: guna lajur Progress (jika ada) sebagai sandaran
                     const sandaran = !(q > 0) && progressRaw ? parseProgressValue(progressRaw) : null;
                     out.push({
@@ -1936,10 +1958,20 @@ html,body{max-width:100%;overflow-x:hidden}
                 sorted = sorted.filter((r, i) => (r.rowIdx ?? i) === lastRow.get(keyOf(r, i)));
                 replacedCount = before - sorted.length;
             }
-            // Kuantiti yang dibaca dari teks Tugasan hanya dikira jika unitnya sama dengan unit target
-            const qtyOf = r => (r.qtyDariTeks && !unitSerasi(r.qtyUnit, task.unit)) ? 0 : (r.qty || 0);
-            const unitTolak = sorted.filter(r => r.qtyDariTeks && r.qty && !unitSerasi(r.qtyUnit, task.unit)).length;
+            // Kuantiti yang membawa unit (teks Tugasan / lajur Unit) ditukar ke unit target jika boleh
+            // (m² ↔ Ekar ↔ Hektar, meter ↔ km). Unit yang tak boleh ditukar tak dikira.
+            const unitTarget = matchUnit(task.unit) || unitRasmi(task.unit);
+            const unitDitolak = new Set(), unitDitukar = new Set();
+            const qtyOf = r => {
+                if (!r.qty) return 0;
+                if (!r.qtyDariTeks || !unitTarget) return r.qty;
+                const v = tukarUnit(r.qty, r.qtyUnit, unitTarget);
+                if (v === null) { unitDitolak.add(r.qtyUnit || 'tiada unit'); return 0; }
+                if (r.qtyUnit !== unitTarget) unitDitukar.add(r.qtyUnit);
+                return v;
+            };
             const doneQty = sorted.reduce((t, r) => t + qtyOf(r), 0);
+            const unitTolak = sorted.filter(r => r.qty && r.qtyDariTeks && unitTarget && tukarUnit(r.qty, r.qtyUnit, unitTarget) === null).length;
             const pctReps = sorted.filter(r => r.pct !== null);
             const pctVal = pctReps.length
                 ? (PERATUS_KUMULATIF ? pctReps[pctReps.length - 1].pct : pctReps.reduce((t, r) => t + r.pct, 0))
@@ -1974,6 +2006,8 @@ html,body{max-width:100%;overflow-x:hidden}
                 totalPct: totalPct !== null ? Math.round(Math.min(100, totalPct) * 10) / 10 : null,
                 totalDate: totalTerkini ? totalTerkini.tarikhIso || '' : '',
                 unitTolak,
+                unitDitolak: [...unitDitolak],
+                unitDitukar: [...unitDitukar],
                 reportCount: sorted.length,
                 replacedCount,
                 overTarget,
@@ -2232,7 +2266,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     const right = !tp.reportCount ? `<span>Belum ada laporan</span>${tp.hasTarget ? `<b>0%</b>` : ''}`
                         : tp.hasTarget ? `${frac}<b>${cPct}%</b>` : `${frac}<span class="warn-t">Tiada target</span>`;
                     const notes = [
-                        tp.unitTolak && tp.totalPct === null ? `${tp.unitTolak} laporan diabaikan: unit laporan lain daripada unit target (${tp.unit})` : '',
+                        tp.unitTolak && tp.totalPct === null ? `${tp.unitTolak} laporan diabaikan: unit "${tp.unitDitolak.join(', ')}" tak boleh ditukar ke ${tp.unit}` : '',
                         tp.overTarget ? 'Jumlah laporan melebihi 100%, semak semula' : '',
                         tp.replacedCount ? `${tp.replacedCount} laporan berganda diganti dengan yang terkini` : ''
                     ].filter(Boolean);
@@ -2259,6 +2293,7 @@ html,body{max-width:100%;overflow-x:hidden}
                                 </div>
                                 <div class="bar sm"><i style="width:${tp.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0}%;background:${cBarColor}"></i></div>
                                 ${autoTxt ? `<p class="ck-when">${escapeHtml(autoTxt)}</p>` : ''}
+                                ${tp.unitDitukar.length ? `<p class="meta" style="margin-top:2px">Ditukar dari ${escapeHtml(tp.unitDitukar.join(', '))} ke ${escapeHtml(tp.unit)}</p>` : ''}
                                 ${tp.totalPct !== null ? `<p class="meta" style="margin-top:2px">Total dah siap ${tp.totalPct}%${tp.totalDate ? ` (laporan ${escapeHtml(formatSiapPada(tp.totalDate))})` : ''}</p>` : ''}
                                 ${siapTxt ? `<p class="ck-when">✓ Ditanda siap ${escapeHtml(siapTxt)}</p>` : ''}
                                 ${notes.length ? `<p class="meta warn-t" style="margin-top:4px">${notes.map(escapeHtml).join(' · ')}</p>` : ''}
