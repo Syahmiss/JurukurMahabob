@@ -220,7 +220,6 @@ button.mini:hover{background:var(--ind-50);border-color:var(--ind-100)}
 .ck > input:disabled:checked{opacity:1;cursor:default}
 .ck > input:focus-visible{outline:2px solid var(--ind-600);outline-offset:2px}
 .ck-b{flex:1;min-width:0}
-.ck.done .cr-n > span{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
 .ck-when{font-size:11px;color:var(--ok);margin-top:2px}
 /* Blok kawasan dinamik: Kawasan di atas, Kuantiti + Unit di bawah */
 .kr-list{display:grid;gap:10px}
@@ -528,22 +527,10 @@ html,body{max-width:100%;overflow-x:hidden}
           </div>
         </div>
 
-        <!-- Tugasan: senarai bullet. Setiap tugasan = satu baris rekod bagi setiap kawasan -->
-        <div>
-          <label class="flab" for="tugasInput"><span class="add-only">Tugasan</span><span class="edit-only">Tugasan rekod ini</span></label>
-          <div class="tg-add">
-            <input type="text" id="tugasInput" class="inp" maxlength="200" autocomplete="off" placeholder="Cth: Cerapan Sempadan"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addTugasan()}">
-            <button type="button" class="btn add-only" onclick="addTugasan()"><i data-lucide="plus" class="i16"></i><span>Tambah</span></button>
-          </div>
-          <ul id="tugasList" class="tg-list add-only"></ul>
-          <p class="hint add-only" id="tugasHint">Taip tugasan dan tekan Enter atau Tambah. Boleh tambah lebih dari satu.</p>
-        </div>
-
         <!-- Kawasan lapangan: satu blok setiap kawasan, dijana ikut Bilangan kawasan -->
         <div>
           <div class="row" style="margin-bottom:8px">
-            <span class="flab" style="margin-bottom:0">Kawasan lapangan, kuantiti &amp; unit</span>
+            <span class="flab" style="margin-bottom:0">Kawasan lapangan, tugasan, kuantiti &amp; unit</span>
             <span class="muted sm" id="kawasanRowsInfo"></span>
           </div>
           <datalist id="kawasanList"></datalist>
@@ -1239,56 +1226,57 @@ html,body{max-width:100%;overflow-x:hidden}
             }
         }
 
-        // ---------- Senarai tugasan ----------
-        const MAX_TUGASAN = 20;
-        const MAX_BARIS_SEKALI = 100; // sama dengan CONFIG.MAX_BARIS_SEKALI dalam Apps Script
-        let tugasanList = [];
+        // ---------- Tugasan setiap kawasan ----------
+        // Setiap blok kawasan ada senarai tugasan sendiri. Satu tugasan = satu baris rekod dalam sheet.
+        const MAX_TUGASAN = 20;        // setiap kawasan
+        const MAX_BARIS_SEKALI = 100;  // jumlah rekod sekali hantar; sama dengan CONFIG.MAX_BARIS_SEKALI dalam Apps Script
+        const normTugas = v => String(v || '').trim().replace(/\s+/g, ' ');
 
-        function addTugasan() {
-            const el = document.getElementById('tugasInput');
-            const v = String(el.value || '').trim().replace(/\s+/g, ' ');
-            if (!v) { el.focus(); return; }
-            if (tugasanList.some(t => normText(t) === normText(v))) {
-                showToast(`Tugasan "${v}" dah ada dalam senarai.`, 'error');
+        function addTugasanRow(i) {
+            const r = kawasanRows[i];
+            if (!r) return;
+            const v = normTugas(r.draft);
+            const fokus = () => document.getElementById(`kr-tg-${i}`)?.focus();
+            if (!v) { fokus(); return; }
+            if (r.tugasan.some(t => normText(t) === normText(v))) {
+                showToast(`Tugasan "${v}" dah ada untuk kawasan ni.`, 'error');
                 return;
             }
-            if (tugasanList.length >= MAX_TUGASAN) {
-                showToast(`Maksimum ${MAX_TUGASAN} tugasan sekali hantar.`, 'error');
+            if (r.tugasan.length >= MAX_TUGASAN) {
+                showToast(`Maksimum ${MAX_TUGASAN} tugasan setiap kawasan.`, 'error');
                 return;
             }
-            tugasanList.push(v);
-            el.value = '';
-            el.focus();
-            renderTugasanList();
+            r.tugasan.push(v);
+            r.draft = '';
+            renderKawasanRows();
+            fokus();
         }
 
-        function removeTugasan(i) {
-            tugasanList.splice(i, 1);
-            renderTugasanList();
+        function removeTugasanRow(i, j) {
+            kawasanRows[i]?.tugasan.splice(j, 1);
+            renderKawasanRows();
         }
 
-        function renderTugasanList() {
-            const ul = document.getElementById('tugasList');
-            if (!ul) return;
-            ul.innerHTML = tugasanList.map((t, i) => `
-                <li><span>${escapeHtml(t)}</span>
-                    <button type="button" onclick="removeTugasan(${i})" aria-label="Buang tugasan ${escapeHtml(t)}" title="Buang"><i data-lucide="x" class="i14"></i></button>
-                </li>`).join('');
-            updateRekodCountInfo();
-            refreshIcons();
+        // Salin tugasan blok ini ke semua blok lain (tanpa pendua) — jimat taip bila kerja sama di semua kawasan
+        function salinTugasanKeSemua(i) {
+            const src = kawasanRows[i];
+            if (!src || !src.tugasan.length) return;
+            kawasanRows.forEach((r, k) => {
+                if (k === i) return;
+                src.tugasan.forEach(t => {
+                    if (r.tugasan.length < MAX_TUGASAN && !r.tugasan.some(x => normText(x) === normText(t))) r.tugasan.push(t);
+                });
+            });
+            renderKawasanRows();
+            showToast('Tugasan disalin ke semua kawasan.', 'success');
         }
 
-        // "3 kawasan × 2 tugasan = 6 rekod" supaya pengguna tahu berapa baris akan masuk sheet
-        function updateRekodCountInfo() {
-            const hint = document.getElementById('tugasHint');
-            if (!hint) return;
-            const kw = kawasanRows.filter(r => !r.skip).length;
-            const tg = tugasanList.length;
-            hint.textContent = !tg
-                ? 'Taip tugasan dan tekan Enter atau Tambah. Boleh tambah lebih dari satu.'
-                : kw
-                    ? `${kw} kawasan × ${tg} tugasan = ${kw * tg} rekod. Kuantiti & unit setiap kawasan dipakai untuk semua tugasannya.`
-                    : `${tg} tugasan. Isi Bilangan kawasan untuk lihat jumlah rekod.`;
+        // Tugasan yang akan dihantar bagi satu blok: senarai + teks yang ditaip tapi belum ditekan Tambah
+        function tugasanBlok(r) {
+            const list = r.tugasan.slice();
+            const d = normTugas(r.draft);
+            if (d && !list.some(t => normText(t) === normText(d))) list.push(d);
+            return list;
         }
 
         // ---------- Blok kawasan dinamik ----------
@@ -1302,10 +1290,10 @@ html,body{max-width:100%;overflow-x:hidden}
             return UNIT_OPTIONS.find(u => u.toLowerCase() === s) || '';
         }
         const MAX_KAWASAN = 50;   // sama dengan CONFIG.MAX_BILANGAN_KAWASAN dalam Apps Script
-        let kawasanRows = [];     // [{ kawasan, kuantiti, unit, skip, autoName }]
+        let kawasanRows = [];     // [{ kawasan, tugasan: [], draft, kuantiti, unit, skip, autoName }]
 
         function blankKawasanRow(unit) {
-            return { kawasan: '', kuantiti: '', unit: unit || '', skip: false, autoName: false };
+            return { kawasan: '', tugasan: [], draft: '', kuantiti: '', unit: unit || '', skip: false, autoName: false };
         }
 
         // Tukar bilangan blok tanpa padam data yang dah ditaip. Blok baru warisi Unit blok pertama.
@@ -1334,6 +1322,32 @@ html,body{max-width:100%;overflow-x:hidden}
             renderKawasanRows();
         }
 
+        // Medan tugasan dalam blok. Mod edit: satu kotak teks (satu rekod = satu tugasan).
+        function tugasanHtml(r, i, isEdit) {
+            const input = `<input type="text" id="kr-tg-${i}" class="inp" maxlength="200" autocomplete="off" placeholder="Cth: Cerapan Sempadan"
+                value="${escapeHtml(r.draft)}" oninput="kawasanRows[${i}].draft=this.value"
+                ${isEdit ? (r.skip ? '' : 'required') : `onkeydown="if(event.key==='Enter'){event.preventDefault();addTugasanRow(${i})}"`}>`;
+            if (isEdit) {
+                return `<div style="margin-top:10px"><label class="flab" for="kr-tg-${i}">Tugasan</label>${input}</div>`;
+            }
+            const salin = kawasanRows.length > 1 && r.tugasan.length
+                ? `<button type="button" class="mini" onclick="salinTugasanKeSemua(${i})" title="Salin tugasan blok ini ke semua kawasan lain"><i data-lucide="copy" class="i12"></i>Salin ke semua kawasan</button>` : '';
+            return `
+                <div style="margin-top:10px">
+                    <div class="row" style="margin-bottom:4px">
+                        <label class="flab" for="kr-tg-${i}" style="margin-bottom:0">Tugasan${r.tugasan.length ? ` (${r.tugasan.length})` : ''}</label>
+                        <span class="sp"></span>${salin}
+                    </div>
+                    <div class="tg-add">${input}
+                        <button type="button" class="btn" onclick="addTugasanRow(${i})"><i data-lucide="plus" class="i16"></i><span>Tambah</span></button>
+                    </div>
+                    <ul class="tg-list">${r.tugasan.map((t, j) => `
+                        <li><span>${escapeHtml(t)}</span>
+                            <button type="button" onclick="removeTugasanRow(${i},${j})" aria-label="Buang tugasan ${escapeHtml(t)}" title="Buang"><i data-lucide="x" class="i14"></i></button>
+                        </li>`).join('')}</ul>
+                </div>`;
+        }
+
         function renderKawasanRows() {
             const box = document.getElementById('kawasanRows');
             const info = document.getElementById('kawasanRowsInfo');
@@ -1342,7 +1356,6 @@ html,body{max-width:100%;overflow-x:hidden}
             if (!kawasanRows.length) {
                 box.innerHTML = `<div class="kr-empty">Masukkan <b>Bilangan kawasan</b> dahulu. Medan kawasan akan muncul ikut bilangan tu.</div>`;
                 if (info) info.textContent = '';
-                updateRekodCountInfo();
                 return;
             }
             box.innerHTML = kawasanRows.map((r, i) => {
@@ -1363,6 +1376,7 @@ html,body{max-width:100%;overflow-x:hidden}
                                 <input type="text" id="kr-kw-${i}" class="inp" list="kawasanList" autocomplete="off" maxlength="100" placeholder="Cth: Mahabob" ${req}
                                     value="${escapeHtml(r.kawasan)}" oninput="kawasanRows[${i}].kawasan=this.value;kawasanRows[${i}].autoName=false">
                             </div>
+                            ${tugasanHtml(r, i, isEdit)}
                             <div class="fgrid" style="margin-top:10px">
                                 <div>
                                     <label class="flab" for="kr-qty-${i}">Kuantiti</label>
@@ -1377,11 +1391,11 @@ html,body{max-width:100%;overflow-x:hidden}
                         </div>
                     </div>`;
             }).join('');
-            updateRekodCountInfo();
             if (info) {
                 const skipped = kawasanRows.filter(r => r.skip).length;
-                info.textContent = isEdit ? 'Mod edit: satu kawasan sahaja'
-                    : `${kawasanRows.length} kawasan${skipped ? ` · ${skipped} dilangkau` : ''}`;
+                const rekod = kawasanRows.filter(r => !r.skip).reduce((n, r) => n + r.tugasan.length, 0);
+                info.textContent = isEdit ? 'Mod edit: satu kawasan, satu tugasan'
+                    : `${kawasanRows.length} kawasan${skipped ? ` · ${skipped} dilangkau` : ''} · ${rekod} rekod`;
             }
             refreshIcons();
         }
@@ -1594,6 +1608,16 @@ html,body{max-width:100%;overflow-x:hidden}
             return out;
         }
 
+        // Progress daripada teks Tugasan (cth. "Topo ±9746 meter persegi"). Lebih ketat daripada lajur Progress:
+        // nombor mesti ada unit atau %, supaya "Recce fasa 2" tak dibaca sebagai 2%.
+        function progressDariTeks(text) {
+            const p = parseProgressValue(text);
+            const s = String(text || '');
+            if (p.pct !== null && !s.includes('%')) return { qty: null, pct: null, done: p.done };
+            return p;
+        }
+        const adaNilai = p => p.qty !== null || p.pct !== null || p.done;
+
         function splitNames(raw) {
             return String(raw || '').split(/[,;\/\n&]+|\s+dan\s+/i).map(s => s.trim()).filter(Boolean);
         }
@@ -1603,6 +1627,13 @@ html,body{max-width:100%;overflow-x:hidden}
             const n = normText(name);
             const hit = DEFAULT_SURVEYORS.find(s => new RegExp('\\b' + normText(s) + '\\b').test(n));
             return hit || kawasanLabel(name);
+        }
+
+        // Lajur Progress diutamakan; jika kosong / tiada nilai, ambil kuantiti yang ditulis dalam Tugasan.
+        // Jika Tugasan sebut beberapa tugas, pecahLaporan() akan baca semula setiap satu.
+        function progressBaris(progressRaw, tugasan) {
+            const p = parseProgressValue(progressRaw);
+            return adaNilai(p) ? p : progressDariTeks(tugasan);
         }
 
         function extractLaporanRows(rows) {
@@ -1643,7 +1674,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     tugasan,
                     progressRaw,
                     rowIdx, // satu baris laporan boleh dipecah jadi beberapa tugas; rowIdx kekalkan asal-usul
-                    ...parseProgressValue(progressRaw)
+                    ...progressBaris(progressRaw, tugasan)
                 });
             });
             return out;
@@ -1770,11 +1801,25 @@ html,body{max-width:100%;overflow-x:hidden}
             // Tinggal satu tugas sahaja: seluruh Progress milik tugas tu
             if (idxPadan.length === 1) return [{ ...lap, tugasan: segs[idxPadan[0]] }];
 
+            // Progress setiap tugas:
+            //  1. Baris Progress sama banyak dengan tugas → dipasangkan ikut susunan.
+            //  2. Jika tidak: nilai yang ditulis dalam teks tugas itu sendiri ("Cerapan 200 m²").
+            //  3. Tugas tanpa nilai sendiri, dan Progress cuma SATU nilai → nilai itu dipakai untuk tugas tu
+            //     (cth. "Recce + Cerapan" dengan Progress "500 m2" = kedua-dua tugas meliputi 500 m²).
             const progLines = pecahTeks(lap.progressRaw, PEMISAH_KUAT);
-            const pasang = progLines.length === segs.length || progLines.length === idxPadan.length;
+            const pasang = progLines.length > 1 && (progLines.length === segs.length || progLines.length === idxPadan.length);
+            const kongsi = progLines.length === 1 ? parseProgressValue(progLines[0]) : null;
             return idxPadan.map((i, k) => {
-                const prog = !pasang ? segs[i] : progLines.length === segs.length ? progLines[i] : progLines[k];
-                return { ...lap, tugasan: segs[i], progressRaw: prog, segmen: `${k + 1}/${idxPadan.length}`, ...parseProgressValue(prog) };
+                let prog, val;
+                if (pasang) {
+                    prog = progLines.length === segs.length ? progLines[i] : progLines[k];
+                    val = parseProgressValue(prog);
+                } else {
+                    val = progressDariTeks(segs[i]);
+                    prog = segs[i];
+                    if (!adaNilai(val) && kongsi && adaNilai(kongsi)) { val = kongsi; prog = progLines[0]; }
+                }
+                return { ...lap, tugasan: segs[i], progressRaw: prog, segmen: `${k + 1}/${idxPadan.length}`, ...val };
             });
         }
 
@@ -2375,8 +2420,6 @@ html,body{max-width:100%;overflow-x:hidden}
             selectedSurveyorList = [];
             kawasanRows = [];
             renderKawasanRows();
-            tugasanList = [];
-            renderTugasanList();
             renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
             syncMultiSelectLabels();
         }
@@ -2400,11 +2443,10 @@ html,body{max-width:100%;overflow-x:hidden}
             document.getElementById('idFile').value = rec.idFile || '';
             document.getElementById('tarikh').value = tarikhToIso(rec.tarikh) || '';
             document.getElementById('jangkaSiap').value = tarikhToIso(rec.jangkaSiap) || '';
-            // Mod edit: satu rekod = satu tugasan, diedit terus dalam kotak input
-            document.getElementById('tugasInput').value = rec.tugas || '';
             // Mod edit = satu rekod = satu blok kawasan sahaja
             const unitOpt = matchUnit(rec.unit);
-            kawasanRows = [{ ...blankKawasanRow(unitOpt), kawasan: rec.kawasan || '', kuantiti: rec.kuantiti > 0 ? String(rec.kuantiti) : '' }];
+            // Mod edit: satu rekod = satu tugasan, diedit terus dalam kotak tugasan blok
+            kawasanRows = [{ ...blankKawasanRow(unitOpt), kawasan: rec.kawasan || '', draft: rec.tugas || '', kuantiti: rec.kuantiti > 0 ? String(rec.kuantiti) : '' }];
             renderKawasanRows();
 
             // Hanya pilihan rasmi boleh dipilih; nilai lama yang tiada dalam senarai dimaklumkan
@@ -2471,6 +2513,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
             // Blok kawasan yang tak dilangkau = rekod yang akan dihantar
             const items = kawasanRows.filter(r => !r.skip).map(r => ({
+                tugasan: isEdit ? [normTugas(r.draft)].filter(Boolean) : tugasanBlok(r),
                 kawasan: kawasanLabel(r.kawasan),
                 kuantitiRaw: String(r.kuantiti ?? '').trim(),
                 unit: r.unit
@@ -2525,32 +2568,18 @@ html,body{max-width:100%;overflow-x:hidden}
                 return;
             }
 
-            // Tugasan: mod tambah guna senarai (teks yang belum ditekan Tambah turut diambil); mod edit satu tugasan
-            const tugasInputVal = document.getElementById('tugasInput').value.trim().replace(/\s+/g, ' ');
-            let tugasan;
-            if (isEdit) {
-                tugasan = [tugasInputVal];
-            } else {
-                if (tugasInputVal && !tugasanList.some(t => normText(t) === normText(tugasInputVal))) {
-                    tugasanList.push(tugasInputVal);
-                    document.getElementById('tugasInput').value = '';
-                    renderTugasanList();
-                }
-                tugasan = tugasanList.slice();
-            }
-            if (!tugasan.length || !tugasan[0]) {
-                showModal('Tugasan Kosong', 'Sila tambah sekurang-kurangnya satu tugasan.', 'error');
+            // Tugasan setiap kawasan (teks yang ditaip tapi belum ditekan Tambah turut diambil)
+            const tanpaTugas = items.find(it => !it.tugasan.length);
+            if (tanpaTugas) {
+                showModal('Tugasan Kosong', `Sila tambah sekurang-kurangnya satu tugasan untuk kawasan ${tanpaTugas.kawasan}.`, 'error');
                 return;
             }
-            const jumlahBaris = items.length * tugasan.length;
-            if (!isEdit && jumlahBaris > MAX_BARIS_SEKALI) {
-                showModal('Terlalu Banyak Rekod', `${items.length} kawasan × ${tugasan.length} tugasan = ${jumlahBaris} rekod. Maksimum ${MAX_BARIS_SEKALI} rekod sekali hantar. Hantar dalam beberapa kali.`, 'error');
+            // Setiap tugasan dalam setiap kawasan = satu rekod. Kuantiti & unit ikut kawasan.
+            const rekodItems = items.flatMap(({ tugasan: tgs, ...it }) => tgs.map(t => ({ ...it, tugas: t })));
+            if (!isEdit && rekodItems.length > MAX_BARIS_SEKALI) {
+                showModal('Terlalu Banyak Rekod', `${rekodItems.length} rekod (jumlah tugasan semua kawasan). Maksimum ${MAX_BARIS_SEKALI} rekod sekali hantar. Hantar dalam beberapa kali.`, 'error');
                 return;
             }
-            // Setiap kawasan × setiap tugasan = satu rekod. Kuantiti & unit ikut kawasan.
-            const rekodItems = isEdit
-                ? [{ ...items[0], tugas: tugasan[0] }]
-                : items.flatMap(it => tugasan.map(t => ({ ...it, tugas: t })));
 
             const tarikhVal = document.getElementById('tarikh').value;
             const jangkaVal = document.getElementById('jangkaSiap').value;
@@ -2626,7 +2655,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 if (isEdit) {
                     showModal('Kerja Dikemas Kini', `Perubahan untuk "${common.idFile}" (${items[0].kawasan}) disimpan pada ${rowTxt}.`, 'success');
                 } else {
-                    showModal('Kerja Berjaya Ditambah', `Fail "${common.idFile}": ${items.length} kawasan (${items.map(i => i.kawasan).join(', ')}) × ${tugasan.length} tugasan = ${rekodItems.length} rekod disimpan dalam sheet (${rowTxt}).`, 'success');
+                    showModal('Kerja Berjaya Ditambah', `Fail "${common.idFile}": ${items.length} kawasan (${items.map(i => i.kawasan).join(', ')}) · ${rekodItems.length} tugasan disimpan dalam sheet (${rowTxt}).`, 'success');
                 }
 
                 setTimeout(() => { refreshAllData(); }, 2500);
