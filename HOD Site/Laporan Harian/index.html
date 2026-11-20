@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Harian Kerja Lapangan | Jurukur Mahabob</title>
+    <!-- Favicon terbenam (elak 404 /favicon.ico di GitHub Pages) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A2540'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='26' font-weight='700' fill='%23FACC15'%3EJM%3C/text%3E%3C/svg%3E">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse untuk CSV fallback -->
@@ -65,7 +67,7 @@
                 <div>
                     <h1 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                         Laporan Harian Kerja Lapangan
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v3.1</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v3.2</span>
                     </h1>
                     <p class="text-xs text-blue-200">Copy-paste laporan WhatsApp/Telegram &amp; pantau kemajuan kerja ukur tapak</p>
                 </div>
@@ -261,8 +263,8 @@
                         <div>
                             <div class="hidden sm:grid grid-cols-6 gap-2 pl-5 pr-10 mb-1">
                                 <span class="col-span-3 form-label mb-0">Tugas <span class="text-red-600">*</span></span>
-                                <span class="col-span-1 form-label mb-0">Kuantiti</span>
-                                <span class="col-span-2 form-label mb-0">Unit</span>
+                                <span class="col-span-1 form-label mb-0">Kuantiti <span class="font-normal text-slate-400">(pilihan)</span></span>
+                                <span class="col-span-2 form-label mb-0">Unit <span class="font-normal text-slate-400">(pilihan)</span></span>
                             </div>
                             <div class="sm:hidden"><span class="form-label">Tugas <span class="text-red-600">*</span></span></div>
                             <ul id="taskList" class="space-y-3"></ul>
@@ -320,7 +322,7 @@
                                 <input type="text" id="imageUrlInput" placeholder="Atau tampal URL gambar (https://...)" oninput="handleImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
                                 <div id="imagePreviewContainer" class="hidden">
                                     <div class="rounded-lg overflow-hidden border border-slate-200 bg-white max-h-44 flex items-center justify-center">
-                                        <img id="imagePreview" src="" alt="Pratonton Lampiran" class="max-h-44 w-auto object-contain" />
+                                        <img id="imagePreview" alt="Pratonton Lampiran" class="max-h-44 w-auto object-contain" />
                                     </div>
                                 </div>
                                 <p class="text-[11px] text-slate-500"><i class="fa-brands fa-google-drive text-jm-blue mr-1"></i>Disimpan dalam Google Drive.</p>
@@ -532,7 +534,7 @@
                 </div>
             </div>
             <div class="flex justify-center bg-slate-100 p-3 max-h-[75vh] overflow-auto">
-                <img id="modalImage" src="" alt="Lampiran Penuh" onerror="onModalImageError()" class="max-h-[70vh] w-auto object-contain rounded-lg" />
+                <img id="modalImage" alt="Lampiran Penuh" class="max-h-[70vh] w-auto object-contain rounded-lg" />
                 <div id="modalImageError" class="hidden py-12 text-center text-slate-500 text-sm">
                     <i class="fa-solid fa-image text-3xl text-slate-300 mb-2"></i>
                     <p class="font-semibold text-slate-600">Gambar tak dapat dipapar</p>
@@ -592,7 +594,7 @@
                         <button type="button" id="editRemoveImgBtn" onclick="removeEditImage()" class="hidden text-[11px] font-semibold text-red-600 hover:underline">Buang Gambar</button>
                     </div>
                     <div id="editImagePreviewWrap" class="hidden rounded-lg overflow-hidden border border-slate-200 bg-white max-h-40 flex items-center justify-center">
-                        <img id="editImagePreview" src="" alt="Gambar laporan" class="max-h-40 w-auto object-contain" />
+                        <img id="editImagePreview" alt="Gambar laporan" class="max-h-40 w-auto object-contain" />
                     </div>
                     <input type="file" id="editImageFile" accept="image/*" onchange="handleEditImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
                     <input type="text" id="editImageUrl" placeholder="Atau tampal URL gambar baharu (https://...)" oninput="handleEditImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
@@ -621,7 +623,7 @@
                         <i class="fa-solid fa-file-code"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v3.1 (Auto-Tab, Edit &amp; Google Drive)</h3>
+                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v3.2 (Auto-Tab, Edit &amp; Google Drive)</h3>
                         <p class="text-[11px] text-blue-200">Guna Active Spreadsheet • Tetapkan MACRO_URL dalam index.html sebelum push ke GitHub</p>
                     </div>
                 </div>
@@ -663,6 +665,9 @@
  * v2.8: Gambar disimpan sebagai fail dalam Google Drive. Sheet hanya simpan link.
  *       Jalankan migrateImagesToDrive() sekali untuk pindah gambar lama (Base64) ke Drive.
  * v2.9: Lajur 'Edit Token' supaya dashboard boleh sahkan simpanan SENDIRI yang masuk.
+ * v3.2: Sync (GET) TIDAK lagi ubah Sheet. Header dipadankan tanpa kira tanda baca
+ *       ("No. File" = "No File"). Respons ada 'version' &amp; 'missingHeaders' supaya
+ *       dashboard boleh beri amaran jika web app belum di-deploy versi baru / header tak dikenali.
  * v3.1: Susunan lajur ikut Borang Laporan Harian. Lajur dibaca ikut NAMA HEADER
  *       (bukan nombor kedudukan), jadi sheet lama tetap jalan sebelum disusun semula.
  *       Jalankan reorderColumns() SEKALI untuk susun semula data lama (backup dibuat dahulu).
@@ -684,18 +689,18 @@ const SHARE_IMAGES_PUBLIC = true;
 const COLUMNS = [
   // --- Borang Laporan Harian ---
   { key: 'tarikh',          header: 'Tarikh' },
-  { key: 'noFile',          header: 'No File' },
+  { key: 'noFile',          header: 'No File', aliases: ['No Fail'] },
   { key: 'kawasan',         header: 'Kawasan' },
   { key: 'nama',            header: 'Nama' },
-  { key: 'tugasan',         header: 'Tugas', aliases: ['Tugasan / Output'] },
+  { key: 'tugasan',         header: 'Tugas', aliases: ['Tugasan / Output', 'Tugasan'] },
   { key: 'kuantiti',        header: 'Kuantiti' },
   { key: 'unit',            header: 'Unit' },
-  { key: 'waktuMula',       header: 'Masa Mula', aliases: ['Waktu Mula'] },
-  { key: 'waktuTamat',      header: 'Masa Tamat', aliases: ['Waktu Tamat'] },
-  { key: 'jangkaAsal',      header: 'Jangka Siap Asal' },
-  { key: 'jangkaSemasa',    header: 'Jangka Siap Semasa' },
+  { key: 'waktuMula',       header: 'Masa Mula', aliases: ['Waktu Mula', 'Mula Kerja'] },
+  { key: 'waktuTamat',      header: 'Masa Tamat', aliases: ['Waktu Tamat', 'Tamat Kerja'] },
+  { key: 'jangkaAsal',      header: 'Jangka Siap Asal', aliases: ['Jangka Asal'] },
+  { key: 'jangkaSemasa',    header: 'Jangka Siap Semasa', aliases: ['Jangka Semasa'] },
   { key: 'gambar',          header: 'Gambar' },
-  { key: 'isu',             header: 'Isu', aliases: ['Isu / Halangan'] },
+  { key: 'isu',             header: 'Isu', aliases: ['Isu / Halangan', 'Halangan'] },
   { key: 'perancangan',     header: 'Perancangan' },
   // --- Medan laporan format lama (WhatsApp v2) ---
   { key: 'progressHariIni', header: 'Progress Hari Ini' },
@@ -711,6 +716,7 @@ const COLUMNS = [
   { key: 'editToken',       header: 'Edit Token' }
 ];
 const HEADERS = COLUMNS.map(c =&gt; c.header);
+const SERVER_VERSION = '3.2';
 const LOG_HEADERS = ['Masa Edit', 'ID', 'Versi Lama', 'Data Lama (JSON)'];
 
 // Medan teks laporan yang ditulis dari payload dashboard
@@ -721,15 +727,17 @@ const FIELD_KEYS = [
 ];
 const FIELD_DEFAULTS = { totalSiap: '0%', status: 'DALAM PROSES' };
 
+// "No. File", "no file", " NO  FILE " -&gt; "no file"
 function normHeader(h) {
-  return String(h || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  return String(h || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
 /**
  * Peta key -&gt; nombor lajur (1-based) ikut header SEBENAR dalam sheet.
- * Lajur yang tiada (contoh: sheet lama) ditambah di hujung.
+ * readOnly = true (Sync/GET): lajur yang tiada TIDAK ditambah; senarainya dalam map._missing.
+ * readOnly = false (simpan): lajur yang tiada ditambah di hujung.
  */
-function getColumnMap(sheet) {
+function getColumnMap(sheet, readOnly) {
   const lastCol = Math.max(sheet.getLastColumn(), 1);
   const header = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
   const lookup = {};
@@ -744,7 +752,9 @@ function getColumnMap(sheet) {
     else missing.push(c);
   });
 
-  if (missing.length) {
+  map._missing = missing.map(c =&gt; c.header);
+  if (missing.length &amp;&amp; !readOnly) {
+    map._missing = [];
     const width = header.some(h =&gt; String(h).trim() !== '') ? lastCol : 0;
     const range = sheet.getRange(1, width + 1, 1, missing.length);
     range.setValues([missing.map(c =&gt; c.header)]);
@@ -753,7 +763,7 @@ function getColumnMap(sheet) {
     missing.forEach((c, i) =&gt; { map[c.key] = width + 1 + i; });
   }
 
-  map._width = Math.max.apply(null, COLUMNS.map(c =&gt; map[c.key]));
+  map._width = Math.max.apply(null, COLUMNS.map(c =&gt; map[c.key] || 0));
   return map;
 }
 
@@ -768,6 +778,7 @@ function asText(value) {
 }
 
 function jsonOutput(obj) {
+  if (obj &amp;&amp; typeof obj === 'object' &amp;&amp; !('version' in obj)) obj.version = SERVER_VERSION;
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
@@ -1110,16 +1121,16 @@ function doGet(e) {
 
   try {
     const sheet = getOrCreateSheet();
-    const map = getColumnMap(sheet);
-    ensureIds(sheet, map);
+    const map = getColumnMap(sheet, true);
+    if (map.id &amp;&amp; map.versi) ensureIds(sheet, map);
     const rows = sheet.getDataRange().getDisplayValues();
 
     if (rows.length &lt;= 1) {
-      return jsonOutput({ status: 'success', data: [] });
+      return jsonOutput({ status: 'success', version: SERVER_VERSION, missingHeaders: map._missing, data: [] });
     }
 
     const data = rows.slice(1).reverse().map(r =&gt; {
-      const get = key =&gt; r[map[key] - 1] || '';
+      const get = key =&gt; (map[key] ? r[map[key] - 1] : '') || '';
       const img = imageUrlsForClient(get('gambar'));
       const rec = {
         timestamp: get('timestamp'),
@@ -1136,7 +1147,7 @@ function doGet(e) {
       return rec;
     });
 
-    return jsonOutput({ status: 'success', data: data });
+    return jsonOutput({ status: 'success', version: SERVER_VERSION, missingHeaders: map._missing, data: data });
 
   } catch (error) {
     return jsonOutput({ status: 'error', message: error.toString() });
@@ -1273,6 +1284,9 @@ function reorderColumns() {
         // ============================================================================
         // KONFIGURASI UTAMA GITHUB DEPLOYMENT (MACRO URL & CSV FALLBACK)
         // ============================================================================
+        // Versi Code.gs yang dashboard ni perlukan. Jika web app pulangkan versi lain,
+        // dashboard beri amaran (biasanya: kod dah ditampal tapi belum Deploy > New version).
+        const EXPECTED_SERVER_VERSION = '3.2';
         const MACRO_URL = "https://script.google.com/macros/s/AKfycbw9Sc1U6MjhLYOpEh0ztWtiwrm2PiDV_ZtsLbRqdPe8snK3pYB9qDg3tByfiPDmdzTM/exec";
 
         // URL CSV Fallback (bacaan sandaran)
@@ -1364,6 +1378,8 @@ function reorderColumns() {
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            // Pasang dari skrip (bukan atribut onerror dalam HTML) supaya fungsi dah wujud bila ralat berlaku
+            document.getElementById('modalImage').addEventListener('error', onModalImageError);
             loadStoredData();
             initReportForm();
             if (location.hash === '#statistik') switchView('statistik');
@@ -1659,7 +1675,7 @@ function reorderColumns() {
         }
 
         function unitOptionsHtml() {
-            return `<option value="">Unit...</option>` + UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+            return `<option value="">Unit (pilihan)</option>` + UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
         }
 
         function taskRows() {
@@ -1713,7 +1729,7 @@ function reorderColumns() {
                         <input type="text" class="form-input task-lain hidden mt-2" placeholder="Taip tugas" aria-label="Tugas lain" />
                         <p class="task-skop hidden text-[11px] text-slate-500 mt-1"></p>
                     </div>
-                    <input type="number" class="form-input task-kuantiti col-span-3 sm:col-span-1 self-start" inputmode="decimal" min="0" step="any" placeholder="Kuantiti" aria-label="Kuantiti" />
+                    <input type="number" class="form-input task-kuantiti col-span-3 sm:col-span-1 self-start" inputmode="decimal" min="0" step="any" placeholder="Kuantiti (pilihan)" aria-label="Kuantiti (pilihan)" />
                     <select class="form-input task-unit col-span-3 sm:col-span-2 self-start" aria-label="Unit">${unitOptionsHtml()}</select>
                 </div>
                 <button type="button" title="Buang tugas" class="task-remove mt-1.5 w-8 h-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
@@ -1961,7 +1977,7 @@ function reorderColumns() {
             const a = timeToMin(getField('f_waktuMula')), b = timeToMin(getField('f_waktuTamat'));
             need('f_waktuTamat', 'Masa Tamat (mesti selepas masa mula)', b === null || (a !== null && b <= a));
 
-            // Tugas: sekurang-kurangnya satu; setiap baris yang ada kuantiti mesti ada unit
+            // Tugas: sekurang-kurangnya satu. Kuantiti & Unit pilihan (kuantiti mesti nombor jika diisi)
             const rows = taskRows();
             const filled = rows.filter(r => { const v = rowValue(r); return v.tugas || v.kuantiti || v.unit; });
             const flag = (el, bad, label) => {
@@ -1976,7 +1992,6 @@ function reorderColumns() {
                 if (p.tugas.value === TASK_OTHER) flag(p.lain, !v.tugas, `Tugas${n}`);
                 else flag(p.tugas, !v.tugas, `Tugas${n}`);
                 flag(p.kuantiti, v.kuantiti !== '' && !(Number(v.kuantiti) >= 0), `Kuantiti${n} (nombor sahaja)`);
-                flag(p.unit, v.kuantiti !== '' && !v.unit, `Unit${n} (wajib bila ada kuantiti)`);
             });
             return errors;
         }
@@ -3585,6 +3600,28 @@ function reorderColumns() {
             document.getElementById('refreshIcon').classList.toggle('fa-spin', isBusy);
         }
 
+        // Semak respons Apps Script: versi web app & header Sheet yang tak dikenali.
+        // Pulangkan true jika ada masalah (amaran dah dipapar).
+        function serverProblem(json) {
+            if (String(json.version || '') !== EXPECTED_SERVER_VERSION) {
+                setSyncStatus('Server Versi Lama');
+                showToast('error', 'Apps Script Belum Dikemas Kini',
+                    `Web app pulangkan versi ${json.version || 'lama (sebelum 3.2)'}, dashboard perlukan ${EXPECTED_SERVER_VERSION}. ` +
+                    'Tampal Code.gs terbaru, kemudian Deploy > Manage deployments > Edit > Version: New version. Data mungkin tersalah lajur sehingga itu.');
+                console.warn('Versi server:', json.version, 'dijangka:', EXPECTED_SERVER_VERSION);
+                return true;
+            }
+            if (Array.isArray(json.missingHeaders) && json.missingHeaders.length) {
+                setSyncStatus('Header Sheet Tak Lengkap');
+                showToast('warning', 'Header Sheet Tak Dijumpai',
+                    `Lajur ini tiada dalam Sheet atau nama header lain: ${json.missingHeaders.join(', ')}. ` +
+                    'Medan tu akan kosong dalam dashboard. Betulkan nama header atau jalankan reorderColumns().');
+                console.warn('Header tiada:', json.missingHeaders);
+                return true;
+            }
+            return false;
+        }
+
         async function fetchGoogleSheetData() {
             setSyncStatus('Syncing...');
             setRefreshing(true);
@@ -3598,12 +3635,18 @@ function reorderColumns() {
                         const pending = mergeWithSheet(json.data);
                         setSyncStatus('AppsScript Synced');
                         setRefreshing(false);
-                        if (pending > 0) {
+                        if (serverProblem(json)) {
+                            // Amaran server lebih penting daripada toast berjaya
+                        } else if (pending > 0) {
                             showToast('warning', 'Sync Berjaya, Ada Pending', `${json.data.length} rekod dari Google Sheet. ${pending} laporan masih belum masuk Sheet, tekan "Hantar Semula".`);
                         } else {
                             showToast('success', 'Sync Berjaya', `${json.data.length} rekod dimuat turun dari Google Sheet.`);
                         }
                         return;
+                    }
+                    if (json && json.status === 'error') {
+                        console.warn('Apps Script pulangkan ralat:', json.message);
+                        showToast('error', 'Ralat Apps Script', `${json.message || 'Ralat tidak diketahui.'} Cuba baca dari CSV...`);
                     }
                 } catch (err) {
                     console.warn('Gagal tarik data dari MACRO_URL, beralih ke CSV fallback:', err);
