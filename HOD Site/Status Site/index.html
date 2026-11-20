@@ -2287,15 +2287,20 @@ html,body{max-width:100%;overflow-x:hidden}
                         tp.replacedCount ? `${tp.replacedCount} laporan berganda diganti dengan yang terkini` : ''
                     ].filter(Boolean);
                     const siapTxt = tp.siap ? formatSiapPada(tp.siap) : '';
-                    // Tick auto bila laporan harian dah dipadankan ke tugasan ni. Dikira dari data laporan
-                    // (bukan disimpan), jadi checkbox dikunci: tak boleh nyahtanda selagi laporan wujud.
-                    const autoTick = tp.reportCount > 0;
+                    // Tick auto HANYA bila laporan harian dah cukupkan target (progres 100%, ikut nilai yang dipapar).
+                    // Dikira dari data laporan (bukan disimpan), jadi checkbox dikunci bila auto.
+                    const autoTick = tp.reportCount > 0 && tp.hasTarget && cPct >= 100;
                     const ticked = Boolean(tp.siap) || autoTick;
-                    const ckTitle = autoTick ? 'Ditanda auto: laporan harian diterima untuk tugasan ini'
+                    const ckTitle = autoTick ? 'Ditanda auto: kuantiti siap dah cukup dengan target'
                         : !tp.id ? 'Rekod belum ada ID. Muat semula selepas rekod disimpan.'
                         : tp.siap ? 'Tanda belum siap' : 'Tanda siap';
+                    const terkini = tp.lastDate ? ` · terkini ${formatSiapPada(tp.lastDate)}` : '';
                     const autoTxt = autoTick
-                        ? `✓ Laporan harian diterima${tp.lastDate ? ` · terkini ${formatSiapPada(tp.lastDate)}` : ''} (${tp.reportCount} laporan)`
+                        ? `✓ Siap: kuantiti cukup${tp.targetQty > 0 ? ` (${tp.doneQty} / ${tp.targetQty} ${tp.unit})` : ''}${terkini}`
+                        : '';
+                    // Laporan dah masuk tapi belum cukup: maklumat sahaja, tiada tick
+                    const lapTxt = !autoTick && tp.reportCount > 0
+                        ? `${tp.reportCount} laporan diterima${terkini}${tp.targetQty > 0 && tp.doneQty > 0 ? ` · baki ${Math.round((tp.targetQty - tp.doneQty) * 100) / 100} ${tp.unit}` : ''}`
                         : '';
                     return `
                         <div class="cr ck${ticked ? ' done' : ''}">
@@ -2309,6 +2314,7 @@ html,body{max-width:100%;overflow-x:hidden}
                                 </div>
                                 <div class="bar sm"><i style="width:${tp.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0}%;background:${cBarColor}"></i></div>
                                 ${autoTxt ? `<p class="ck-when">${escapeHtml(autoTxt)}</p>` : ''}
+                                ${lapTxt ? `<p class="meta" style="margin-top:2px">${escapeHtml(lapTxt)}</p>` : ''}
                                 ${tp.unitDitukar.length ? `<p class="meta" style="margin-top:2px">Ditukar dari ${escapeHtml(tp.unitDitukar.join(', '))} ke ${escapeHtml(tp.unit)}</p>` : ''}
                                 ${tp.totalPct !== null ? `<p class="meta" style="margin-top:2px">Total dah siap ${tp.totalPct}%${tp.totalDate ? ` (laporan ${escapeHtml(formatSiapPada(tp.totalDate))})` : ''}</p>` : ''}
                                 ${siapTxt ? `<p class="ck-when">✓ Ditanda siap ${escapeHtml(siapTxt)}</p>` : ''}
@@ -2323,7 +2329,8 @@ html,body{max-width:100%;overflow-x:hidden}
                     ckGroups.get(k).items.push(tp);
                 });
                 const taskBarsHtml = Array.from(ckGroups.values()).map(g => {
-                    const siapN = g.items.filter(t => t.siap || t.reportCount > 0).length;
+                    // Sama dengan syarat tick: tanda manual, atau progres laporan capai 100%
+                    const siapN = g.items.filter(t => t.siap || (t.reportCount > 0 && t.hasTarget && Math.round(t.percentage || 0) >= 100)).length;
                     return `
                         <div class="ck-grp">
                             <div class="ck-h"><i data-lucide="map-pin" class="i12"></i><span>${escapeHtml(g.label)}</span><b>${siapN}/${g.items.length} tugasan ditanda</b></div>
