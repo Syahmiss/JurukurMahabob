@@ -261,8 +261,8 @@
                         <div>
                             <div class="hidden sm:grid grid-cols-6 gap-2 pl-5 pr-10 mb-1">
                                 <span class="col-span-3 form-label mb-0">Tugas <span class="text-red-600">*</span></span>
-                                <span class="col-span-1 form-label mb-0">Kuantiti <span class="font-normal text-slate-400">(pilihan)</span></span>
-                                <span class="col-span-2 form-label mb-0">Unit <span class="font-normal text-slate-400">(pilihan)</span></span>
+                                <span class="col-span-1 form-label mb-0">Kuantiti</span>
+                                <span class="col-span-2 form-label mb-0">Unit</span>
                             </div>
                             <div class="sm:hidden"><span class="form-label">Tugas <span class="text-red-600">*</span></span></div>
                             <ul id="taskList" class="space-y-3"></ul>
@@ -1659,7 +1659,7 @@ function reorderColumns() {
         }
 
         function unitOptionsHtml() {
-            return `<option value="">Unit (pilihan)</option>` + UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+            return `<option value="">Unit...</option>` + UNITS.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
         }
 
         function taskRows() {
@@ -1713,7 +1713,7 @@ function reorderColumns() {
                         <input type="text" class="form-input task-lain hidden mt-2" placeholder="Taip tugas" aria-label="Tugas lain" />
                         <p class="task-skop hidden text-[11px] text-slate-500 mt-1"></p>
                     </div>
-                    <input type="number" class="form-input task-kuantiti col-span-3 sm:col-span-1 self-start" inputmode="decimal" min="0" step="any" placeholder="Kuantiti (pilihan)" aria-label="Kuantiti (pilihan)" />
+                    <input type="number" class="form-input task-kuantiti col-span-3 sm:col-span-1 self-start" inputmode="decimal" min="0" step="any" placeholder="Kuantiti" aria-label="Kuantiti" />
                     <select class="form-input task-unit col-span-3 sm:col-span-2 self-start" aria-label="Unit">${unitOptionsHtml()}</select>
                 </div>
                 <button type="button" title="Buang tugas" class="task-remove mt-1.5 w-8 h-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
@@ -1870,4 +1870,1816 @@ function reorderColumns() {
             if (el) el.classList.toggle('is-invalid', !!bad);
         }
 
-        function formHasContent()
+        function formHasContent() {
+            return ['f_noFile', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat'].some(id => getField(id))
+                || taskRows().some(r => { const v = rowValue(r); return v.tugas || v.kuantiti; })
+                || !!attachedImageData;
+        }
+
+        // Isi borang dari rekod. today=true: TARIKH jadi hari ini (untuk contoh laporan)
+        function fillReportForm(rec, opts = {}) {
+            const tarikh = opts.today ? toInputDate(new Date()) : (toInputDate(rec.tarikh) || toInputDate(new Date()));
+            setField('f_tarikh', tarikh);
+
+            setSelectValue(document.getElementById('f_noFile'), clean(rec.noFile));
+            renderKawasanOptions(clean(rec.kawasan));
+
+            if (clean(rec.nama)) setNama(rec.nama);
+            setField('f_waktuMula', toInputTime(rec.waktuMula));
+            setField('f_waktuTamat', toInputTime(rec.waktuTamat));
+            setTaskRows(reportTasks(rec));
+            setField('f_jangkaAsal', toInputDate(clean(rec.jangkaAsal)));
+            setField('f_jangkaSemasa', toInputDate(clean(rec.jangkaSemasa)));
+            setField('f_isu', clean(rec.isu));
+            setField('f_perancangan', clean(rec.perancangan));
+
+            document.querySelectorAll('#reportForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            updateHoursHint();
+            updateDelayHint();
+        }
+
+        // Kosongkan borang. Nama dikekalkan (orang sama biasanya hantar dari phone sama).
+        function resetReportForm(askFirst) {
+            if (askFirst && formHasContent() && !confirm('Kosongkan semua isi borang?')) return;
+            ['f_jangkaAsal', 'f_jangkaSemasa', 'f_isu', 'f_perancangan', 'f_waktuMula', 'f_waktuTamat']
+                .forEach(id => setField(id, ''));
+            setTaskRows([]);
+            setField('f_tarikh', toInputDate(new Date()));
+            document.getElementById('f_noFile').value = '';
+            [...document.getElementById('f_noFile').options].filter(o => o.dataset.custom).forEach(o => o.remove());
+            renderKawasanOptions('');
+            clearAttachedImage();
+            document.querySelectorAll('#reportForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.getElementById('templateHint').classList.add('hidden');
+            updateHoursHint();
+            updateDelayHint();
+        }
+
+        // Senarai tugas -> medan Tugas / Kuantiti / Unit (berbilang baris, sejajar)
+        function tasksToFields(tasks) {
+            if (!tasks.length) return { tugasan: '-', kuantiti: '-', unit: '-' };
+            const anyQty = tasks.some(t => t.kuantiti);
+            const anyUnit = tasks.some(t => t.unit);
+            return {
+                tugasan: tasks.map(t => t.tugas).join('\n'),
+                kuantiti: anyQty ? tasks.map(t => t.kuantiti || '-').join('\n') : '-',
+                unit: anyUnit ? tasks.map(t => t.unit || '-').join('\n') : '-'
+            };
+        }
+
+        function collectReportForm() {
+            const v = id => getField(id) || '-';
+            return {
+                tarikh: fromInputDate(getField('f_tarikh')) || '-',
+                noFile: v('f_noFile'),
+                kawasan: v('f_kawasan'),
+                nama: v('f_nama'),
+                waktuMula: v('f_waktuMula'),
+                waktuTamat: v('f_waktuTamat'),
+                ...tasksToFields(taskRows().map(rowValue).filter(t => t.tugas)),
+                jangkaAsal: fromInputDate(getField('f_jangkaAsal')) || '-',
+                jangkaSemasa: fromInputDate(getField('f_jangkaSemasa')) || '-',
+                isu: v('f_isu'),
+                perancangan: v('f_perancangan')
+            };
+        }
+
+        // Pulangkan senarai label medan yang salah (kosong = sah)
+        function validateReportForm() {
+            const errors = [];
+            const need = (id, label, bad) => {
+                const isBad = bad !== undefined ? bad : !getField(id);
+                markInvalid(id, isBad);
+                if (isBad) errors.push({ id, label });
+            };
+            need('f_tarikh', 'Tarikh');
+            need('f_noFile', 'No File');
+            const kawasanAda = document.getElementById('f_kawasan').options.length > 1;
+            need('f_kawasan', 'Kawasan', kawasanAda && !getField('f_kawasan'));
+            need('f_nama', 'Nama');
+            need('f_waktuMula', 'Masa Mula');
+            const a = timeToMin(getField('f_waktuMula')), b = timeToMin(getField('f_waktuTamat'));
+            need('f_waktuTamat', 'Masa Tamat (mesti selepas masa mula)', b === null || (a !== null && b <= a));
+
+            // Tugas: sekurang-kurangnya satu; setiap baris yang ada kuantiti mesti ada unit
+            const rows = taskRows();
+            const filled = rows.filter(r => { const v = rowValue(r); return v.tugas || v.kuantiti || v.unit; });
+            const flag = (el, bad, label) => {
+                el.classList.toggle('is-invalid', bad);
+                if (bad) errors.push({ el, label });
+            };
+            if (filled.length === 0) {
+                flag(rowParts(rows[0]).tugas, true, 'Tugas');
+            }
+            filled.forEach((r, i) => {
+                const p = rowParts(r), v = rowValue(r), n = filled.length > 1 ? ` ${i + 1}` : '';
+                if (p.tugas.value === TASK_OTHER) flag(p.lain, !v.tugas, `Tugas${n}`);
+                else flag(p.tugas, !v.tugas, `Tugas${n}`);
+                flag(p.kuantiti, v.kuantiti !== '' && !(Number(v.kuantiti) >= 0), `Kuantiti${n} (nombor sahaja)`);
+                flag(p.unit, v.kuantiti !== '' && !v.unit, `Unit${n} (wajib bila ada kuantiti)`);
+            });
+            return errors;
+        }
+
+        function rememberNama(nama) {
+            try { if (clean(nama)) localStorage.setItem(NAMA_PREF_KEY, clean(nama)); } catch (e) {}
+        }
+
+        // Dropdown Nama: senarai tetap dari SURVEYOR_ORDER (tambah/buang nama di situ)
+        function renderNamaOptions() {
+            const sel = document.getElementById('f_nama');
+            sel.innerHTML = `<option value="">Pilih nama...</option>` +
+                SURVEYOR_ORDER.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        }
+
+        // Padankan nama dalam laporan dengan pilihan dropdown, contoh "M.BADRUL" / "Mohd Badrul" -> "Badrul".
+        // Nama yang tiada dalam senarai dipapar sebagai "(tiada dalam senarai)".
+        function setNama(nama) {
+            const v = clean(nama);
+            const sel = document.getElementById('f_nama');
+            if (!v) { sel.value = ''; return; }
+            const tokens = surveyorKey(v).split(/[^A-Z]+/).filter(Boolean);
+            const match = SURVEYOR_ORDER.find(n => n.toUpperCase() === v.toUpperCase() || tokens.includes(n.toUpperCase()));
+            setSelectValue(sel, match || v);
+        }
+
+        function initReportForm() {
+            setField('f_tarikh', toInputDate(new Date()));
+            renderNamaOptions();
+            try {
+                const last = localStorage.getItem(NAMA_PREF_KEY);
+                if (last) setNama(last);
+            } catch (e) {}
+            ['f_waktuMula', 'f_waktuTamat'].forEach(id => document.getElementById(id).addEventListener('input', updateHoursHint));
+            setTaskRows([]);
+            // Buang tanda merah sebaik pengguna isi
+            document.querySelectorAll('#reportForm .form-input').forEach(el => {
+                el.addEventListener('input', () => el.classList.remove('is-invalid'));
+                el.addEventListener('change', () => el.classList.remove('is-invalid'));
+            });
+            loadMasterData(false);
+        }
+
+        // ============================================================================
+        // CONTOH LAPORAN IKUT NAMA
+        // Laporan terakhir yang DIHANTAR oleh setiap surveyor jadi contoh untuk nama tu.
+        // Sumber: reportsData (Teks Asal dari Sheet + laporan pending), jadi contoh ikut ke
+        // semua peranti selepas Sync. Nama terakhir yang dipilih/dihantar diingat dalam pelayar.
+        // ============================================================================
+        const TEMPLATE_PREF_KEY = 'drafter_template_name';
+
+        function getTemplatePref() {
+            try { return localStorage.getItem(TEMPLATE_PREF_KEY) || ''; } catch (e) { return ''; }
+        }
+
+        function setTemplatePref(key) {
+            try { if (key) localStorage.setItem(TEMPLATE_PREF_KEY, key); } catch (e) {}
+        }
+
+        // Kunci contoh ikut nama surveyor dalam SURVEYOR_ORDER (sama dengan dropdown Nama).
+        // Semua variasi nama ("M.BADRUL", "Mohd Badrul") digabung jadi satu: "NAMA:BADRUL".
+        function templateKey(nama) {
+            const tokens = surveyorKey(nama).split(/[^A-Z]+/).filter(Boolean);
+            const hit = SURVEYOR_ORDER.find(n => tokens.includes(n.toUpperCase()));
+            return hit ? 'NAMA:' + hit.toUpperCase() : surveyorKey(nama);
+        }
+
+        // reportsData tersusun ikut masa hantar (pending dahulu, kemudian Sheet terbaru dahulu),
+        // jadi rekod pertama bagi setiap nama = laporan terakhir dia hantar.
+        function getTemplates() {
+            const map = new Map();
+            reportsData.forEach(r => {
+                if (surveyorKey(r.nama) === '-') return;
+                const key = templateKey(r.nama);
+                if (!key || key === '-' || map.has(key)) return;
+                map.set(key, r);
+            });
+            return map;
+        }
+
+        // Bina teks laporan (disimpan dalam lajur Teks Asal, dan boleh disalin ke WhatsApp)
+        function buildReportText(r) {
+            const v = k => clean(r[k]) || '-';
+            const bullet = k => clean(r[k]).split('\n').map(l => l.trim()).filter(Boolean).map(l => `- ${l}`).join('\n') || '-';
+            const lines = [
+                'Laporan Harian',
+                '',
+                `TARIKH : ${v('tarikh')}`,
+                `NO FILE : ${v('noFile')}`,
+                `KAWASAN : ${v('kawasan')}`,
+                `NAMA : ${v('nama')}`,
+                '',
+                'WAKTU :',
+                `Mula kerja : ${v('waktuMula')}`,
+                `Tamat : ${v('waktuTamat')}`,
+                '',
+                'TUGAS :',
+                ...(reportTasks(r).map(t => `- ${t.tugas}${t.kuantiti ? ` — ${t.kuantiti} ${t.unit}`.trimEnd() : ''}`)),
+            ];
+            if (!reportTasks(r).length) lines.push('-');
+            lines.push('', 'DATELINE PROJEK :', `- Jangka siap asal : ${v('jangkaAsal')}`, `- Jangka siap semasa : ${v('jangkaSemasa')}`);
+            lines.push('', 'ISU / HALANGAN :', bullet('isu'));
+            lines.push('', 'PERANCANGAN :', bullet('perancangan'));
+            return lines.join('\n');
+        }
+
+        // Dropdown Contoh Laporan Saya: lima nama ikut susunan dropdown Nama.
+        // Nama yang belum ada laporan dipapar tapi tak boleh dipilih.
+        function refreshTemplateOptions() {
+            const select = document.getElementById('templateSelect');
+            if (!select) return;
+            const templates = getTemplates();
+            // Pilihan lama mungkin tersimpan sebagai "ALIAS:BADRUL" / "M.BADRUL": normalkan
+            const raw = getTemplatePref() || select.value;
+            const current = templates.has(raw) ? raw : templateKey(raw);
+
+            const known = SURVEYOR_ORDER.map(n => {
+                const key = 'NAMA:' + n.toUpperCase();
+                return { key, label: n, has: templates.has(key) };
+            });
+            // Nama di luar senarai yang ada laporan (jarang): letak di hujung
+            const others = [...templates.entries()]
+                .filter(([key]) => !key.startsWith('NAMA:'))
+                .map(([key, r]) => ({ key, label: String(r.nama).trim(), has: true }))
+                .sort((a, b) => a.label.localeCompare(b.label));
+
+            select.innerHTML = `<option value="">Pilih nama...</option>` + [...known, ...others].map(o =>
+                `<option value="${escapeHtml(o.key)}"${o.has ? '' : ' disabled'}>${escapeHtml(o.label)}${o.has ? '' : ' (belum ada laporan)'}</option>`
+            ).join('');
+            select.value = templates.has(current) ? current : '';
+        }
+
+        // Tukar Nama dalam borang -> dropdown Contoh ikut sekali (tak isi borang)
+        function syncTemplateWithNama() {
+            const select = document.getElementById('templateSelect');
+            const key = templateKey(getField('f_nama'));
+            if ([...select.options].some(o => o.value === key && !o.disabled)) select.value = key;
+        }
+
+        function applyTemplate() {
+            const select = document.getElementById('templateSelect');
+            const key = select.value;
+            if (!key) {
+                showToast('info', 'Pilih Nama', 'Pilih nama anda dahulu untuk guna laporan terakhir sebagai contoh.');
+                return;
+            }
+            const rec = getTemplates().get(key);
+            if (!rec) {
+                showToast('warning', 'Tiada Contoh', 'Belum ada laporan untuk nama ni. Sync data dahulu.');
+                return;
+            }
+            if (formHasContent() && !confirm('Borang dah ada isi. Ganti dengan laporan terakhir?')) return;
+
+            fillReportForm(rec, { today: true });
+            clearAttachedImage();
+            setTemplatePref(key);
+
+            const hint = document.getElementById('templateHint');
+            hint.textContent = `Diisi dari laporan ${rec.tarikh || '-'} (${rec.noFile || '-'}). Tarikh dah ditukar ke hari ini. Semak masa, kuantiti & isu sebelum hantar.`;
+            hint.classList.remove('hidden');
+            const firstTask = document.querySelector('#taskList .task-tugas');
+            if (firstTask) firstTask.focus();
+        }
+
+        // Kecilkan gambar (maks 1600px) dan mampatkan berperingkat jika masih terlalu besar
+        function compressImage(img) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let width = Math.min(IMAGE_MAX_WIDTH, img.width);
+            let quality = IMAGE_QUALITY;
+
+            for (let i = 0; i < 8; i++) {
+                const scale = width / img.width;
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const out = canvas.toDataURL('image/jpeg', quality);
+                if (out.length <= MAX_IMAGE_CHARS) return out;
+                width = Math.round(width * 0.85);
+                quality = Math.max(0.5, quality - 0.05);
+            }
+            return '';
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('error', 'Fail Tidak Sah', 'Sila pilih fail gambar sahaja.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const data = compressImage(img);
+                    if (!data) {
+                        clearAttachedImage();
+                        showToast('warning', 'Gambar Terlalu Besar', 'Gambar tak dapat dimampatkan bawah 3MB. Cuba gambar lain atau guna URL.');
+                        return;
+                    }
+                    attachedImageData = data;
+                    document.getElementById('imageUrlInput').value = '';
+                    updateImagePreview(attachedImageData);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleImageUrl(event) {
+            const url = event.target.value.trim();
+            if (!url) { clearAttachedImage(); return; }
+            const safe = safeImageSrc(url);
+            if (safe) {
+                attachedImageData = safe;
+                updateImagePreview(safe);
+            } else {
+                attachedImageData = '';
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+            }
+        }
+
+        function updateImagePreview(src) {
+            if (!src) return;
+            document.getElementById('imagePreview').src = src;
+            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            document.getElementById('removeImgBtn').classList.remove('hidden');
+        }
+
+        function clearAttachedImage() {
+            attachedImageData = "";
+            document.getElementById('imageFileInput').value = "";
+            document.getElementById('imageUrlInput').value = "";
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('removeImgBtn').classList.add('hidden');
+        }
+
+        function openImageModal(src, title, link) {
+            const img = document.getElementById('modalImage');
+            img.classList.remove('hidden');
+            document.getElementById('modalImageError').classList.add('hidden');
+            img.src = src;
+            document.getElementById('modalTitle').textContent = title || 'Lampiran Gambar Kerja Lapangan';
+
+            const a = document.getElementById('modalDriveLink');
+            const safeLink = /^https:\/\//i.test(link || '') ? link : '';
+            if (safeLink) {
+                a.href = safeLink;
+                a.classList.remove('hidden');
+                a.classList.add('inline-flex');
+            } else {
+                a.classList.add('hidden');
+                a.classList.remove('inline-flex');
+            }
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        function onModalImageError() {
+            const img = document.getElementById('modalImage');
+            if (!img.getAttribute('src')) return;
+            img.classList.add('hidden');
+            document.getElementById('modalImageError').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        // Hurai Teks Asal (format buildReportText) kepada medan laporan.
+        // Dipakai oleh butang "Hurai Semula" dalam Edit Laporan.
+        // "Topo sungai — 350 m" -> { tugas, kuantiti, unit }
+        function parseTaskLines(text) {
+            const tasks = String(clean(text) || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+                const i = l.lastIndexOf(' — ');
+                if (i === -1) return { tugas: l, kuantiti: '', unit: '' };
+                const m = l.slice(i + 3).trim().match(/^([\d.,]+)\s*(.*)$/);
+                return m ? { tugas: l.slice(0, i).trim(), kuantiti: m[1], unit: m[2].trim() } : { tugas: l, kuantiti: '', unit: '' };
+            });
+            return tasksToFields(tasks);
+        }
+
+        function parseReportText(rawText) {
+            const clean = String(rawText || '').replace(/\r\n/g, '\n').trim();
+
+            const line = (label) => {
+                const m = clean.match(new RegExp('^[ \\t\\-•]*' + label + '[ \\t]*:[ \\t]*([^\\n]*)', 'im'));
+                const v = m ? m[1].trim() : '';
+                return v || '-';
+            };
+
+            // Seksyen berbilang baris: dari header hingga header seterusnya (mesti di awal baris)
+            const NEXT_HDR = /^[ \t]*(TARIKH|NO FILE|KAWASAN|NAMA|WAKTU|TUGAS|DATELINE PROJEK|ISU \/ HALANGAN|PERANCANGAN)[ \t]*:/im;
+            const section = (headerRegex) => {
+                const start = clean.match(headerRegex);
+                if (!start) return '-';
+                const rest = clean.slice(start.index + start[0].length);
+                const end = rest.match(NEXT_HDR);
+                return (end ? rest.slice(0, end.index) : rest)
+                    .split('\n')
+                    .map(l => l.replace(/^[-•\s]+/, '').trim())
+                    .filter(Boolean)
+                    .join('\n') || '-';
+            };
+
+            return {
+                tarikh: line('TARIKH'),
+                noFile: line('NO FILE'),
+                kawasan: line('KAWASAN'),
+                nama: line('NAMA'),
+                waktuMula: line('Mula kerja'),
+                waktuTamat: line('Tamat'),
+                ...parseTaskLines(section(/^[ \t]*TUGAS[ \t]*:/im)),
+                jangkaAsal: line('Jangka siap asal'),
+                jangkaSemasa: line('Jangka siap semasa'),
+                isu: section(/^[ \t]*ISU \/ HALANGAN[ \t]*:/im),
+                perancangan: section(/^[ \t]*PERANCANGAN[ \t]*:/im),
+                rawText: rawText
+            };
+        }
+
+        function setSubmitting(isBusy, label) {
+            const btn = document.getElementById('submitReportBtn');
+            const text = document.getElementById('submitBtnText');
+            const icon = document.getElementById('submitIcon');
+            btn.disabled = isBusy;
+            text.textContent = label || 'Hantar Laporan';
+            icon.className = isBusy ? 'fa-solid fa-circle-notch fa-spin text-jm-gold' : 'fa-solid fa-paper-plane text-jm-gold';
+        }
+
+        async function submitReportForm() {
+            if (document.getElementById('submitReportBtn').disabled) return;
+
+            const errors = validateReportForm();
+            if (errors.length) {
+                (errors[0].el || document.getElementById(errors[0].id)).focus();
+                showToast('warning', 'Borang Belum Lengkap', `Semak: ${errors.map(e => e.label).join(', ')}.`);
+                return;
+            }
+
+            const record = collectReportForm();
+            record.rawText = buildReportText(record);
+            record.image = attachedImageData || '';
+            record.id = generateId();
+            record.versi = 1;
+            record.editToken = generateId();
+            record.pending = true; // belum disahkan masuk Sheet
+
+            // Laporan ni terus jadi contoh untuk nama dia, dan nama dia diingat untuk esok
+            setTemplatePref(templateKey(record.nama));
+            rememberNama(record.nama);
+
+            // Optimistic UI. Rekod disimpan sebagai "pending" dalam pelayar dan boleh dihantar
+            // semula dengan ID SAMA (server tolak duplikat ikut ID), jadi borang boleh terus dikosongkan.
+            reportsData.unshift(record);
+            saveStoredData();
+            filterReports();
+            updateKPIs(reportsData);
+            resetReportForm(false);
+
+            if (!isMacroConfigured()) {
+                showToast('info', 'Disimpan (Mod Tempatan)', `Laporan ${record.nama} ditambah. Masukkan MACRO_URL dalam index.html untuk simpan ke Google Sheet.`);
+                return;
+            }
+
+            try {
+                setSubmitting(true, 'Menghantar Ke Google Sheet...');
+                await submitAndReport(record);
+            } finally {
+                setSubmitting(false);
+            }
+        }
+
+        // ============================================================================
+        // HANTAR KE APPS SCRIPT & PENGESAHAN
+        // ============================================================================
+
+        // POST biasa (bukan no-cors) supaya respons JSON Apps Script boleh dibaca terus.
+        // text/plain = "simple request", tiada preflight CORS.
+        // Pulangkan { json } jika respons dapat dibaca, atau { json: null } jika tidak
+        // (rangkaian putus, atau browser sekat respons). Dalam kes null, POST mungkin dah
+        // sampai ke server, jadi pemanggil MESTI sahkan melalui GET.
+        async function postToMacro(payload) {
+            try {
+                const res = await fetch(MACRO_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (json && typeof json.status === 'string') return { json };
+            } catch (e) {
+                console.warn('Respons POST tak dapat dibaca, sahkan melalui GET:', e);
+            }
+            return { json: null };
+        }
+
+        // Tarik data dari Apps Script dan gabung dengan rekod pending tempatan.
+        // Pulangkan array data Sheet, atau null jika gagal.
+        async function pullFromSheet() {
+            const res = await fetch(MACRO_URL, { method: 'GET', redirect: 'follow' });
+            const json = await res.json();
+            if (!json || json.status !== 'success' || !Array.isArray(json.data)) return null;
+            mergeWithSheet(json.data);
+            return json.data;
+        }
+
+        // Sahkan melalui GET (fallback bila respons POST tak dapat dibaca).
+        // Pulangkan { reachable, match } dengan match = rekod Sheet ikut ID (atau undefined).
+        async function verifyRecord(id) {
+            await new Promise(r => setTimeout(r, 1500));
+            try {
+                const data = await pullFromSheet();
+                if (!data) return { reachable: false };
+                return { reachable: true, match: data.find(d => d.id === id) };
+            } catch (e) {
+                console.warn('Gagal sahkan rekod:', e);
+                return { reachable: false };
+            }
+        }
+
+        // Rekod yang belum disahkan masuk Sheet. 'action: create' = rekod pending dari versi lama (v2.8).
+        function isPendingLocal(r) {
+            return !!(r && r.id && (r.pending === true || r.action === 'create'));
+        }
+
+        // Data Sheet jadi sumber utama, TAPI rekod pending tempatan yang belum ada dalam Sheet
+        // dikekalkan di atas supaya tak hilang bila tekan Sync. Pulangkan bilangan pending.
+        function mergeWithSheet(sheetData) {
+            const sheetIds = new Set(sheetData.map(d => d.id).filter(Boolean));
+            const pendingLocal = reportsData
+                .filter(r => isPendingLocal(r) && !sheetIds.has(r.id))
+                .map(r => ({ ...r, pending: true }));
+            reportsData = [...pendingLocal, ...sheetData];
+            saveStoredData();
+            filterReports();
+            updateKPIs(reportsData);
+            return pendingLocal.length;
+        }
+
+        function pendingCount() {
+            return reportsData.filter(isPendingLocal).length;
+        }
+
+        function markSaved(id) {
+            const rec = reportsData.find(r => r.id === id);
+            if (rec) {
+                rec.pending = false;
+                delete rec.action;
+                delete rec.imageDropped;
+            }
+            saveStoredData();
+            filterReports();
+            updateKPIs(reportsData);
+            // Tarik semula senyap untuk dapat link Drive gambar & data rasmi Sheet
+            pullFromSheet().catch(() => {});
+        }
+
+        function buildCreatePayload(rec) {
+            const payload = { action: 'create', id: rec.id, editToken: rec.editToken || generateId() };
+            EDIT_FIELDS.forEach(f => { payload[f.key] = rec[f.key]; });
+            payload.rawText = rec.rawText || '';
+            payload.image = safeImageSrc(rec.image);
+            return payload;
+        }
+
+        // Hantar rekod baharu. Pulangkan 'saved' | 'rejected' | 'notfound' | 'offline'
+        async function submitCreate(rec) {
+            if (!rec.editToken) rec.editToken = generateId();
+            const { json } = await postToMacro(buildCreatePayload(rec));
+
+            if (json) {
+                if (json.status === 'success') { markSaved(rec.id); return { state: 'saved' }; }
+                return { state: 'rejected', message: json.message || 'Ralat tidak diketahui dari server.' };
+            }
+
+            // Respons tak dapat dibaca: semak dalam Sheet ikut ID
+            const v = await verifyRecord(rec.id);
+            if (!v.reachable) return { state: 'offline' };
+            if (v.match) return { state: 'saved' }; // mergeWithSheet dah ganti rekod pending dengan versi Sheet
+            return { state: 'notfound' };
+        }
+
+        // Hantar + papar toast ikut keputusan
+        async function submitAndReport(rec) {
+            setSyncStatus('Saving...');
+            const out = await submitCreate(rec);
+            const label = `${rec.nama} (${rec.noFile})`;
+
+            if (out.state === 'saved') {
+                setSyncStatus('Saved to Cloud');
+                showToast('success', 'Disahkan Dalam Sheet', `Laporan ${label} dah masuk Google Sheet.`);
+            } else if (out.state === 'rejected') {
+                setSyncStatus('Ditolak Server');
+                showToast('error', 'Server Tolak Laporan', `${out.message} Laporan disimpan dalam pelayar, tekan "Hantar Semula" lepas betulkan.`);
+            } else if (out.state === 'notfound') {
+                setSyncStatus('Belum Masuk Sheet');
+                showToast('warning', 'Belum Masuk Sheet', `Laporan ${label} tak jumpa dalam Sheet. Tekan "Hantar Semula" pada baris tu.`);
+            } else {
+                setSyncStatus('Offline');
+                showToast('error', 'Tiada Sambungan', `Laporan ${label} disimpan dalam pelayar. Tekan "Hantar Semula" bila ada line.`);
+            }
+            return out;
+        }
+
+        const resendingIds = new Set();
+
+        async function resendReport(id) {
+            if (!isMacroConfigured()) {
+                showToast('info', 'Mod Tempatan', 'Masukkan MACRO_URL dalam index.html dahulu.');
+                return;
+            }
+            if (resendingIds.has(id)) return;
+            const rec = reportsData.find(r => r.id === id && isPendingLocal(r));
+            if (!rec) return;
+
+            resendingIds.add(id);
+            filterReports();
+            try {
+                if (rec.imageDropped && !rec.image) {
+                    showToast('info', 'Gambar Tak Dapat Dihantar', 'Gambar laporan ni tak sempat disimpan dalam pelayar. Lampir semula melalui Edit selepas laporan masuk Sheet.');
+                }
+                await submitAndReport(rec);
+            } finally {
+                resendingIds.delete(id);
+                filterReports();
+            }
+        }
+
+        // ============================================================================
+        // EDIT LAPORAN
+        // ============================================================================
+        function buildEditFields(item) {
+            const grid = document.getElementById('editFieldsGrid');
+            grid.innerHTML = EDIT_FIELDS.map(f => {
+                const val = clean(item[f.key]);
+                const base = 'w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all';
+                const input = f.multiline
+                    ? `<textarea id="edit_${f.key}" rows="2" class="${base}">${escapeHtml(val)}</textarea>`
+                    : `<input type="text" id="edit_${f.key}" value="${escapeHtml(val)}" class="${base}" />`;
+                return `
+                    <div class="${f.wide ? 'sm:col-span-2 lg:col-span-3' : ''}">
+                        <label for="edit_${f.key}" class="block text-[11px] font-semibold text-slate-600 mb-1">${f.label}</label>
+                        ${input}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openEditModal(id) {
+            const item = reportsData.find(r => r.id === id);
+            if (!item) {
+                showToast('error', 'Rekod Tidak Dijumpai', 'Sync semula data dan cuba lagi.');
+                return;
+            }
+
+            editingId = id;
+            editImageData = safeImageSrc(item.image);
+            editImageChanged = false;
+
+            document.getElementById('editModalSub').textContent =
+                `${item.nama || '-'} • ${item.noFile || '-'} • Versi ${item.versi || 1}`;
+            document.getElementById('edit_rawText').value = item.rawText || '';
+            buildEditFields(item);
+
+            document.getElementById('editImageFile').value = '';
+            document.getElementById('editImageUrl').value = '';
+            refreshEditImagePreview();
+
+            const notice = document.getElementById('editLocalNotice');
+            const noticeText = document.getElementById('editLocalNoticeText');
+            if (isPendingLocal(item)) {
+                noticeText.textContent = 'Laporan ni belum masuk Google Sheet. Perubahan disimpan dalam pelayar, kemudian tekan "Hantar Semula" pada jadual.';
+                notice.classList.remove('hidden');
+            } else if (!isMacroConfigured()) {
+                noticeText.textContent = 'MACRO_URL belum ditetapkan. Perubahan hanya disimpan dalam pelayar ini.';
+                notice.classList.remove('hidden');
+            } else {
+                notice.classList.add('hidden');
+            }
+
+            setEditSaving(false);
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            if (document.getElementById('editSaveBtn').disabled) return; // jangan tutup masa sedang simpan
+            modal.classList.add('hidden');
+            editingId = null;
+            editImageData = '';
+            editImageChanged = false;
+        }
+
+        // Hurai semula Teks Asal dan isi medan (gambar tidak disentuh)
+        function reparseEditText() {
+            const raw = document.getElementById('edit_rawText').value;
+            if (!raw.trim()) {
+                showToast('warning', 'Teks Kosong', 'Tiada teks untuk dihurai.');
+                return;
+            }
+            const parsed = parseReportText(raw);
+
+            EDIT_FIELDS.forEach(f => {
+                const el = document.getElementById(`edit_${f.key}`);
+                if (el) el.value = parsed[f.key] && parsed[f.key] !== '-' ? parsed[f.key] : '';
+            });
+            showToast('info', 'Medan Dikemaskini', 'Semua medan diisi semula dari Teks Asal. Semak sebelum simpan.');
+        }
+
+        function refreshEditImagePreview() {
+            const wrap = document.getElementById('editImagePreviewWrap');
+            const img = document.getElementById('editImagePreview');
+            const removeBtn = document.getElementById('editRemoveImgBtn');
+            if (editImageData) {
+                img.src = editImageData;
+                wrap.classList.remove('hidden');
+                removeBtn.classList.remove('hidden');
+            } else {
+                img.src = '';
+                wrap.classList.add('hidden');
+                removeBtn.classList.add('hidden');
+            }
+        }
+
+        function handleEditImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('error', 'Fail Tidak Sah', 'Sila pilih fail gambar sahaja.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const data = compressImage(img);
+                    if (!data) {
+                        showToast('warning', 'Gambar Terlalu Besar', 'Gambar tak dapat dimampatkan bawah 3MB. Cuba gambar lain atau guna URL.');
+                        return;
+                    }
+                    editImageData = data;
+                    editImageChanged = true;
+                    document.getElementById('editImageUrl').value = '';
+                    refreshEditImagePreview();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleEditImageUrl(event) {
+            const url = event.target.value.trim();
+            if (!url) return;
+            const safe = safeImageSrc(url);
+            if (safe) {
+                editImageData = safe;
+                editImageChanged = true;
+                document.getElementById('editImageFile').value = '';
+                refreshEditImagePreview();
+            }
+        }
+
+        function removeEditImage() {
+            editImageData = '';
+            editImageChanged = true;
+            document.getElementById('editImageFile').value = '';
+            document.getElementById('editImageUrl').value = '';
+            refreshEditImagePreview();
+        }
+
+        function setEditSaving(isBusy, label) {
+            const btn = document.getElementById('editSaveBtn');
+            btn.disabled = isBusy;
+            document.getElementById('editSaveText').textContent = label || 'Simpan Perubahan';
+            document.getElementById('editSaveIcon').className = isBusy
+                ? 'fa-solid fa-circle-notch fa-spin text-jm-gold'
+                : 'fa-solid fa-floppy-disk text-jm-gold';
+        }
+
+        async function saveEdit() {
+            if (!editingId) return;
+            const idx = reportsData.findIndex(r => r.id === editingId);
+            if (idx === -1) {
+                showToast('error', 'Rekod Tidak Dijumpai', 'Rekod ini mungkin telah dibuang. Sync semula data.');
+                return;
+            }
+
+            const original = reportsData[idx];
+            const updated = { ...original };
+            EDIT_FIELDS.forEach(f => {
+                const el = document.getElementById(`edit_${f.key}`);
+                updated[f.key] = el && el.value.trim() ? el.value.trim() : '-';
+            });
+            const rawEdited = document.getElementById('edit_rawText').value;
+            const fieldsChanged = EDIT_FIELDS.some(f => clean(updated[f.key]) !== clean(original[f.key]));
+            const rawUntouched = rawEdited.trim() === String(original.rawText || '').trim();
+            updated.rawText = fieldsChanged && rawUntouched ? buildReportText(updated) : rawEdited;
+
+            if (updated.nama === '-' && updated.noFile === '-') {
+                showToast('warning', 'Medan Wajib', 'Sekurang-kurangnya Nama atau No File perlu diisi.');
+                return;
+            }
+
+            // Status auto jika dikosongkan
+            if (updated.status === '-') {
+                updated.status = (parseFloat(updated.totalSiap) || 0) >= 100 ? 'SIAP' : 'DALAM PROSES';
+            }
+            if (editImageChanged) {
+                updated.image = editImageData;
+                updated.imageThumb = '';
+                delete updated.imageDropped;
+            }
+
+            const baseVersi = Number(original.versi) || 1;
+
+            // Rekod pending belum wujud dalam Sheet: edit dalam pelayar sahaja.
+            // Bila "Hantar Semula", data terkini ni yang dihantar (ID sama).
+            if (isPendingLocal(original)) {
+                updated.pending = true;
+                reportsData[idx] = updated;
+                saveStoredData();
+                filterReports();
+                updateKPIs(reportsData);
+                setEditSaving(false);
+                closeEditModal();
+                showToast('info', 'Dikemaskini (Belum Masuk Sheet)', 'Perubahan disimpan dalam pelayar. Tekan "Hantar Semula" untuk hantar ke Google Sheet.');
+                return;
+            }
+
+            // Mod tempatan: terus simpan dalam pelayar
+            if (!isMacroConfigured()) {
+                updated.versi = baseVersi + 1;
+                reportsData[idx] = updated;
+                saveStoredData();
+                filterReports();
+                updateKPIs(reportsData);
+                setEditSaving(false);
+                closeEditModal();
+                showToast('info', 'Dikemaskini (Mod Tempatan)', 'Perubahan disimpan dalam pelayar sahaja.');
+                return;
+            }
+
+            // Token unik untuk simpanan INI. Pengesahan semak token, bukan nombor versi,
+            // sebab versi boleh sama dengan hasil edit orang lain (kes konflik).
+            const editToken = generateId();
+            const payload = {
+                action: 'update',
+                id: updated.id,
+                baseVersi: baseVersi,
+                rawText: updated.rawText,
+                imageChanged: editImageChanged,
+                editToken: editToken
+            };
+            EDIT_FIELDS.forEach(f => { payload[f.key] = updated[f.key]; });
+            if (editImageChanged) payload.image = safeImageSrc(editImageData);
+
+            const showFreshVersion = () => {
+                const fresh = reportsData.find(r => r.id === editingId);
+                if (fresh) {
+                    document.getElementById('editModalSub').textContent =
+                        `${fresh.nama || '-'} • ${fresh.noFile || '-'} • Versi ${fresh.versi || 1} (terkini dari Sheet)`;
+                }
+            };
+
+            try {
+                setEditSaving(true, 'Menyimpan...');
+                setSyncStatus('Updating...');
+
+                const { json } = await postToMacro(payload);
+                let state, serverMsg = '';
+
+                if (json) {
+                    state = json.status === 'success' ? 'saved' : 'rejected';
+                    serverMsg = json.message || '';
+                    if (state === 'saved') {
+                        // Kemaskini paparan terus, kemudian tarik data rasmi Sheet di belakang
+                        reportsData[idx] = { ...updated, versi: Number(json.versi) || baseVersi + 1, editToken };
+                        saveStoredData();
+                        filterReports();
+                        updateKPIs(reportsData);
+                        pullFromSheet().catch(() => {});
+                    } else {
+                        // Konflik / ralat: muat semula supaya pengguna nampak data terkini
+                        try { await pullFromSheet(); } catch (e) {}
+                    }
+                } else {
+                    // Respons tak dapat dibaca: sahkan ikut token dalam Sheet
+                    setEditSaving(true, 'Mengesahkan...');
+                    const v = await verifyRecord(updated.id);
+                    if (!v.reachable) state = 'offline';
+                    else state = v.match && v.match.editToken === editToken ? 'saved' : 'unverified';
+                }
+
+                setEditSaving(false);
+
+                if (state === 'saved') {
+                    setSyncStatus('Updated');
+                    closeEditModal();
+                    showToast('success', 'Laporan Dikemaskini', `${updated.nama} (${updated.noFile}) dah dikemaskini dalam Google Sheet.`);
+                } else if (state === 'rejected') {
+                    setSyncStatus('Edit Ditolak');
+                    showToast('warning', 'Kemaskini Ditolak', `${serverMsg || 'Server tolak perubahan.'} Perubahan anda masih dalam borang, semak data terkini dan simpan semula.`);
+                    showFreshVersion();
+                } else if (state === 'unverified') {
+                    setSyncStatus('Edit Gagal');
+                    showToast('warning', 'Kemaskini Tidak Masuk',
+                        'Perubahan anda tak jumpa dalam Sheet. Mungkin orang lain dah edit laporan ni dulu. Data terkini dah dimuat semula, semak dan cuba lagi.');
+                    showFreshVersion();
+                } else {
+                    setSyncStatus('Edit Gagal');
+                    showToast('error', 'Gagal Hubungi Server', 'Status perubahan tak dapat disahkan. Semak sambungan internet, Sync, dan semak laporan ni sebelum simpan semula.');
+                }
+            } catch (err) {
+                console.error('Ralat kemaskini:', err);
+                setEditSaving(false);
+                setSyncStatus('Edit Gagal');
+                showToast('error', 'Gagal Hubungi Server', 'Perubahan belum disimpan. Semak sambungan internet dan cuba lagi.');
+            }
+        }
+
+        function tugasCell(item) {
+            const tasks = reportTasks(item);
+            if (!tasks.length) return '<span class="text-slate-400">-</span>';
+            return `<ul class="space-y-1">${tasks.map(t => `
+                <li class="flex gap-1.5 leading-snug">
+                    <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-jm-gold ring-2 ring-jm-gold/30 shrink-0"></span>
+                    <span>${escapeHtml(t.tugas)}${t.kuantiti ? ` <span class="ml-1 whitespace-nowrap px-1.5 py-0.5 rounded bg-jm-light text-jm-navy text-[10px] font-bold">${escapeHtml(t.kuantiti)} ${escapeHtml(t.unit)}</span>` : ''}</span>
+                </li>`).join('')}
+            </ul>`;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('reportTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const badge = document.getElementById('recordCountBadge');
+            renderedData = data || [];
+
+            if (renderedData.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                badge.textContent = '0 Rekod';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            badge.textContent = `${renderedData.length} Rekod`;
+
+            tbody.innerHTML = renderedData.map((item, idx) => {
+
+                const img = safeImageSrc(item.image);
+                const thumb = safeImageSrc(item.imageThumb) || img;
+                const imgCell = img
+                    ? `<button type="button" data-img-idx="${idx}" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 text-[11px] font-semibold transition-colors">
+                           <img src="${escapeHtml(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" class="w-5 h-5 rounded object-cover" onerror="this.style.display='none'" />
+                           Lihat
+                       </button>`
+                    : `<span class="text-slate-400">-</span>`;
+
+                const rowHasIssue = hasIssue(item);
+
+                const editCell = canEdit(item)
+                    ? `<button type="button" data-edit-id="${escapeHtml(item.id)}" title="Edit laporan" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-jm-gold hover:bg-jm-amber text-jm-navy text-[11px] font-bold transition-colors">
+                           <i class="fa-solid fa-pen-to-square"></i> Edit
+                       </button>`
+                    : `<span title="Rekod dari CSV fallback tiada ID. Sync melalui Apps Script untuk edit." class="text-slate-300 cursor-help"><i class="fa-solid fa-lock"></i></span>`;
+
+                const isPending = isPendingLocal(item);
+                const isResending = isPending && resendingIds.has(item.id);
+                const pendingCell = isPending
+                    ? `<div class="mt-1.5 flex flex-col items-center gap-1">
+                           <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700" title="${item.imageDropped && !item.image ? 'Gambar tak tersimpan dalam pelayar, lampir semula melalui Edit' : 'Laporan disimpan dalam pelayar sahaja'}">Belum masuk Sheet</span>
+                           <button type="button" data-resend-id="${escapeHtml(item.id)}" ${isResending ? 'disabled' : ''} class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-jm-navy hover:bg-jm-blue disabled:opacity-60 text-white text-[10px] font-bold transition-colors">
+                               <i class="fa-solid ${isResending ? 'fa-circle-notch fa-spin' : 'fa-rotate-right'} text-jm-gold"></i> ${isResending ? 'Menghantar...' : 'Hantar Semula'}
+                           </button>
+                       </div>`
+                    : '';
+
+                const editedBadge = Number(item.versi) > 1
+                    ? `<div class="mt-1 text-[10px] font-semibold text-jm-goldDark" title="${escapeHtml(item.updatedAt ? 'Dikemaskini: ' + item.updatedAt : 'Telah diedit')}">diedit • v${Number(item.versi)}</div>`
+                    : '';
+
+                return `
+                    <tr class="${isPending ? 'bg-red-50/40 ' : ''}hover:bg-blue-50/50 transition-colors align-top">
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${editCell}${editedBadge}${pendingCell}</td>
+                        <td class="py-3.5 px-3 font-mono whitespace-nowrap text-slate-600">${escapeHtml(item.tarikh || '-')}</td>
+                        <td class="py-3.5 px-3 font-mono font-semibold text-jm-royal whitespace-nowrap">${escapeHtml(item.noFile || '-')}</td>
+                        <td class="py-3.5 px-3 text-slate-700 min-w-[110px]">${escapeHtml(item.kawasan || '-')}</td>
+                        <td class="py-3.5 px-3 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(item.nama || '-')}</td>
+                        <td class="py-3.5 px-3 font-mono text-[11px] whitespace-nowrap text-slate-600">${escapeHtml(item.waktuMula || '-')} - ${escapeHtml(item.waktuTamat || '-')}</td>
+                        <td class="py-3.5 px-3 min-w-[220px] text-slate-800">${tugasCell(item)}</td>
+                        <td class="py-3.5 px-3 text-[11px] whitespace-nowrap">
+                            <div class="text-slate-500">Asal: <span class="font-mono">${escapeHtml(item.jangkaAsal || '-')}</span></div>
+                            <div class="text-jm-navy font-semibold">Kini: <span class="font-mono">${escapeHtml(item.jangkaSemasa || '-')}</span></div>
+                        </td>
+                        <td class="py-3.5 px-3 min-w-[140px] whitespace-pre-line ${rowHasIssue ? 'text-red-700 font-medium' : 'text-slate-400'}">${escapeHtml(item.isu || '-')}</td>
+                        <td class="py-3.5 px-3 min-w-[140px] text-slate-600 whitespace-pre-line">${escapeHtml(item.perancangan || '-')}</td>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">${imgCell}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateKPIs(data) {
+            const total = data.length;
+            let completed = 0;
+            let sumProgress = 0;
+            let issues = 0;
+
+            data.forEach(d => {
+                const prog = parseFloat(String(d.totalSiap).replace('%', '')) || 0;
+                sumProgress += prog;
+                if (isRecordDone(d)) completed++;
+                if (hasIssue(d)) issues++;
+            });
+
+            const avg = total > 0 ? Math.round(sumProgress / total) : 0;
+
+            document.getElementById('kpiTotalReports').textContent = total;
+            document.getElementById('kpiCompleted').textContent = completed;
+            document.getElementById('kpiAvgProgress').textContent = `${avg}%`;
+            document.getElementById('kpiAvgBar').style.width = `${Math.min(100, avg)}%`;
+            document.getElementById('kpiIssues').textContent = issues;
+
+            refreshTemplateOptions();
+            renderSurveyorStats();
+        }
+
+        // ============================================================================
+        // HELPER STATUS / TARIKH / WAKTU
+        // ============================================================================
+        function progressNum(val) {
+            return parseFloat(String(val || '').replace('%', '')) || 0;
+        }
+
+        // "BELUM SIAP" tak dikira siap walaupun ada perkataan SIAP
+        function isRecordDone(item) {
+            if (progressNum(item.totalSiap) >= 100) return true;
+            const s = String(item.status || '').toUpperCase();
+            if (/BELUM|TAK|TIDAK|X SIAP/.test(s)) return false;
+            return /\b(SIAP|SELESAI|COMPLETE|DONE)\b/.test(s);
+        }
+
+        function hasIssue(item) {
+            const s = String(item.isu || '').trim().toLowerCase();
+            return !!s && !['-', 'tiada', 'tiada isu', 'nil', 'none', 'tak ada', 'takde', 'x'].includes(s);
+        }
+
+        // dd/mm/yyyy atau dd/mm/yy (juga - atau .) -> Date (tempatan), atau null
+        // Nama bulan Melayu & Inggeris (3 huruf pertama) untuk format "12 Nov 2026" / "12 Ogos 2026"
+        const MONTH_NAME_MAP = {
+            jan: 1, feb: 2, mac: 3, mar: 3, apr: 4, mei: 5, may: 5, jun: 6, jul: 7,
+            ogo: 8, aug: 8, sep: 9, okt: 10, oct: 10, nov: 11, dis: 12, dec: 12
+        };
+
+        function buildDate(y, mo, d) {
+            if (y < 100) y += 2000;
+            if (d < 1 || d > 31 || mo < 1 || mo > 12 || y < 2000 || y > 2100) return null;
+            const dt = new Date(y, mo - 1, d);
+            return dt.getMonth() === mo - 1 ? dt : null; // tolak 31/11, 30/02 dan sebagainya
+        }
+
+        // Pulangkan Date (tempatan, tengah malam) atau null.
+        // Disokong: 12/11/2026, 12/11/26, 12-11-2026, 12.11.2026, "12 / 11 / 2026",
+        //           2026-11-12 (ISO, dari Sheets/CSV), 12 Nov 2026, 12 Ogos 2026
+        function parseTarikh(str) {
+            const s = String(str || '').trim();
+            if (!s) return null;
+
+            // ISO yyyy-mm-dd MESTI disemak dahulu. Sebelum ini "2026-11-12" dibaca
+            // sebagai 26/11/2012 dan laporan masuk bulan & minggu yang salah.
+            let m = s.match(/\b(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})\b/);
+            if (m) return buildDate(Number(m[1]), Number(m[2]), Number(m[3]));
+
+            // dd/mm/yyyy atau dd/mm/yy (ruang di sekeliling pemisah dibenarkan)
+            m = s.match(/(?:^|[^\d])(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4}|\d{2})(?!\d)/) ||
+                s.match(/^(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4}|\d{2})(?!\d)/);
+            if (m) return buildDate(Number(m[3]), Number(m[2]), Number(m[1]));
+
+            // 12 Nov 2026 / 12 November 2026 / 12 Ogos 2026
+            m = s.match(/(\d{1,2})\s+([A-Za-z]{3,})\.?\s+(\d{4}|\d{2})(?!\d)/);
+            if (m) {
+                const mo = MONTH_NAME_MAP[m[2].slice(0, 3).toLowerCase()];
+                if (mo) return buildDate(Number(m[3]), mo, Number(m[1]));
+            }
+            return null;
+        }
+
+        function formatTarikh(dt) {
+            if (!dt) return '-';
+            const p = n => String(n).padStart(2, '0');
+            return `${p(dt.getDate())}/${p(dt.getMonth() + 1)}/${dt.getFullYear()}`;
+        }
+
+        // "7.30am", "3.00pm", "07:30", "1530", "3 petang" -> { min, hasSuffix } atau null
+        function parseTime(str) {
+            const s = String(str || '').toLowerCase().replace(/\s+/g, '');
+            let m = s.match(/^(\d{1,2})(?:[.:](\d{2}))?(am|pm|pagi|ptg|petang|tengahari|malam)?$/);
+            let h, mi, suf;
+            if (m) {
+                h = Number(m[1]); mi = Number(m[2] || 0); suf = m[3] || '';
+            } else {
+                m = s.match(/^(\d{2})(\d{2})(am|pm)?$/);
+                if (!m) return null;
+                h = Number(m[1]); mi = Number(m[2]); suf = m[3] || '';
+            }
+            if (h > 23 || mi > 59) return null;
+            if (['pm', 'ptg', 'petang', 'malam'].includes(suf) && h < 12) h += 12;
+            if (suf === 'tengahari' && h < 11) h += 12;
+            if ((suf === 'am' || suf === 'pagi') && h === 12) h = 0;
+            return { min: h * 60 + mi, hasSuffix: !!suf };
+        }
+
+        // Tempoh kerja dalam jam. Pulangkan null jika tak munasabah (0 atau > 16 jam).
+        function workHours(mula, tamat) {
+            const a = parseTime(mula), b = parseTime(tamat);
+            if (!a || !b) return null;
+            let diff = b.min - a.min;
+            // "7.30" - "3.00" tanpa am/pm: anggap tamat waktu petang
+            if (diff <= 0 && !b.hasSuffix) diff += 12 * 60;
+            if (diff <= 0 || diff > 16 * 60) return null;
+            return diff / 60;
+        }
+
+        // "M. BADRUL" dan "m.badrul" dikira orang yang sama
+        function surveyorKey(nama) {
+            return String(nama || '').toUpperCase().replace(/\s+/g, ' ').replace(/\.\s*/g, '.').trim();
+        }
+
+        function initials(nama) {
+            const parts = String(nama || '').replace(/[^A-Za-z\s.]/g, ' ').split(/[\s.]+/).filter(Boolean);
+            if (parts.length === 0) return '?';
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        // ============================================================================
+        // STATISTIK SURVEYOR
+        // ============================================================================
+        let currentView = 'laporan';
+        let surveyorSort = 'laporan';
+        let lastSurveyorList = [];
+
+        function switchView(view) {
+            currentView = view === 'statistik' ? 'statistik' : 'laporan';
+            document.getElementById('viewLaporan').classList.toggle('hidden', currentView !== 'laporan');
+            document.getElementById('viewStatistik').classList.toggle('hidden', currentView !== 'statistik');
+
+            document.querySelectorAll('.view-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-jm-gold', 'text-jm-navy', 'font-bold', 'shadow-md');
+                btn.classList.add('text-blue-100', 'font-semibold', 'hover:bg-white/10', 'hover:text-white');
+            });
+            const active = document.getElementById(`view-tab-${currentView}`);
+            active.classList.remove('text-blue-100', 'font-semibold', 'hover:bg-white/10', 'hover:text-white');
+            active.classList.add('bg-jm-gold', 'text-jm-navy', 'font-bold', 'shadow-md');
+
+            try { history.replaceState(null, '', currentView === 'statistik' ? '#statistik' : '#'); } catch (e) {}
+            if (currentView === 'statistik') renderSurveyorStats();
+        }
+
+        function setSurveyorSort(key) {
+            surveyorSort = key;
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.classList.remove('bg-jm-navy', 'text-white', 'shadow-sm');
+                btn.classList.add('text-slate-600');
+            });
+            const b = document.getElementById(`sort-${key}`);
+            b.classList.remove('text-slate-600');
+            b.classList.add('bg-jm-navy', 'text-white', 'shadow-sm');
+            renderSurveyorStats();
+        }
+
+        // ============================================================================
+        // PENAPIS TEMPOH (BULAN & MINGGU)
+        // ============================================================================
+        const BULAN = ['Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun', 'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'];
+        const BULAN_PENDEK = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
+        const HARI_PENDEK = ['Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'];
+
+        let statMonth = null;   // null = belum dipilih (auto pilih bulan terkini), 'ALL' atau 'YYYY-MM'
+        let statWeek = 'ALL';   // 'ALL' atau indeks minggu (0, 1, 2...)
+
+        function monthKey(dt) {
+            return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        // Minggu Isnin–Ahad, dipotong ikut sempadan bulan supaya setiap hari hanya
+        // masuk dalam bulan sendiri. Minggu pertama/akhir boleh jadi kurang 7 hari.
+        // Contoh Nov 2026: M1 = 1 (Ahd), M2 = 2–8, M3 = 9–15, M4 = 16–22, M5 = 23–29, M6 = 30.
+        function getMonthWeeks(key) {
+            const [y, m] = key.split('-').map(Number);
+            const monthEnd = new Date(y, m, 0);
+            const weeks = [];
+            let start = new Date(y, m - 1, 1);
+            while (start <= monthEnd) {
+                const daysToSunday = (7 - start.getDay()) % 7; // Ahad = 0
+                let end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + daysToSunday);
+                if (end > monthEnd) end = new Date(monthEnd);
+                weeks.push({ start: new Date(start), end });
+                start = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1);
+            }
+            return weeks;
+        }
+
+        function weekRangeLabel(w) {
+            const a = w.start.getDate(), b = w.end.getDate(), mo = BULAN_PENDEK[w.end.getMonth()];
+            return a === b ? `${a} ${mo}` : `${a}–${b} ${mo}`;
+        }
+
+        // Julat tarikh aktif ikut penapis. null = tiada had (Semua Bulan)
+        function getActiveRange() {
+            if (!statMonth || statMonth === 'ALL') return null;
+            const weeks = getMonthWeeks(statMonth);
+            if (statWeek !== 'ALL' && weeks[statWeek]) {
+                return { start: weeks[statWeek].start, end: weeks[statWeek].end, weeks, week: weeks[statWeek] };
+            }
+            return { start: weeks[0].start, end: weeks[weeks.length - 1].end, weeks, week: null };
+        }
+
+        function filterByPeriod(data, range) {
+            if (!range) return { list: data, invalid: 0 };
+            let invalid = 0;
+            const startT = range.start.getTime(), endT = range.end.getTime();
+            const list = data.filter(item => {
+                const dt = parseTarikh(item.tarikh);
+                if (!dt) { invalid++; return false; }
+                const t = dt.getTime();
+                return t >= startT && t <= endT;
+            });
+            return { list, invalid };
+        }
+
+        // Bina pilihan bulan dari data (terbaru dahulu). Kekalkan pilihan pengguna jika masih wujud.
+        function refreshMonthOptions() {
+            const select = document.getElementById('statMonthSelect');
+            const keys = new Set();
+            reportsData.forEach(r => { const dt = parseTarikh(r.tarikh); if (dt) keys.add(monthKey(dt)); });
+            const months = [...keys].sort().reverse();
+
+            if (statMonth === null) {
+                const nowKey = monthKey(new Date());
+                statMonth = months.includes(nowKey) ? nowKey : (months[0] || 'ALL');
+            } else if (statMonth !== 'ALL' && !months.includes(statMonth)) {
+                statMonth = months[0] || 'ALL';
+                statWeek = 'ALL';
+            }
+
+            select.innerHTML = `<option value="ALL">Semua Bulan</option>` + months.map(k => {
+                const [y, m] = k.split('-').map(Number);
+                return `<option value="${k}">${BULAN[m - 1]} ${y}</option>`;
+            }).join('');
+            select.value = statMonth;
+        }
+
+        function setStatMonth(value) {
+            statMonth = value || 'ALL';
+            statWeek = 'ALL';
+            renderSurveyorStats();
+        }
+
+        function setStatWeek(value) {
+            statWeek = value === 'ALL' ? 'ALL' : Number(value);
+            renderSurveyorStats();
+        }
+
+        function renderWeekPills(range) {
+            const bar = document.getElementById('statWeekBar');
+            const pills = document.getElementById('statWeekPills');
+            if (!range) {
+                bar.classList.add('hidden');
+                bar.classList.remove('flex');
+                pills.innerHTML = '';
+                return;
+            }
+            bar.classList.remove('hidden');
+            bar.classList.add('flex');
+
+            const pill = (val, label, sub) => {
+                const active = String(statWeek) === String(val);
+                return `<button type="button" data-week="${val}" class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap text-left ${active ? 'bg-jm-navy text-white shadow-sm' : 'text-slate-600 hover:text-jm-navy hover:bg-white/60'}">
+                    <span class="font-bold">${label}</span>${sub ? `<span class="block text-[10px] font-medium ${active ? 'text-jm-gold' : 'text-slate-400'}">${sub}</span>` : ''}
+                </button>`;
+            };
+            pills.innerHTML = pill('ALL', 'Semua', 'Sebulan') +
+                range.weeks.map((w, i) => pill(i, `Minggu ${i + 1}`, weekRangeLabel(w))).join('');
+        }
+
+        document.getElementById('statWeekPills').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-week]');
+            if (b) setStatWeek(b.dataset.week);
+        });
+
+        // ============================================================================
+        // KIRA STATISTIK
+        // ============================================================================
+        // Data disusun terbaru dahulu, jadi rekod pertama bagi setiap No File = laporan terkini fail itu
+        function buildSurveyorStats(data) {
+            const map = new Map();
+
+            data.forEach(item => {
+                const key = surveyorKey(item.nama);
+                if (!key || key === '-') return;
+
+                if (!map.has(key)) {
+                    map.set(key, {
+                        key, nama: String(item.nama).trim(),
+                        reports: 0, issues: 0, hours: 0, hoursCount: 0,
+                        days: new Set(), dayCounts: new Map(), files: new Map(),
+                        lastDate: null, lastTarikhRaw: item.tarikh
+                    });
+                }
+                const s = map.get(key);
+                s.reports++;
+                if (hasIssue(item)) s.issues++;
+
+                const dt = parseTarikh(item.tarikh);
+                if (dt) {
+                    const t = dt.getTime();
+                    s.days.add(t);
+                    s.dayCounts.set(t, (s.dayCounts.get(t) || 0) + 1);
+                    if (!s.lastDate || dt > s.lastDate) s.lastDate = dt;
+                } else if (item.tarikh && item.tarikh !== '-') {
+                    s.days.add('raw:' + item.tarikh);
+                }
+
+                const h = workHours(item.waktuMula, item.waktuTamat);
+                if (h !== null) { s.hours += h; s.hoursCount++; }
+
+                // Laporan terkini setiap fail ikut TARIKH. Jika tarikh sama/tak sah, rekod lebih awal
+                // dalam senarai (lebih baru dihantar) diutamakan.
+                const fileKey = String(item.noFile || '-').trim().toUpperCase();
+                if (fileKey !== '-') {
+                    const existing = s.files.get(fileKey);
+                    const isNewer = !existing || (dt && (!existing.date || dt > existing.date));
+                    if (isNewer) {
+                        const asal = parseTarikh(item.jangkaAsal);
+                        const semasa = parseTarikh(item.jangkaSemasa);
+                        s.files.set(fileKey, {
+                            noFile: item.noFile,
+                            date: dt,
+                            progress: Math.min(100, progressNum(item.totalSiap)),
+                            done: isRecordDone(item),
+                            delayed: !!(asal && semasa && semasa > asal),
+                            tugasan: item.tugasan
+                        });
+                    }
+                }
+            });
+
+            return [...map.values()].map(s => {
+                const files = [...s.files.values()].sort((a, b) => (b.date ? b.date.getTime() : 0) - (a.date ? a.date.getTime() : 0));
+                const avgProgress = files.length ? Math.round(files.reduce((a, f) => a + f.progress, 0) / files.length) : 0;
+                return {
+                    ...s,
+                    fileList: files,
+                    fileCount: files.length,
+                    filesDone: files.filter(f => f.done).length,
+                    filesDelayed: files.filter(f => f.delayed && !f.done).length,
+                    avgProgress,
+                    activeDays: s.days.size,
+                    avgHours: s.hoursCount ? s.hours / s.hoursCount : 0
+                };
+            });
+        }
+
+        function activityBadge(lastDate) {
+            if (!lastDate) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">Tarikh tak sah</span>`;
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const diff = Math.round((today - lastDate) / 86400000);
+            if (diff <= 1) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-jm-blue"><i class="fa-solid fa-circle text-[6px] align-middle mr-1"></i>Aktif</span>`;
+            if (diff <= 7) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-jm-gold/30 text-jm-navy">${diff} hari lalu</span>`;
+            return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">${diff} hari lalu</span>`;
+        }
+
+        // Jalur aktiviti: harian (jika minggu dipilih) atau mingguan (jika sebulan)
+        function activityStrip(s, range) {
+            if (!range) return '';
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+
+            if (range.week) {
+                const cells = [];
+                for (let d = new Date(range.week.start); d <= range.week.end; d.setDate(d.getDate() + 1)) {
+                    const t = d.getTime();
+                    const n = s.dayCounts ? (s.dayCounts.get(t) || 0) : 0;
+                    const future = d > today;
+                    const cls = n > 0 ? 'bg-jm-navy text-jm-gold' : (future ? 'bg-white text-slate-300 border border-dashed border-slate-200' : 'bg-slate-100 text-slate-400');
+                    cells.push(`<div class="flex-1 min-w-0 rounded-lg py-1.5 text-center ${cls}" title="${formatTarikh(d)}: ${n} laporan">
+                        <div class="text-[9px] font-semibold uppercase">${HARI_PENDEK[d.getDay()]}</div>
+                        <div class="text-xs font-extrabold">${d.getDate()}</div>
+                    </div>`);
+                }
+                return `<div class="space-y-1.5">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Kehadiran Laporan Minggu Ini</p>
+                    <div class="flex gap-1">${cells.join('')}</div>
+                </div>`;
+            }
+
+            const counts = range.weeks.map(w => {
+                let n = 0;
+                if (s.dayCounts) s.dayCounts.forEach((c, t) => { if (t >= w.start.getTime() && t <= w.end.getTime()) n += c; });
+                return n;
+            });
+            const max = Math.max(1, ...counts);
+            const cells = range.weeks.map((w, i) => {
+                const n = counts[i];
+                const pct = Math.round((n / max) * 100);
+                return `<div class="flex-1 min-w-0 text-center" title="Minggu ${i + 1} (${weekRangeLabel(w)}): ${n} laporan">
+                    <div class="h-12 bg-slate-100 rounded-lg flex items-end overflow-hidden">
+                        <div class="w-full ${n > 0 ? 'bg-gradient-to-t from-jm-navy to-jm-royal' : ''} rounded-lg" style="height:${n > 0 ? Math.max(12, pct) : 0}%"></div>
+                    </div>
+                    <div class="text-[10px] font-bold text-slate-600 mt-1">M${i + 1}</div>
+                    <div class="text-[10px] text-slate-400">${n}</div>
+                </div>`;
+            }).join('');
+            return `<div class="space-y-1.5">
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Laporan Setiap Minggu</p>
+                <div class="flex gap-1.5">${cells}</div>
+            </div>`;
+        }
+
+        // Susunan tetap: surveyor ini sentiasa di atas, ikut turutan ini.
+        // Padanan ikut perkataan dalam nama, jadi "M.BADRUL" dan "Mohd Badrul" kedua-duanya = BADRUL.
+        const SURVEYOR_ORDER = ['Badrul', 'Riduwan', 'Ridhzuan', 'Helmi', 'Syahmi'];
+        const SURVEYOR_ORDER_KEYS = SURVEYOR_ORDER.map(n => n.toUpperCase());
+
+        function priorityIndex(nama) {
+            const tokens = surveyorKey(nama).split(/[^A-Z]+/).filter(Boolean);
+            return SURVEYOR_ORDER_KEYS.findIndex(k => tokens.includes(k));
+        }
+
+        // Kad kosong untuk surveyor utama yang belum pernah hantar laporan (atau nama dieja lain)
+        function priorityPlaceholders(existing) {
+            const found = new Set(existing.map(s => priorityIndex(s.nama)).filter(i => i >= 0));
+            return SURVEYOR_ORDER.map((nama, i) => found.has(i) ? null : {
+                key: 'PRIORITY:' + i, nama, reports: 0, issues: 0, hours: 0, avgHours: 0,
+                activeDays: 0, fileList: [], fileCount: 0, filesDone: 0, filesDelayed: 0, avgProgress: 0,
+                dayCounts: new Map(), overallLast: null, overallLastRaw: '-', noReport: true, neverReported: true
+            }).filter(Boolean);
+        }
+
+        function periodTitle(range) {
+            if (!range) return 'Semua Tempoh';
+            const [y, m] = statMonth.split('-').map(Number);
+            if (range.week) return `Minggu ${statWeek + 1} • ${formatTarikh(range.week.start)} – ${formatTarikh(range.week.end)}`;
+            return `${BULAN[m - 1]} ${y} (Sebulan)`;
+        }
+
+        function renderSurveyorStats() {
+            const grid = document.getElementById('surveyorCardsGrid');
+            if (!grid) return;
+            const empty = document.getElementById('surveyorEmpty');
+
+            refreshMonthOptions();
+            const range = getActiveRange();
+            renderWeekPills(range);
+            document.getElementById('statPeriodTitle').textContent = periodTitle(range);
+
+            const { list: periodData, invalid } = filterByPeriod(reportsData, range);
+            const note = document.getElementById('statInvalidNote');
+            if (range && invalid > 0) {
+                note.textContent = `${invalid} laporan tidak dikira sebab format TARIKH tak dapat dibaca (perlu dd/mm/yyyy). Edit laporan tersebut untuk betulkan.`;
+                note.classList.remove('hidden');
+            } else {
+                note.classList.add('hidden');
+            }
+
+            // Semua surveyor yang pernah melapor (untuk tunjuk siapa tiada laporan dalam tempoh)
+            const allTime = buildSurveyorStats(reportsData);
+            const lastDateByKey = new Map(allTime.map(s => [s.key, s]));
+            const inPeriod = buildSurveyorStats(periodData);
+            const inPeriodKeys = new Set(inPeriod.map(s => s.key));
+
+            // Badge aktiviti sentiasa ikut laporan terakhir keseluruhan, bukan tempoh
+            inPeriod.forEach(s => {
+                const a = lastDateByKey.get(s.key);
+                s.overallLast = a ? a.lastDate : s.lastDate;
+                s.overallLastRaw = a ? a.lastTarikhRaw : s.lastTarikhRaw;
+            });
+            const missing = allTime.filter(s => !inPeriodKeys.has(s.key)).map(s => ({
+                key: s.key, nama: s.nama, reports: 0, issues: 0, hours: 0, avgHours: 0,
+                activeDays: 0, fileList: [], fileCount: 0, filesDone: 0, filesDelayed: 0, avgProgress: 0,
+                dayCounts: new Map(), overallLast: s.lastDate, overallLastRaw: s.lastTarikhRaw, noReport: true
+            }));
+            const placeholders = priorityPlaceholders(allTime);
+
+            // Ringkasan pasukan (ikut tempoh, tak ikut carian)
+            const allFiles = new Map();
+            inPeriod.forEach(s => s.fileList.forEach(f => {
+                const k = String(f.noFile).toUpperCase();
+                if (!allFiles.has(k)) allFiles.set(k, f);
+            }));
+            const filesArr = [...allFiles.values()];
+            const top = [...inPeriod].sort((a, b) => b.reports - a.reports)[0];
+            document.getElementById('teamTotalSurveyor').textContent = inPeriod.length;
+            document.getElementById('teamAllSurveyor').textContent = allTime.length + placeholders.length;
+            document.getElementById('teamReportCount').textContent = periodData.length;
+            document.getElementById('teamTopSurveyor').textContent = top ? `${top.nama} (${top.reports})` : '-';
+            document.getElementById('teamFiles').textContent = filesArr.length;
+            document.getElementById('teamFilesDone').textContent = filesArr.filter(f => f.done).length;
+            document.getElementById('teamHours').textContent = `${Math.round(inPeriod.reduce((a, s) => a + s.hours, 0))} j`;
+            document.getElementById('teamDelayed').textContent = filesArr.filter(f => f.delayed && !f.done).length;
+
+            // Carian & susunan (surveyor tanpa laporan sentiasa di bawah)
+            const q = (document.getElementById('surveyorSearch').value || '').toLowerCase().trim();
+            const match = s => !q || s.nama.toLowerCase().includes(q);
+            const sorters = {
+                laporan: (a, b) => b.reports - a.reports || a.nama.localeCompare(b.nama),
+                kemajuan: (a, b) => b.avgProgress - a.avgProgress || b.reports - a.reports,
+                isu: (a, b) => b.issues - a.issues || b.reports - a.reports,
+                nama: (a, b) => a.nama.localeCompare(b.nama)
+            };
+            const sorter = sorters[surveyorSort] || sorters.laporan;
+            // 1) Surveyor utama ikut SURVEYOR_ORDER (walaupun tiada laporan dalam tempoh)
+            // 2) Surveyor lain yang melapor, ikut butang susunan
+            // 3) Surveyor lain tanpa laporan dalam tempoh, ikut nama
+            const everyone = [...inPeriod, ...missing, ...placeholders].filter(match);
+            const priority = everyone
+                .filter(s => priorityIndex(s.nama) >= 0)
+                .sort((a, b) => priorityIndex(a.nama) - priorityIndex(b.nama) || b.reports - a.reports);
+            const others = everyone.filter(s => priorityIndex(s.nama) < 0);
+            const list = [
+                ...priority,
+                ...others.filter(s => !s.noReport).sort(sorter),
+                ...others.filter(s => s.noReport).sort((a, b) => a.nama.localeCompare(b.nama))
+            ];
+            lastSurveyorList = list;
+
+            const missingCount = list.filter(s => s.noReport).length;
+            document.getElementById('surveyorCountBadge').textContent =
+                `${list.length - missingCount} Surveyor` + (missingCount ? ` • ${missingCount} tiada laporan` : '');
+
+            if (list.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            grid.innerHTML = list.map((s, idx) => {
+                // Nombor kedudukan kad (bukan ranking prestasi)
+                const rankHtml = `<span class="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold flex items-center justify-center ring-2 ring-white">${idx + 1}</span>`;
+                const lastLabel = s.overallLast ? formatTarikh(s.overallLast) : escapeHtml(s.overallLastRaw || '-');
+                const header = (rankHtml) => `
+                    <div class="p-5 flex items-start gap-3 border-b border-slate-100">
+                        <div class="relative shrink-0">
+                            <div class="w-12 h-12 rounded-xl ${s.noReport ? 'bg-slate-200 text-slate-500' : 'bg-gradient-to-br from-jm-navy to-jm-blue text-jm-gold'} font-extrabold flex items-center justify-center text-sm shadow">
+                                ${escapeHtml(initials(s.nama))}
+                            </div>
+                            ${rankHtml}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="font-extrabold ${s.noReport ? 'text-slate-500' : 'text-jm-navy'} text-sm truncate" title="${escapeHtml(s.nama)}">${escapeHtml(s.nama)}</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Laporan terakhir: <span class="font-mono font-semibold text-slate-700">${lastLabel}</span></p>
+                        </div>
+                        <div class="shrink-0">${s.neverReported
+                            ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">Belum melapor</span>'
+                            : activityBadge(s.overallLast)}</div>
+                    </div>`;
+                const footer = `
+                    <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/70 mt-auto">
+                        <button type="button" data-surveyor-idx="${idx}" class="w-full py-2 rounded-xl ${s.noReport ? 'bg-white text-jm-navy border border-slate-300 hover:bg-blue-50' : 'bg-jm-navy hover:bg-jm-blue text-white'} text-xs font-bold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-list-check ${s.noReport ? 'text-jm-blue' : 'text-jm-gold'}"></i> Lihat Semua Laporan
+                        </button>
+                    </div>`;
+
+                if (s.noReport) {
+                    return `
+                    <article class="bg-white rounded-2xl border border-dashed border-slate-300 overflow-hidden flex flex-col opacity-90">
+                        ${header(rankHtml)}
+                        <div class="p-5 space-y-4 flex-1">
+                            <div class="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2.5">
+                                <i class="fa-solid fa-circle-exclamation"></i> ${s.neverReported ? 'Belum ada laporan dengan nama ini' : 'Tiada laporan dalam tempoh ini'}
+                            </div>
+                            ${activityStrip(s, range)}
+                        </div>
+                        ${footer}
+                    </article>`;
+                }
+
+                const filesPreview = s.fileList.slice(0, 4).map(f => `
+                    <div>
+                        <div class="flex items-center justify-between gap-2 text-[11px]">
+                            <span class="font-mono font-semibold text-jm-royal truncate" title="${escapeHtml(f.tugasan || '')}">${escapeHtml(f.noFile)}</span>
+                            <span class="flex items-center gap-1.5 shrink-0">
+                                ${f.delayed && !f.done ? '<span class="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[9px] font-bold">LEWAT</span>' : ''}
+                                <span class="font-bold ${f.done ? 'text-jm-royal' : 'text-amber-700'}">${f.progress}%</span>
+                            </span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                            <div class="h-full ${f.done ? 'bg-jm-royal' : 'bg-jm-gold'}" style="width:${f.progress}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+                const moreFiles = s.fileCount > 4 ? `<p class="text-[11px] text-slate-400">+${s.fileCount - 4} fail lagi</p>` : '';
+
+                return `
+                <article class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                    ${header(rankHtml)}
+                    <div class="p-5 space-y-4 flex-1">
+                        <div class="grid grid-cols-4 gap-2 text-center">
+                            <div class="p-2 rounded-xl bg-blue-50">
+                                <div class="text-lg font-extrabold text-jm-navy">${s.reports}</div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Laporan</div>
+                            </div>
+                            <div class="p-2 rounded-xl bg-slate-50">
+                                <div class="text-lg font-extrabold text-jm-navy">${s.activeDays}</div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Hari</div>
+                            </div>
+                            <div class="p-2 rounded-xl bg-slate-50">
+                                <div class="text-lg font-extrabold text-jm-navy">${s.filesDone}<span class="text-xs text-slate-400">/${s.fileCount}</span></div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Fail Siap</div>
+                            </div>
+                            <div class="p-2 rounded-xl ${s.issues > 0 ? 'bg-red-50' : 'bg-slate-50'}">
+                                <div class="text-lg font-extrabold ${s.issues > 0 ? 'text-red-700' : 'text-jm-navy'}">${s.issues}</div>
+                                <div class="text-[10px] font-semibold text-slate-500 uppercase">Isu</div>
+                            </div>
+                        </div>
+
+                        ${activityStrip(s, range)}
+
+                        ${s.filesDelayed > 0 ? `<div class="text-[11px] font-semibold text-red-700 bg-red-50 rounded-xl px-3 py-2"><i class="fa-solid fa-hourglass-half mr-1"></i> ${s.filesDelayed} fail lewat dari jangka asal</div>` : ''}
+
+                        <div class="space-y-2.5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fail Dalam Tempoh</p>
+                            ${filesPreview || '<p class="text-[11px] text-slate-400">Tiada No File</p>'}
+                            ${moreFiles}
+                        </div>
+                    </div>
+                    ${footer}
+                </article>`;
+            }).join('');
+        }
+
+        // Klik "Lihat Laporan" pada kad -> tapis jadual ikut nama surveyor
+        document.getElementById('surveyorCardsGrid').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-surveyor-idx]');
+            if (!btn) return;
+            const s = lastSurveyorList[Number(btn.dataset.surveyorIdx)];
+            if (!s) return;
+            switchView('laporan');
+            const input = document.getElementById('searchInput');
+            input.value = s.nama;
+            filterReports();
+            document.getElementById('reportTableBody').closest('.lg\\:col-span-8').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        function filterReports() {
+            const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+            if (!q) { renderTable(reportsData); return; }
+            const filtered = reportsData.filter(item =>
+                ['tarikh', 'nama', 'noFile', 'kawasan', 'tugasan', 'status', 'isu', 'maklumat', 'perancangan']
+                    .some(k => String(item[k] || '').toLowerCase().includes(q)) ||
+                surveyorKey(item.nama) === surveyorKey(q)
+            );
+            renderTable(filtered);
+        }
+
+        // Gambar Base64 rekod yang dah masuk Sheet tak dicache (link Drive dah ada).
+        // Gambar rekod PENDING cuba disimpan supaya boleh dihantar semula selepas refresh.
+        // Jika localStorage penuh (had ~5MB), gambar pending dibuang dan ditanda imageDropped.
+        function saveStoredData() {
+            const build = (keepPendingImages) => reportsData.map(r => {
+                if (!/^data:/i.test(String(r.image || ''))) return r;
+                if (keepPendingImages && isPendingLocal(r)) return r;
+                return { ...r, image: '', imageThumb: '', imageDropped: isPendingLocal(r) ? true : r.imageDropped };
+            });
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(build(true)));
+                return;
+            } catch (e) {
+                console.warn('LocalStorage penuh, simpan tanpa gambar pending:', e);
+            }
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(build(false)));
+            } catch (e) {
+                console.warn('LocalStorage penuh atau tidak tersedia:', e);
+            }
+        }
+
+        function loadStoredData() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                reportsData = saved ? JSON.parse(saved) : [];
+                if (!Array.isArray(reportsData)) reportsData = [];
+            } catch (e) {
+                reportsData = [];
+            }
+        }
+
+        function clearLocalData() {
+            const pending = pendingCount();
+            if (pending > 0 && !confirm(`${pending} laporan BELUM masuk Google Sheet dan akan hilang terus jika Reset. Teruskan?`)) {
+                return;
+            }
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            reportsData = [];
+            renderTable(reportsData);
+            updateKPIs(reportsData);
+            showToast('info', 'Data Dikosongkan', 'Rekod tempatan dalam pelayar telah dipadam. Data dalam Google Sheet tidak terjejas.');
+        }
+
+        function setRefreshing(isBusy) {
+            document.getElementById('refreshIcon').classList.toggle('fa-spin', isBusy);
+        }
+
+        async function fetchGoogleSheetData() {
+            setSyncStatus('Syncing...');
+            setRefreshing(true);
+
+            // 1. Cuba Apps Script dahulu
+            if (isMacroConfigured()) {
+                try {
+                    const response = await fetch(MACRO_URL, { method: 'GET', redirect: 'follow' });
+                    const json = await response.json();
+                    if (json && json.status === 'success' && Array.isArray(json.data)) {
+                        const pending = mergeWithSheet(json.data);
+                        setSyncStatus('AppsScript Synced');
+                        setRefreshing(false);
+                        if (pending > 0) {
+                            showToast('warning', 'Sync Berjaya, Ada Pending', `${json.data.length} rekod dari Google Sheet. ${pending} laporan masih belum masuk Sheet, tekan "Hantar Semula".`);
+                        } else {
+                            showToast('success', 'Sync Berjaya', `${json.data.length} rekod dimuat turun dari Google Sheet.`);
+                        }
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('Gagal tarik data dari MACRO_URL, beralih ke CSV fallback:', err);
+                }
+            }
+
+            // 2. Fallback ke Published CSV
+            if (typeof Papa === 'undefined') {
+                setSyncStatus('Offline');
+                setRefreshing(false);
+                return;
+            }
+
+            Papa.parse(currentSheetUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    setRefreshing(false);
+                    if (results && results.data && results.data.length > 0) {
+                        const sheetRecords = results.data.map(row => {
+                            const keys = Object.keys(row);
+                            const getVal = (matchStr) => {
+                                const foundKey = keys.find(k => k.toLowerCase().includes(matchStr.toLowerCase()));
+                                return foundKey ? row[foundKey] : '';
+                            };
+
+                            return {
+                                tarikh: getVal('tarikh') || getVal('date') || '-',
+                                nama: getVal('nama') || getVal('drafter') || '-',
+                                noFile: getVal('file') || getVal('fail') || '-',
+                                tugasan: getVal('tugas') || getVal('output') || '-',
+                                progressHariIni: getVal('hari ini') || getVal('progress') || '-',
+                                totalSiap: getVal('total') || getVal('siap') || '0%',
+                                jangkaAsal: getVal('asal') || '-',
+                                jangkaSemasa: getVal('semasa') || '-',
+                                status: getVal('status') || 'PROSES',
+                                waktuMula: getVal('mula') || '-',
+                                waktuTamat: getVal('tamat') || '-',
+                                isu: getVal('isu') || getVal('halangan') || '-',
+                                maklumat: getVal('maklumat') || getVal('tambahan') || '-',
+                                perancangan: getVal('perancangan') || '-',
+                                image: getVal('gambar') || getVal('image') || '',
+                                // Padanan TEPAT (bukan includes) supaya 'ID' tak tersalah padan lajur lain
+                                id: String(row['ID'] || '').trim(),
+                                versi: Number(row['Versi']) || 1,
+                                editToken: String(row['Edit Token'] || '').trim(),
+                                kawasan: String(row['Kawasan'] || '').trim() || '-',
+                                kuantiti: String(row['Kuantiti'] || '').trim() || '-',
+                                unit: String(row['Unit'] || '').trim() || '-'
+                            };
+                        });
+
+                        const pending = mergeWithSheet(sheetRecords);
+                        setSyncStatus('CSV Synced');
+                        if (pending > 0) {
+                            showToast('warning', 'Sync Berjaya (CSV), Ada Pending', `${sheetRecords.length} rekod dari CSV. ${pending} laporan masih belum masuk Sheet.`);
+                        } else {
+                            showToast('success', 'Sync Berjaya', `${sheetRecords.length} rekod dimuat turun dari Google Sheets (CSV).`);
+                        }
+                    } else {
+                        // Sheet kosong: papar keadaan kosong sahaja, TIDAK hantar data sampel ke Sheet
+                        renderTable(reportsData);
+                        updateKPIs(reportsData);
+                        setSyncStatus('Sheet Kosong');
+                    }
+                },
+                error: function() {
+                    setRefreshing(false);
+                    setSyncStatus('Local Mode');
+                    renderTable(reportsData);
+                    updateKPIs(reportsData);
+                    showToast('error', 'Gagal Sync', 'Tak dapat sambung ke Google Sheet. Papar data tempatan sahaja.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
