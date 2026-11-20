@@ -1608,13 +1608,41 @@ html,body{max-width:100%;overflow-x:hidden}
             return out;
         }
 
+        // Unit dalam teks → nama unit rasmi (sama dengan pilihan Unit borang). '' jika tak dikenal.
+        const UNIT_TEKS = [
+            [/^(m2|m²|m\^2|meter\s*persegi|meter\s*per\s*segi|sq\.?\s*m|sqm|mp)\b/i, 'm²'],
+            [/^(ekar|acres?|ac)\b/i, 'Ekar'],
+            [/^(lots?)\b/i, 'Lot'],
+            [/^(points?|pts?|titik)\b/i, 'Point'],
+            [/^(stesen|stn|stations?)\b/i, 'Stesen'],
+            [/^(kawasan)\b/i, 'Kawasan'],
+            [/^(m|meter|metre|mtr)\b/i, 'Meter'] // paling akhir: "m" jangan telan "m2"
+        ];
+        function unitDalamTeks(selepasNombor) {
+            const s = String(selepasNombor || '').trim();
+            const hit = UNIT_TEKS.find(([re]) => re.test(s));
+            return hit ? hit[1] : '';
+        }
+
         // Progress daripada teks Tugasan (cth. "Topo ±9746 meter persegi"). Lebih ketat daripada lajur Progress:
-        // nombor mesti ada unit atau %, supaya "Recce fasa 2" tak dibaca sebagai 2%.
+        // nombor mesti ada unit atau %, supaya "Recce fasa 2" tak dibaca sebagai 2%. Unit disimpan supaya
+        // computeTaskProgress() boleh tolak kuantiti yang unitnya lain daripada target (cth. "300m" vs Ekar).
         function progressDariTeks(text) {
             const p = parseProgressValue(text);
             const s = String(text || '');
             if (p.pct !== null && !s.includes('%')) return { qty: null, pct: null, done: p.done };
+            if (p.qty !== null) {
+                const cleaned = s.replace(/(\d),(\d{3})(?!\d)/g, '$1$2');
+                const m = cleaned.match(/-?\d+(?:[.,]\d+)?/);
+                p.qtyUnit = m ? unitDalamTeks(cleaned.slice(m.index + m[0].length)) : '';
+                p.qtyDariTeks = true;
+            }
             return p;
+        }
+        // Unit kuantiti dari teks serasi dengan unit target tugas? Unit tak dikenal = tak dikira (elak 4000%).
+        function unitSerasi(unitTeks, unitTarget) {
+            const t = matchUnit(unitTarget);
+            return Boolean(unitTeks) && (!t || unitTeks === t);
         }
         const adaNilai = p => p.qty !== null || p.pct !== null || p.done;
 
@@ -1651,6 +1679,18 @@ html,body{max-width:100%;overflow-x:hidden}
             const iFile = pick(find(['no file', 'no fail', 'file', 'fail']), 2);
             const iTugas = pick(find(['tugasan', 'tugas', 'output', 'task']), 3);
             const iProg = pick(find(['progress hari ini', 'progres hari ini', 'progress', 'progres']), 4);
+            // "Total dah siap" (kumulatif) daripada template laporan WhatsApp. Tiada lajur = -1 (tiada fallback)
+            const iTotal = find(['total dah siap', 'total siap', 'jumlah siap', 'jumlah dah siap']);
+
+            // Mod berstruktur: sheet laporan ada lajur No File, Kawasan, Nama, Tugas, Kuantiti, Unit.
+            // Satu baris = satu tugas di satu kawasan; kuantiti siap dibaca terus (tiada tekaan dari teks).
+            // Header dipadan tepat supaya "Bilangan Kawasan" / "Kuantiti Target" tak tersalah ambil.
+            const exact = cands => hasHeaders ? hl.findIndex(h => cands.includes(h)) : -1;
+            const iKawasan = exact(['kawasan', 'kawasan lapangan', 'lokasi']);
+            const iQty = exact(['kuantiti', 'kuantiti siap', 'kuantiti hari ini', 'qty']);
+            const iUnit = exact(['unit']);
+            const iTugasS = exact(['tugas', 'tugasan']);
+            const berstruktur = iQty !== -1 && iTugasS !== -1;
 
             let lastFile = '';
             const out = [];
@@ -1660,11 +1700,41 @@ html,body{max-width:100%;overflow-x:hidden}
                 let fileRaw = get(iFile);
                 const tugasan = get(iTugas);
                 const progressRaw = get(iProg);
+                const totalRaw = iTotal !== -1 ? get(iTotal) : '';
                 if (!fileRaw && !tugasan && !progressRaw) return;
                 // Sel No File bergabung: warisi No File baris atas
                 if (!fileRaw && lastFile) fileRaw = lastFile;
                 if (fileRaw) lastFile = fileRaw;
                 const parts = splitFileAndKawasan(fileRaw);
+                if (berstruktur) {
+                    const tugasS = get(iTugasS);
+                    const qtyRaw = get(iQty);
+                    const unitRaw = iUnit !== -1 ? get(iUnit) : '';
+                    if (!fileRaw && !tugasS && !qtyRaw) return;
+                    const q = parseFloat(qtyRaw.replace(/(\d),(\d{3})(?!\d)/g, '$1$2').replace(',', '.'));
+                    const unit = matchUnit(unitRaw);
+                    // Kuantiti kosong: guna lajur Progress (jika ada) sebagai sandaran
+                    const sandaran = !(q > 0) && progressRaw ? parseProgressValue(progressRaw) : null;
+                    out.push({
+                        idFile: parts.file,
+                        // Lajur Kawasan diutamakan; jika kosong, guna kawasan yang ditulis selepas No File
+                        kawasanHint: (iKawasan !== -1 ? get(iKawasan) : '') || parts.kawasan,
+                        tarikh: get(iTarikh),
+                        tarikhIso: tarikhToIso(get(iTarikh)),
+                        nama: get(iNama),
+                        tugasan: tugasS,
+                        progressRaw: q > 0 ? `${qtyRaw} ${unitRaw}`.trim() : progressRaw,
+                        rowIdx,
+                        berstruktur: true, // jangan pecah: satu baris = satu tugas
+                        total: parseProgressValue(totalRaw),
+                        ...(q > 0
+                            ? { qty: q, pct: null, done: false,
+                                // Unit diisi tapi lain daripada unit target → ditolak dalam computeTaskProgress
+                                ...(unitRaw ? { qtyUnit: unit || unitRaw, qtyDariTeks: true } : {}) }
+                            : (sandaran || { qty: null, pct: null, done: false }))
+                    });
+                    return;
+                }
                 out.push({
                     idFile: parts.file,
                     kawasanHint: parts.kawasan, // cth. "MCP 001/26 Bangi" → "Bangi"
@@ -1674,6 +1744,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     tugasan,
                     progressRaw,
                     rowIdx, // satu baris laporan boleh dipecah jadi beberapa tugas; rowIdx kekalkan asal-usul
+                    total: parseProgressValue(totalRaw), // kumulatif; dikongsi semua tugas dalam laporan ni
                     ...progressBaris(progressRaw, tugasan)
                 });
             });
@@ -1782,6 +1853,7 @@ html,body{max-width:100%;overflow-x:hidden}
         //  - Progress: jika bilangan baris Progress sama dengan bilangan segmen, dipasangkan ikut susunan;
         //    jika tidak, nilai dibaca daripada teks segmen itu sendiri (cth. "Cerapan 200 m²").
         function pecahLaporan(lap, tasks) {
+            if (lap.berstruktur) return [lap]; // lajur Tugas berstruktur: satu baris = satu tugas
             let segs = pecahTeks(lap.tugasan, PEMISAH_KUAT);
             if (segs.length <= 1) segs = [String(lap.tugasan || '').trim()];
             segs = segs.flatMap(seg => {
@@ -1864,7 +1936,10 @@ html,body{max-width:100%;overflow-x:hidden}
                 sorted = sorted.filter((r, i) => (r.rowIdx ?? i) === lastRow.get(keyOf(r, i)));
                 replacedCount = before - sorted.length;
             }
-            const doneQty = sorted.reduce((t, r) => t + (r.qty || 0), 0);
+            // Kuantiti yang dibaca dari teks Tugasan hanya dikira jika unitnya sama dengan unit target
+            const qtyOf = r => (r.qtyDariTeks && !unitSerasi(r.qtyUnit, task.unit)) ? 0 : (r.qty || 0);
+            const unitTolak = sorted.filter(r => r.qtyDariTeks && r.qty && !unitSerasi(r.qtyUnit, task.unit)).length;
+            const doneQty = sorted.reduce((t, r) => t + qtyOf(r), 0);
             const pctReps = sorted.filter(r => r.pct !== null);
             const pctVal = pctReps.length
                 ? (PERATUS_KUMULATIF ? pctReps[pctReps.length - 1].pct : pctReps.reduce((t, r) => t + r.pct, 0))
@@ -1874,6 +1949,16 @@ html,body{max-width:100%;overflow-x:hidden}
             if (target > 0 && doneQty > 0) parts.push(doneQty / target * 100);
             if (pctVal !== null) parts.push(pctVal);
             let pct = isDone ? 100 : (PERATUS_KUMULATIF ? Math.max(0, ...parts) : parts.reduce((a, b) => a + b, 0));
+            // "Total dah siap" ialah nilai kumulatif: ambil laporan TERKINI yang mengisinya (bukan jumlah).
+            // Progres = yang lebih tinggi antara kiraan harian dan Total dah siap terkini.
+            const denganTotal = sorted.filter(r => r.total && (r.total.pct !== null || r.total.qty !== null || r.total.done));
+            const totalTerkini = denganTotal.length ? denganTotal[denganTotal.length - 1] : null;
+            let totalPct = null;
+            if (totalTerkini) {
+                const t = totalTerkini.total;
+                totalPct = t.done ? 100 : t.pct !== null ? t.pct : (target > 0 ? t.qty / target * 100 : null);
+                if (totalPct !== null && !isDone) pct = Math.max(pct, totalPct);
+            }
             const overTarget = pct > 100.5; // jumlah lebih 100%: kemungkinan salah isi, papar amaran
             pct = Math.min(100, Math.max(0, pct));
             const datesWithValue = sorted.map(r => r.tarikhIso).filter(Boolean);
@@ -1885,7 +1970,10 @@ html,body{max-width:100%;overflow-x:hidden}
                 doneQty: Math.round((isDone && target > 0 ? Math.max(doneQty, target) : doneQty) * 100) / 100,
                 targetQty: Math.round(target * 100) / 100,
                 unit: task.unit || 'Unit',
-                hasTarget: target > 0 || pctVal !== null || isDone,
+                hasTarget: target > 0 || pctVal !== null || isDone || totalPct !== null,
+                totalPct: totalPct !== null ? Math.round(Math.min(100, totalPct) * 10) / 10 : null,
+                totalDate: totalTerkini ? totalTerkini.tarikhIso || '' : '',
+                unitTolak,
                 reportCount: sorted.length,
                 replacedCount,
                 overTarget,
@@ -2144,6 +2232,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     const right = !tp.reportCount ? `<span>Belum ada laporan</span>${tp.hasTarget ? `<b>0%</b>` : ''}`
                         : tp.hasTarget ? `${frac}<b>${cPct}%</b>` : `${frac}<span class="warn-t">Tiada target</span>`;
                     const notes = [
+                        tp.unitTolak && tp.totalPct === null ? `${tp.unitTolak} laporan diabaikan: unit laporan lain daripada unit target (${tp.unit})` : '',
                         tp.overTarget ? 'Jumlah laporan melebihi 100%, semak semula' : '',
                         tp.replacedCount ? `${tp.replacedCount} laporan berganda diganti dengan yang terkini` : ''
                     ].filter(Boolean);
@@ -2170,6 +2259,7 @@ html,body{max-width:100%;overflow-x:hidden}
                                 </div>
                                 <div class="bar sm"><i style="width:${tp.hasTarget && cPct > 0 ? Math.max(cPct, 4) : 0}%;background:${cBarColor}"></i></div>
                                 ${autoTxt ? `<p class="ck-when">${escapeHtml(autoTxt)}</p>` : ''}
+                                ${tp.totalPct !== null ? `<p class="meta" style="margin-top:2px">Total dah siap ${tp.totalPct}%${tp.totalDate ? ` (laporan ${escapeHtml(formatSiapPada(tp.totalDate))})` : ''}</p>` : ''}
                                 ${siapTxt ? `<p class="ck-when">✓ Ditanda siap ${escapeHtml(siapTxt)}</p>` : ''}
                                 ${notes.length ? `<p class="meta warn-t" style="margin-top:4px">${notes.map(escapeHtml).join(' · ')}</p>` : ''}
                             </div>
