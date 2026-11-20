@@ -637,6 +637,48 @@ html,body{max-width:100%;overflow-x:hidden}
         let lastAddedFileId = null;
         let editingRecord = null;      // { id, updatedAt } bila borang dalam mod edit
         const localStatus = new Map(); // id -> nilai Status Checklist yang baru ditanda (CSV terbitan lambat beberapa minit)
+        const localStatusAt = new Map(); // id -> masa ditanda (untuk tamat tempoh simpanan)
+
+        // ---------- Simpan perubahan tempatan merentas refresh ----------
+        // CSV "Publish to web" Google lambat beberapa minit. Tanpa ini, rekod yang baru ditambah / diedit /
+        // ditanda hilang bila halaman di-refresh (F5) sebelum CSV dikemas kini. Disimpan dalam localStorage
+        // browser ini sahaja, dan dibuang sendiri bila CSV dah ada data yang sama atau selepas PENDING_TTL.
+        const PENDING_KEY = 'jm_pending_v1';
+        const PENDING_TTL = 30 * 60 * 1000; // 30 minit
+
+        function savePending() {
+            const now = Date.now();
+            localAddedRecords.forEach(r => { if (!r.__savedAt) r.__savedAt = now; });
+            localEdits.forEach(v => { if (!v.__savedAt) v.__savedAt = now; });
+            localStatus.forEach((v, id) => { if (!localStatusAt.has(id)) localStatusAt.set(id, now); });
+            try {
+                if (!localAddedRecords.length && !localEdits.size && !localStatus.size) {
+                    localStorage.removeItem(PENDING_KEY);
+                    return;
+                }
+                localStorage.setItem(PENDING_KEY, JSON.stringify({
+                    added: localAddedRecords,
+                    edits: [...localEdits.entries()],
+                    status: [...localStatus.entries()].map(([id, v]) => [id, v, localStatusAt.get(id)])
+                }));
+            } catch (e) { /* storage penuh / disekat: abaikan, data tetap ada dalam sheet */ }
+        }
+
+        function loadPending() {
+            let data = null;
+            try { data = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); } catch (e) { data = null; }
+            if (!data || typeof data !== 'object') return;
+            const fresh = t => typeof t === 'number' && Date.now() - t < PENDING_TTL;
+            (Array.isArray(data.added) ? data.added : []).forEach(r => {
+                if (r && typeof r === 'object' && fresh(r.__savedAt)) localAddedRecords.push(r);
+            });
+            (Array.isArray(data.edits) ? data.edits : []).forEach(e => {
+                if (Array.isArray(e) && e[1] && fresh(e[1].__savedAt)) localEdits.set(e[0], e[1]);
+            });
+            (Array.isArray(data.status) ? data.status : []).forEach(e => {
+                if (Array.isArray(e) && fresh(e[2])) { localStatus.set(e[0], e[1]); localStatusAt.set(e[0], e[2]); }
+            });
+        }
         const localEdits = new Map();  // id -> rekod yang baru diedit (sementara CSV belum dikemas kini)
         let isRefreshing = false;
         let toastTimer = null;
@@ -760,6 +802,7 @@ html,body{max-width:100%;overflow-x:hidden}
             renderDropdownMenus(DEFAULT_KATEGORI, DEFAULT_SURVEYORS);
             switchTab('dashboard');
             if (!TARGET_DARI_REKOD) document.getElementById('targetPanel').style.display = '';
+            loadPending(); // pulihkan rekod/edit/tanda yang belum muncul dalam CSV
             refreshAllData();
         });
 
@@ -879,7 +922,8 @@ html,body{max-width:100%;overflow-x:hidden}
                 }
             } catch (err) {
                 console.error("Ralat memproses data CSV:", err);
-                showToast('Ralat memproses data. Sila cuba muat semula.', 'error');
+                // Papar mesej ralat sebenar supaya mudah dikesan (cth. hantar screenshot toast ni)
+                showToast(`Ralat memproses data: ${err && err.message ? err.message : err}. Sila cuba muat semula.`, 'error');
             } finally {
                 if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 400);
                 isRefreshing = false;
@@ -1045,6 +1089,8 @@ html,body{max-width:100%;overflow-x:hidden}
             };
             const editedRekod = parsedRekod.map(applyEdit).map(applyStatus);
             localAddedRecords = localAddedRecords.map(applyEdit).map(applyStatus);
+            [...localStatusAt.keys()].forEach(id => { if (!localStatus.has(id)) localStatusAt.delete(id); });
+            savePending();
 
             const combinedRecords = [...localAddedRecords, ...editedRekod];
             window.__rekodById = new Map(combinedRecords.filter(r => r.id).map(r => [r.id, r]));
@@ -1495,63 +1541,4 @@ html,body{max-width:100%;overflow-x:hidden}
                         unit: unit,
                         jangkaSiap: jangkaSiap,
                         tugasSiap: tugasSiap,
-                        sourceType: sourceType
-                    });
-                }
-            });
-
-            return normalizedList;
-        }
-
-        // =====================================================================
-        // ENJIN PROGRES (dua sumber)
-        //   TARGET  : Rekod Kerja (atau CSV_TARGET_URL) → Tugas + Kuantiti + Unit
-        //   PERATUS : Laporan harian → Progress Hari Ini
-        // Setiap laporan dipadankan ke SATU tugas target (No File sama + Tugas paling serupa).
-        // Progres tugas = jumlah siap ÷ Kuantiti target. Progres fail = purata tugas yang ada target.
-        // =====================================================================
-
-        // Teks untuk perbandingan: huruf kecil, tanpa tanda baca, ruang tunggal
-        function normText(s) {
-            return String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-z0-9]+/g, ' ').trim();
-        }
-
-        // "Progress Hari Ini" → { qty, pct, done }
-        //   "5" / "5 lot" / "1,250 m" → qty   ·   "20%" → pct   ·   "Siap" / "Selesai" → done
-        function parseProgressValue(raw) {
-            const s = String(raw || '').trim();
-            const out = { qty: null, pct: null, done: false };
-            if (!s || s === '-') return out;
-            const cleaned = s.replace(/(\d),(\d{3})(?!\d)/g, '$1$2'); // 1,250 → 1250 (pemisah ribu)
-            const m = cleaned.match(/-?\d+(?:[.,]\d+)?/);
-            if (m) {
-                const n = parseFloat(m[0].replace(',', '.'));
-                if (!isNaN(n) && n > 0) {
-                    const adaUnit = /\d\s*[a-z]/i.test(cleaned.slice(m.index)); // "5 lot", "120m"
-                    if (cleaned.includes('%') || (NOMBOR_BIASA_PERATUS && !adaUnit)) out.pct = n;
-                    else out.qty = n;
-                }
-            } else if (/\b(siap|selesai|complete|completed|done)\b/i.test(s) && !/\b(belum|tak|tidak|x)\b/i.test(s)) {
-                out.done = true;
-            }
-            return out;
-        }
-
-        function splitNames(raw) {
-            return String(raw || '').split(/[,;\/\n&]+|\s+dan\s+/i).map(s => s.trim()).filter(Boolean);
-        }
-
-        // "Muhammad Syahmi" → "Syahmi" jika nama rasmi ada dalam teks; jika tidak, kekalkan nama asal
-        function canonicalSurveyorName(name) {
-            const n = normText(name);
-            const hit = DEFAULT_SURVEYORS.find(s => new RegExp('\\b' + normText(s) + '\\b').test(n));
-            return hit || kawasanLabel(name);
-        }
-
-        function extractLaporanRows(rows) {
-            if (!rows || !rows.length) return [];
-            const first = rows[0];
-            const hasHeaders = first.__hasExplicitHeaders !== false;
-            const hl = (first.__headers || []).map(normText);
-            const find = (cands, exclude
+                        sou
