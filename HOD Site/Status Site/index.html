@@ -597,8 +597,10 @@ html,body{max-width:100%;overflow-x:hidden}
         // Nombor dengan unit (cth. "5 lot", "120 meter") tetap dikira kuantiti siap ÷ Kuantiti target.
         const NOMBOR_BIASA_PERATUS = true;
 
-        // Surveyor, tugas & tarikh sama dihantar lebih sekali = laporan dikemas kini: ambil yang TERAKHIR sahaja.
-        const LAPORAN_BERGANDA_AMBIL_TERAKHIR = true;
+        // Semua laporan untuk satu tugas DIJUMLAHKAN. true = buang baris pendua yang sama sepenuhnya
+        // (tarikh, nama, kawasan, tugas, kuantiti, unit) supaya laporan ter-hantar dua kali tak dikira dua kali.
+        // Edit laporan dalam app Laporan Harian menimpa baris asal (ikut ID), jadi tiada risiko dikira semula.
+        const LAPORAN_BUANG_PENDUA = true;
 
         // Senarai sama dengan Dashboard Laporan Harian supaya kategori Engineering/Strata dari sheet statistik tak tercicir
         const DEFAULT_KATEGORI = ["Kadaster", "Kalibrasi", "Lidar", "Pemetaan Utiliti", "Strata", "TLS", "Topografi"];
@@ -1957,21 +1959,24 @@ html,body{max-width:100%;overflow-x:hidden}
 
         function computeTaskProgress(task, reps) {
             const target = task.kuantiti > 0 ? task.kuantiti : 0;
-            // Susunan CSV = susunan hantar. Sort stabil ikut tarikh, kemudian buang laporan berganda hari sama.
+            // Susunan CSV = susunan hantar. Sort stabil ikut tarikh.
+            // SEMUA laporan untuk tugas ini dijumlahkan (laporan baru menambah, bukan mengganti).
+            // Satu-satunya yang dibuang: baris pendua yang SAMA sepenuhnya dengan baris lain
+            // (tarikh, nama, kawasan, tugas, kuantiti, unit) — biasanya laporan ter-paste / dihantar dua kali.
+            // Segmen dari baris yang sama (cth. "Recce pagi↵Recce petang") tak dikira pendua.
             let sorted = reps.slice().sort((x, y) => (x.tarikhIso || '').localeCompare(y.tarikhIso || ''));
             let replacedCount = 0;
-            if (LAPORAN_BERGANDA_AMBIL_TERAKHIR) {
-                // Laporan hari sama oleh orang sama untuk tugas ini: baris terkini (paling bawah) menang.
-                // Segmen dari baris yang SAMA (satu laporan sebut tugas ni dua kali) dijumlahkan, bukan diganti.
-                const lastRow = new Map();
-                const keyOf = (r, i) => r.tarikhIso ? `${r.tarikhIso}|${normText(r.nama)}` : `#${i}`;
-                sorted.forEach((r, i) => {
-                    const k = keyOf(r, i);
-                    const ri = r.rowIdx ?? i;
-                    if (!lastRow.has(k) || ri > lastRow.get(k)) lastRow.set(k, ri);
-                });
+            if (LAPORAN_BUANG_PENDUA) {
+                const barisPertama = new Map();
+                const kunci = r => [r.tarikhIso || r.tarikh, normText(r.nama), kawasanKey(r.kawasanHint),
+                    normText(r.tugasan), r.qty ?? '', r.qtyUnit || '', r.pct ?? '', r.done ? 1 : 0].join('|');
                 const before = sorted.length;
-                sorted = sorted.filter((r, i) => (r.rowIdx ?? i) === lastRow.get(keyOf(r, i)));
+                sorted = sorted.filter((r, i) => {
+                    const k = kunci(r);
+                    const ri = r.rowIdx ?? `#${i}`;
+                    if (!barisPertama.has(k)) { barisPertama.set(k, ri); return true; }
+                    return barisPertama.get(k) === ri;
+                });
                 replacedCount = before - sorted.length;
             }
             // Kuantiti yang membawa unit (teks Tugasan / lajur Unit) ditukar ke unit target jika boleh
@@ -2284,7 +2289,7 @@ html,body{max-width:100%;overflow-x:hidden}
                     const notes = [
                         tp.unitTolak && tp.totalPct === null ? `${tp.unitTolak} laporan diabaikan: unit "${tp.unitDitolak.join(', ')}" tak boleh ditukar ke ${tp.unit}` : '',
                         tp.overTarget ? 'Jumlah laporan melebihi 100%, semak semula' : '',
-                        tp.replacedCount ? `${tp.replacedCount} laporan berganda diganti dengan yang terkini` : ''
+                        tp.replacedCount ? `${tp.replacedCount} laporan pendua (sama sepenuhnya) tak dikira` : ''
                     ].filter(Boolean);
                     const siapTxt = tp.siap ? formatSiapPada(tp.siap) : '';
                     // Tick auto HANYA bila laporan harian dah cukupkan target (progres 100%, ikut nilai yang dipapar).
