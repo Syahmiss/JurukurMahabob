@@ -211,6 +211,9 @@ button.mini:hover{background:var(--ind-50);border-color:var(--ind-100)}
 .tg-x{border:0;background:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;display:grid;place-items:center;flex:none}
 .tg-x:hover{color:var(--bad);background:var(--line2)}
 .tg-qu{gap:10px}
+/* Kotak tugasan baru: Tugas → Kuantiti + Unit → Tambah */
+.tg-new{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:8px;background:var(--line2)}
+.tg-btn{justify-content:center;width:100%}
 .tg-qu .flab{margin-bottom:4px}
 /* Checklist tugasan dalam kad progres */
 .ck-grp + .ck-grp{margin-top:12px}
@@ -1239,33 +1242,31 @@ html,body{max-width:100%;overflow-x:hidden}
         const MAX_BARIS_SEKALI = 100;  // jumlah rekod sekali hantar; sama dengan CONFIG.MAX_BARIS_SEKALI dalam Apps Script
         const normTugas = v => String(v || '').trim().replace(/\s+/g, ' ');
 
-        // Unit lalai tugasan baru: unit tugasan terakhir dalam blok ni, atau blok pertama yang ada unit
-        function unitLalai(i) {
-            const r = kawasanRows[i];
-            const last = r?.tugasan[r.tugasan.length - 1];
-            if (last?.unit) return last.unit;
-            for (const x of kawasanRows) { const u = x.tugasan.find(t => t.unit)?.unit; if (u) return u; }
-            return '';
-        }
-
         function addTugasanRow(i) {
             const r = kawasanRows[i];
             if (!r) return;
+            const fokus = id => document.getElementById(id)?.focus();
             const v = normTugas(r.draft);
-            if (!v) { document.getElementById(`kr-tg-${i}`)?.focus(); return; }
+            if (!v) { showToast('Taip nama tugasan dahulu.', 'error'); fokus(`kr-tg-${i}`); return; }
             if (r.tugasan.some(t => normText(t.nama) === normText(v))) {
                 showToast(`Tugasan "${v}" dah ada untuk kawasan ni.`, 'error');
+                fokus(`kr-tg-${i}`);
                 return;
             }
+            const qRaw = String(r.draftQty ?? '').trim();
+            const q = Number(qRaw);
+            if (qRaw === '' || !isFinite(q) || q < 0) { showToast(`Isi Kuantiti untuk "${v}".`, 'error'); fokus(`kr-nq-${i}`); return; }
+            if (!UNIT_OPTIONS.includes(r.draftUnit)) { showToast(`Pilih Unit untuk "${v}".`, 'error'); fokus(`kr-nu-${i}`); return; }
             if (r.tugasan.length >= MAX_TUGASAN) {
                 showToast(`Maksimum ${MAX_TUGASAN} tugasan setiap kawasan.`, 'error');
                 return;
             }
-            r.tugasan.push({ nama: v, kuantiti: '', unit: unitLalai(i) });
+            r.tugasan.push({ nama: v, kuantiti: qRaw, unit: r.draftUnit });
+            // Kosongkan nama & kuantiti untuk tugasan seterusnya; Unit dikekalkan (biasanya sama)
             r.draft = '';
+            r.draftQty = '';
             renderKawasanRows();
-            // Terus ke Kuantiti tugasan yang baru ditambah
-            document.getElementById(`kr-q-${i}-${r.tugasan.length - 1}`)?.focus();
+            fokus(`kr-tg-${i}`);
         }
 
         function removeTugasanRow(i, j) {
@@ -1292,7 +1293,7 @@ html,body{max-width:100%;overflow-x:hidden}
         function tugasanBlok(r) {
             const list = r.tugasan.map(t => ({ ...t, nama: normTugas(t.nama) }));
             const d = normTugas(r.draft);
-            if (d && !list.some(t => normText(t.nama) === normText(d))) list.push({ nama: d, kuantiti: '', unit: '' });
+            if (d && !list.some(t => normText(t.nama) === normText(d))) list.push({ nama: d, kuantiti: r.draftQty ?? '', unit: r.draftUnit || '' });
             return list;
         }
 
@@ -1309,8 +1310,9 @@ html,body{max-width:100%;overflow-x:hidden}
         const MAX_KAWASAN = 50;   // sama dengan CONFIG.MAX_BILANGAN_KAWASAN dalam Apps Script
         let kawasanRows = [];     // [{ kawasan, tugasan: [{ nama, kuantiti, unit }], draft, skip, autoName }]
 
+        // draft / draftQty / draftUnit = kotak "tugasan baru" (nama + kuantiti + unit) sebelum ditekan Tambah
         function blankKawasanRow() {
-            return { kawasan: '', tugasan: [], draft: '', skip: false, autoName: false };
+            return { kawasan: '', tugasan: [], draft: '', draftQty: '', draftUnit: '', skip: false, autoName: false };
         }
 
         // Tukar bilangan blok tanpa padam data yang dah ditaip.
@@ -1343,7 +1345,8 @@ html,body{max-width:100%;overflow-x:hidden}
         function tugasanItemHtml(t, i, j, isEdit, req) {
             const unitOpts = `<option value="" disabled ${t.unit ? '' : 'selected'}>Pilih Unit...</option>`
                 + UNIT_OPTIONS.map(u => `<option value="${u}" ${t.unit === u ? 'selected' : ''}>${u}</option>`).join('');
-            const buang = isEdit ? '' : `<button type="button" class="tg-x" onclick="removeTugasanRow(${i},${j})" aria-label="Buang tugasan ${escapeHtml(t.nama)}" title="Buang tugasan"><i data-lucide="x" class="i14"></i></button>`;
+            // Tugasan yang dah ada dalam sheet (ada id) tak boleh dibuang dari sini: API tiada padam
+            const buang = t.id ? '' : `<button type="button" class="tg-x" onclick="removeTugasanRow(${i},${j})" aria-label="Buang tugasan ${escapeHtml(t.nama)}" title="Buang tugasan"><i data-lucide="x" class="i14"></i></button>`;
             return `
                 <li class="tg-item">
                     <div class="tg-top">
@@ -1366,14 +1369,11 @@ html,body{max-width:100%;overflow-x:hidden}
                 </li>`;
         }
 
-        // Medan tugasan dalam blok. Mod edit: satu tugasan (rekod ini) tanpa butang Tambah / Buang.
+        // Medan tugasan dalam blok. Mod edit: semua tugasan kawasan; yang dah ada dalam sheet tak boleh dibuang.
         function tugasanHtml(r, i, isEdit) {
             const req = r.skip ? '' : 'required';
             const items = `<ul class="tg-list">${r.tugasan.map((t, j) => tugasanItemHtml(t, i, j, isEdit, req)).join('')}</ul>`;
-            if (isEdit) {
-                return `<div style="margin-top:10px"><span class="flab">Tugasan</span>${items}</div>`;
-            }
-            const salin = kawasanRows.length > 1 && r.tugasan.length
+            const salin = !isEdit && kawasanRows.length > 1 && r.tugasan.length
                 ? `<button type="button" class="mini" onclick="salinTugasanKeSemua(${i})" title="Salin tugasan blok ini (dengan kuantiti & unit) ke semua kawasan lain"><i data-lucide="copy" class="i12"></i>Salin ke semua kawasan</button>` : '';
             return `
                 <div style="margin-top:10px">
@@ -1381,14 +1381,29 @@ html,body{max-width:100%;overflow-x:hidden}
                         <label class="flab" for="kr-tg-${i}" style="margin-bottom:0">Tugasan${r.tugasan.length ? ` (${r.tugasan.length})` : ''}</label>
                         <span class="sp"></span>${salin}
                     </div>
-                    <div class="tg-add">
-                        <input type="text" id="kr-tg-${i}" class="inp" maxlength="200" autocomplete="off" placeholder="Taip tugasan, cth: Topo"
-                            value="${escapeHtml(r.draft)}" oninput="kawasanRows[${i}].draft=this.value"
-                            onkeydown="if(event.key==='Enter'){event.preventDefault();addTugasanRow(${i})}">
-                        <button type="button" class="btn" onclick="addTugasanRow(${i})"><i data-lucide="plus" class="i16"></i><span>Tambah</span></button>
+                    <!-- Tugasan baru: isi nama, kuantiti & unit, kemudian Tambah -->
+                    <div class="tg-new">
+                        <input type="text" id="kr-tg-${i}" class="inp" maxlength="200" autocomplete="off" placeholder="Nama tugasan, cth: Topo"
+                            aria-label="Nama tugasan baru" value="${escapeHtml(r.draft)}" oninput="kawasanRows[${i}].draft=this.value"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('kr-nq-${i}')?.focus()}">
+                        <div class="fgrid tg-qu">
+                            <div>
+                                <label class="flab" for="kr-nq-${i}">Kuantiti</label>
+                                <input type="number" id="kr-nq-${i}" class="inp" step="any" min="0" placeholder="0.00"
+                                    value="${escapeHtml(r.draftQty)}" oninput="kawasanRows[${i}].draftQty=this.value"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();addTugasanRow(${i})}">
+                            </div>
+                            <div>
+                                <label class="flab" for="kr-nu-${i}">Unit</label>
+                                <select id="kr-nu-${i}" class="inp" onchange="kawasanRows[${i}].draftUnit=this.value">
+                                    <option value="" disabled ${r.draftUnit ? '' : 'selected'}>Pilih Unit...</option>
+                                    ${UNIT_OPTIONS.map(u => `<option value="${u}" ${r.draftUnit === u ? 'selected' : ''}>${u}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <button type="button" class="btn tg-btn" onclick="addTugasanRow(${i})"><i data-lucide="plus" class="i16"></i><span>Tambah tugasan</span></button>
                     </div>
                     ${items}
-                    ${r.tugasan.length ? '' : '<p class="hint" style="margin-top:6px">Setiap tugasan ada Kuantiti & Unit sendiri.</p>'}
                 </div>`;
         }
 
@@ -1409,7 +1424,7 @@ html,body{max-width:100%;overflow-x:hidden}
                 return `
                     <div class="kr${r.skip ? ' skip' : ''}">
                         <div class="kr-h">
-                            <span class="kr-no"><i>${i + 1}</i>${isEdit ? 'Kawasan rekod ini' : `Kawasan ${i + 1}`}${r.skip ? ' · dilangkau' : ''}</span>
+                            <span class="kr-no"><i>${i + 1}</i>${isEdit ? 'Kawasan yang diedit' : `Kawasan ${i + 1}`}${r.skip ? ' · dilangkau' : ''}</span>
                             <span class="sp"></span>${skipBtn}
                         </div>
                         <div class="kr-f">
@@ -1425,7 +1440,8 @@ html,body{max-width:100%;overflow-x:hidden}
             if (info) {
                 const skipped = kawasanRows.filter(r => r.skip).length;
                 const rekod = kawasanRows.filter(r => !r.skip).reduce((n, r) => n + r.tugasan.length, 0);
-                info.textContent = isEdit ? 'Mod edit: satu kawasan, satu tugasan'
+                const baruN = isEdit ? kawasanRows[0].tugasan.filter(t => !t.id).length : 0;
+                info.textContent = isEdit ? `Mod edit: ${kawasanRows[0].tugasan.length - baruN} tugasan sedia ada${baruN ? ` + ${baruN} baru` : ''}`
                     : `${kawasanRows.length} kawasan${skipped ? ` · ${skipped} dilangkau` : ''} · ${rekod} rekod`;
             }
             refreshIcons();
@@ -2619,17 +2635,24 @@ html,body{max-width:100%;overflow-x:hidden}
                 return;
             }
             switchTab('tambah', true);
-            editingRecord = { id: rec.id, updatedAt: rec.updatedAt || '' };
+            // Semua tugasan untuk No File + Kawasan yang sama diedit bersama (rekod yang ada ID sahaja)
+            const fKey = normalizeFileId(rec.idFile);
+            const kKey = kawasanKey(rec.kawasan);
+            const all = (window.__processedData?.combinedRecords || []).filter(r =>
+                r.sourceType === 'rekod' && r.id && r.idFile && normalizeFileId(r.idFile) === fKey && kawasanKey(r.kawasan) === kKey);
+            const group = all.some(r => r.id === rec.id) ? all : [rec, ...all];
+            editingRecord = { id: rec.id, updatedAt: rec.updatedAt || '', ids: new Set(group.map(r => r.id)) };
             resetFieldWorkForm();
 
             document.getElementById('idFile').value = rec.idFile || '';
             document.getElementById('tarikh').value = tarikhToIso(rec.tarikh) || '';
             document.getElementById('jangkaSiap').value = tarikhToIso(rec.jangkaSiap) || '';
-            // Mod edit = satu rekod = satu blok kawasan sahaja
-            const unitOpt = matchUnit(rec.unit);
-            // Mod edit: satu rekod = satu tugasan, diedit terus dalam kotak tugasan blok
+            // Mod edit = satu blok kawasan dengan SEMUA tugasannya (id & updatedAt dibawa untuk semakan conflict)
             kawasanRows = [{ ...blankKawasanRow(), kawasan: rec.kawasan || '',
-                tugasan: [{ nama: rec.tugas || '', kuantiti: rec.kuantiti > 0 ? String(rec.kuantiti) : '', unit: unitOpt || '' }] }];
+                tugasan: group.map(r => ({
+                    id: r.id, updatedAt: r.updatedAt || '',
+                    nama: r.tugas || '', kuantiti: r.kuantiti > 0 ? String(r.kuantiti) : '', unit: matchUnit(r.unit) || ''
+                })) }];
             renderKawasanRows();
 
             // Hanya pilihan rasmi boleh dipilih; nilai lama yang tiada dalam senarai dimaklumkan
@@ -2650,11 +2673,13 @@ html,body{max-width:100%;overflow-x:hidden}
             syncMultiSelectLabels();
             updateKawasanSuggestions();
 
+            // Unit lama dalam sheet yang tiada dalam pilihan (cth. "ha") perlu dipilih semula
+            const unitTakDikenal = [...new Set(group.filter(r => r.unit && !matchUnit(r.unit)).map(r => `${r.tugas}: ${r.unit}`))];
             const bannerText = document.getElementById('editBannerText');
             if (bannerText) {
-                bannerText.innerText = `Mengedit: ${rec.idFile || '-'} · ${rec.kawasan || 'tiada kawasan'} · ${rec.tugas || '-'}.`
-                    + (kat.unknown.length || surv.unknown.length || !unitOpt
-                        ? ` Sila pilih semula: ${[...kat.unknown, ...surv.unknown, ...(!unitOpt && rec.unit ? [rec.unit] : [])].join(', ') || 'Unit'} (tiada dalam senarai).`
+                bannerText.innerText = `Mengedit: ${rec.idFile || '-'} · ${rec.kawasan || 'tiada kawasan'} · ${group.length} tugasan.`
+                    + (kat.unknown.length || surv.unknown.length || unitTakDikenal.length
+                        ? ` Sila pilih semula: ${[...kat.unknown, ...surv.unknown, ...unitTakDikenal].join(', ') || 'Unit'} (tiada dalam senarai).`
                         : '');
             }
             setFormMode('edit');
@@ -2696,7 +2721,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
             // Blok kawasan yang tak dilangkau = rekod yang akan dihantar
             const items = kawasanRows.filter(r => !r.skip).map(r => ({
-                tugasan: isEdit ? r.tugasan.map(t => ({ ...t, nama: normTugas(t.nama) })) : tugasanBlok(r),
+                tugasan: tugasanBlok(r), // termasuk tugasan yang ditaip tapi belum ditekan Tambah
                 kawasan: kawasanLabel(r.kawasan)
             }));
             if (!items.length) {
@@ -2742,7 +2767,7 @@ html,body{max-width:100%;overflow-x:hidden}
             const fNormSubmit = normalizeFileId(fileParts.file);
             const kwKeys = new Set(seen);
             (window.__processedData?.combinedRecords || []).forEach(r => {
-                if (editingRecord && r.id && r.id === editingRecord.id) return;
+                if (editingRecord && r.id && editingRecord.ids?.has(r.id)) return; // rekod kawasan yang sedang diedit
                 const k = kawasanKey(r.kawasan);
                 if (k && r.idFile && normalizeFileId(r.idFile) === fNormSubmit) kwKeys.add(k);
             });
@@ -2764,8 +2789,11 @@ html,body{max-width:100%;overflow-x:hidden}
                 return;
             }
             // Setiap tugasan dalam setiap kawasan = satu rekod, dengan kuantiti & unit tugasan tu sendiri
-            const rekodItems = items.flatMap(it => it.tugasan.map(t => ({ kawasan: it.kawasan, tugas: t.nama, kuantiti: t.kuantiti, unit: t.unit })));
-            if (!isEdit && rekodItems.length > MAX_BARIS_SEKALI) {
+            const rekodItems = items.flatMap(it => it.tugasan.map(t => ({
+                kawasan: it.kawasan, tugas: t.nama, kuantiti: t.kuantiti, unit: t.unit,
+                ...(t.id ? { id: t.id, updatedAt: t.updatedAt || '' } : {})
+            })));
+            if (rekodItems.length > MAX_BARIS_SEKALI) {
                 showModal('Terlalu Banyak Rekod', `${rekodItems.length} rekod (jumlah tugasan semua kawasan). Maksimum ${MAX_BARIS_SEKALI} rekod sekali hantar. Hantar dalam beberapa kali.`, 'error');
                 return;
             }
@@ -2790,8 +2818,11 @@ html,body{max-width:100%;overflow-x:hidden}
                 kategori: selectedKategoriList.join(', '),
                 jangkaSiap: jangkaVal
             };
+            const tanpaId = ({ id, updatedAt, kawasan, ...rest }) => rest;
             const payload = isEdit
-                ? { ...common, ...rekodItems[0], action: 'update', id: editingRecord.id, updatedAt: editingRecord.updatedAt }
+                ? { ...common, kawasan: items[0].kawasan, action: 'editKawasan',
+                    updates: rekodItems.filter(x => x.id).map(x => ({ id: x.id, updatedAt: x.updatedAt, ...tanpaId(x) })),
+                    adds: rekodItems.filter(x => !x.id).map(tanpaId) }
                 : { ...common, action: 'addMany', items: rekodItems };
 
             try {
@@ -2811,11 +2842,24 @@ html,body{max-width:100%;overflow-x:hidden}
 
                 lastAddedFileId = common.idFile;
                 let savedRows = [];
+                let nUpdated = 0, nAdded = 0;
                 if (isEdit) {
-                    // Bilangan kawasan ikut fail sasaran (Apps Script buat perkara yang sama)
-                    const saved = { ...common, ...rekodItems[0], bilanganKawasan: plannedBil, id: result.id || editingRecord.id, updatedAt: result.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' };
-                    localEdits.set(saved.id, saved);
-                    savedRows = [result.row];
+                    // Bilangan kawasan ikut fail sasaran (Apps Script pulangkan nilai yang dipakai)
+                    const bil = result.bilanganKawasan !== undefined && result.bilanganKawasan !== '' ? Number(result.bilanganKawasan) : plannedBil;
+                    const byId = new Map(rekodItems.filter(x => x.id).map(x => [x.id, x]));
+                    (Array.isArray(result.updated) ? result.updated : []).forEach(u => {
+                        const it = byId.get(u.id) || {};
+                        localEdits.set(u.id, { ...common, ...it, bilanganKawasan: bil, id: u.id, updatedAt: u.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' });
+                        if (u.row) savedRows.push(u.row);
+                        nUpdated++;
+                    });
+                    const baruItems = rekodItems.filter(x => !x.id);
+                    const baru = (Array.isArray(result.added) ? result.added : []).map((a, i) => {
+                        if (a.row) savedRows.push(a.row);
+                        return { ...common, ...baruItems[i], bilanganKawasan: bil, id: a.id || '', updatedAt: a.updatedAt || '', isNewlyAdded: true, sourceType: 'rekod' };
+                    });
+                    localAddedRecords.unshift(...baru);
+                    nAdded = baru.length;
                 } else {
                     // Respons addMany: records[i] sepadan dengan items[i]
                     const recs = Array.isArray(result.records) ? result.records : [];
@@ -2842,7 +2886,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
                 const rowTxt = savedRows.length > 1 ? `baris ${Math.min(...savedRows)}–${Math.max(...savedRows)}` : `baris ${savedRows[0] ?? '-'}`;
                 if (isEdit) {
-                    showModal('Kerja Dikemas Kini', `Perubahan untuk "${common.idFile}" (${items[0].kawasan}) disimpan pada ${rowTxt}.`, 'success');
+                    showModal('Kerja Dikemas Kini', `"${common.idFile}" · ${items[0].kawasan}: ${nUpdated} tugasan dikemas kini${nAdded ? `, ${nAdded} tugasan baru ditambah` : ''} (${rowTxt}).`, 'success');
                 } else {
                     showModal('Kerja Berjaya Ditambah', `Fail "${common.idFile}": ${items.length} kawasan (${items.map(i => i.kawasan).join(', ')}) · ${rekodItems.length} tugasan disimpan dalam sheet (${rowTxt}).`, 'success');
                 }
