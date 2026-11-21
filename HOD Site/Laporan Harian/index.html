@@ -1712,7 +1712,7 @@ function reorderColumns() {
             };
         }
 
-        // Tugas untuk dropdown: belum mula atau belum siap sahaja
+        // Tugas untuk dropdown: belum mula atau belum siap sahaja, ikut susunan dalam sheet
         function openTasksForSelection() {
             const seen = new Set();
             const open = [], done = [];
@@ -1723,8 +1723,8 @@ function reorderColumns() {
                 const pr = taskProgress(m);
                 (pr.siap ? done : open).push({ m, pr });
             });
-            const byName = (a, b) => a.m.tugas.localeCompare(b.m.tugas, undefined, { numeric: true, sensitivity: 'base' });
-            return { open: open.sort(byName), done: done.sort(byName) };
+            // Susunan ikut baris dalam sheet Status Site (masterRows kekal ikut susunan CSV)
+            return { open, done };
         }
 
         function taskOptionLabel(m, pr) {
