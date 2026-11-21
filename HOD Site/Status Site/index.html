@@ -2410,27 +2410,26 @@ html,body{max-width:100%;overflow-x:hidden}
                     .map(([u, val]) => `<span class="qty">${val} <b>${escapeHtml(u)}</b></span>`)
                     .join('');
 
-                // Senarai kerja (setiap baris Tambah Kerja) dengan butang Edit
-                const kerjaListHtml = grp.rekodEntries.map(r => {
-                    const meta = [
-                        r.kawasan ? escapeHtml(r.kawasan) : '<span class="warn-t">Tiada kawasan</span>',
-                        escapeHtml([...new Set(splitMultiValues(r.kategori))].join(', ') || 'Umum'),
-                        r.kuantiti > 0 ? `${r.kuantiti} ${escapeHtml(r.unit || 'Unit')}` : '',
-                        r.jangkaSiap ? `Siap ${escapeHtml(formatTarikh(r.jangkaSiap))}` : ''
-                    ].filter(Boolean).join(' · ');
-                    const canEdit = /^[A-Za-z0-9-]{6,64}$/.test(r.id || '');
-                    const btn = canEdit
-                        ? `<button type="button" class="mini" data-id="${escapeHtml(r.id)}" onclick="openEditKerja(this.dataset.id)" aria-label="Edit kerja ${escapeHtml(r.tugas || '')}"><i data-lucide="pencil" class="i12"></i>Edit</button>`
+                // Senarai edit: satu baris setiap KAWASAN (Edit buka semua tugasan kawasan tu sekali gus)
+                const kwEdit = new Map();
+                grp.rekodEntries.forEach(r => {
+                    const k = kawasanKey(r.kawasan) || '__tiada__';
+                    if (!kwEdit.has(k)) kwEdit.set(k, { label: r.kawasan ? kawasanLabel(r.kawasan) : '', id: '' });
+                    const g = kwEdit.get(k);
+                    if (!g.id && /^[A-Za-z0-9-]{6,64}$/.test(r.id || '')) g.id = r.id; // mana-mana rekod ber-ID cukup
+                });
+                const kerjaListHtml = Array.from(kwEdit.values()).map(g => {
+                    const nama = g.label ? escapeHtml(g.label) : '<span class="warn-t">Tiada kawasan</span>';
+                    const btn = g.id
+                        ? `<button type="button" class="mini" data-id="${escapeHtml(g.id)}" onclick="openEditKerja(this.dataset.id)" aria-label="Edit kawasan ${escapeHtml(g.label || '')}"><i data-lucide="pencil" class="i12"></i>Edit</button>`
                         : `<span class="mini dashed" title="Rekod belum ada ID. Jalankan setup() dalam Apps Script Progres, atau tunggu CSV dikemas kini.">Tiada ID</span>`;
                     return `
                         <li>
-                            <div class="min">
-                                <p class="t">${escapeHtml(r.tugas || 'Tanpa tugas')}</p>
-                                <p class="m">${meta}</p>
-                            </div>
+                            <div class="min"><p class="t">${nama}</p></div>
                             ${btn}
                         </li>`;
                 }).join('');
+                const kerjaListCount = kwEdit.size;
 
                 const kawasanHtml = grp.kawasanList.map(kw => {
                     const qty = Object.entries(kw.qty).map(([u, v]) => `${v} ${escapeHtml(u)}`).join(', ');
@@ -2492,7 +2491,7 @@ html,body{max-width:100%;overflow-x:hidden}
                             ${qtySummary ? `<div class="tags">${qtySummary}</div>` : ''}
                             ${kerjaListHtml ? `
                             <details class="kl">
-                                <summary><i data-lucide="chevron-right" class="i14 chev"></i>Senarai kerja &amp; edit (${grp.rekodEntries.length})</summary>
+                                <summary><i data-lucide="chevron-right" class="i14 chev"></i>Edit kawasan (${kerjaListCount})</summary>
                                 <ul>${kerjaListHtml}</ul>
                             </details>` : ''}
                         </div>
