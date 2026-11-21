@@ -69,7 +69,7 @@
                         Laporan Harian Kerja Lapangan
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v3.2</span>
                     </h1>
-                    <p class="text-xs text-blue-200">Copy-paste laporan WhatsApp/Telegram &amp; pantau kemajuan kerja ukur tapak</p>
+                    <p class="text-xs text-blue-200">Borang laporan harian &amp; pantau kemajuan kerja ukur tapak</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 justify-end">
@@ -111,7 +111,7 @@
       <div id="viewLaporan" class="space-y-6">
 
         <!-- KPI Cards -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <section id="kpiSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
             <!-- Card 1: Jumlah Laporan -->
             <div class="bg-gradient-to-br from-jm-navy to-jm-blue text-white rounded-2xl p-5 shadow-md border border-blue-900 relative overflow-hidden group">
@@ -188,7 +188,7 @@
         <section class="space-y-6">
 
             <!-- Borang Laporan Harian -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div id="reportFormCard" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                         <h3 class="font-bold text-jm-navy text-base flex items-center gap-2">
@@ -240,7 +240,7 @@
                             </div>
                             <div>
                                 <label for="f_kawasan" class="form-label">Kawasan <span class="text-red-600">*</span></label>
-                                <select id="f_kawasan" onchange="refreshTaskOptions()" class="form-input">
+                                <select id="f_kawasan" onchange="onKawasanChange()" class="form-input">
                                     <option value="">Pilih kawasan...</option>
                                 </select>
                             </div>
@@ -348,8 +348,27 @@
                 </form>
             </div>
 
+            <!-- Bar: sedang lihat semua laporan seorang surveyor (dari Prestasi Surveyor) -->
+            <div id="surveyorFilterBar" class="hidden bg-jm-navy text-white rounded-2xl px-5 py-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="w-9 h-9 rounded-xl bg-jm-gold/15 flex items-center justify-center shrink-0"><i class="fa-solid fa-user-check text-jm-gold"></i></span>
+                    <div class="min-w-0">
+                        <p class="text-[11px] uppercase tracking-wider text-blue-200 font-semibold">Semua laporan</p>
+                        <p class="font-bold truncate"><span id="surveyorFilterName">-</span> <span id="surveyorFilterCount" class="ml-1 text-xs font-bold bg-jm-gold text-jm-navy px-2 py-0.5 rounded-full">0</span></p>
+                    </div>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button type="button" onclick="switchView('statistik')" class="text-xs px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-semibold transition-colors">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+                    </button>
+                    <button type="button" onclick="closeSurveyorReports()" class="text-xs px-3 py-2 rounded-lg bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold transition-colors">
+                        <i class="fa-solid fa-xmark mr-1"></i> Tutup tapisan
+                    </button>
+                </div>
+            </div>
+
             <!-- Jadual Laporan -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div id="reportTableCard" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h3 class="font-bold text-jm-navy text-lg flex items-center gap-2">
@@ -1328,9 +1347,9 @@ function reorderColumns() {
 
         // Senarai No File & Kawasan (sheet master, published CSV)
         const MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSW5BxrFQw07_bCiTfbARTgXh8qYvbMnLo4Uur7iM6ROw42DMmluHxrxXd3bKxVADyj_dLu_pCoEob8/pub?gid=1800236702&single=true&output=csv";
-        const MASTER_CACHE_KEY = 'drafter_master_files_v2';
+        const MASTER_CACHE_KEY = 'drafter_master_files_v3';
         const NAMA_PREF_KEY = 'drafter_last_nama';
-        let masterRows = [];      // [{ noFile, kawasan, tugas, kuantiti, unit }]
+        let masterRows = [];      // [{ noFile, kawasan, tugas, kuantiti, unit, status }]
 
         // Pilihan Unit dalam dropdown tugas
         const UNITS = ['m', 'km', 'meter persegi', 'ekar', 'stesen', 'point'];
@@ -1484,7 +1503,8 @@ function reorderColumns() {
         const sameText = (a, b) => String(a || '').trim().toUpperCase() === String(b || '').trim().toUpperCase();
 
         // Header sheet master: No File | Kawasan | Tugas | Kuantiti | Unit (tak kira huruf besar/kecil)
-        const MASTER_HEADERS = { noFile: 'no file', kawasan: 'kawasan', tugas: 'tugas', kuantiti: 'kuantiti', unit: 'unit' };
+        // 'status' pilihan: jika ada & bertanda Siap/Selesai, tugas dikira siap walaupun kuantiti belum cukup
+        const MASTER_HEADERS = { noFile: 'no file', kawasan: 'kawasan', tugas: 'tugas', kuantiti: 'kuantiti', unit: 'unit', status: 'status' };
 
         function parseMasterRows(rows) {
             if (!Array.isArray(rows) || rows.length === 0) return [];
@@ -1505,7 +1525,8 @@ function reorderColumns() {
                     kawasan: cell(r, 'kawasan'),
                     tugas: cell(r, 'tugas'),
                     kuantiti: cell(r, 'kuantiti'),
-                    unit: cell(r, 'unit')
+                    unit: cell(r, 'unit'),
+                    status: cell(r, 'status')
                 };
                 if (!row.noFile && !row.kawasan && !row.tugas) return;
                 const key = [row.noFile, row.kawasan, row.tugas].join('||').toUpperCase();
@@ -1656,6 +1677,14 @@ function reorderColumns() {
 
         const sameUnit = (a, b) => String(a || '').replace(/\s+/g, '').toLowerCase() === String(b || '').replace(/\s+/g, '').toLowerCase();
         const fmtNum = n => String(Number(Number(n).toFixed(2)));
+        // Unit dari sheet master dipapar ikut nama dalam dropdown Unit ("meterpersegi" -> "meter persegi")
+        const displayUnit = u => UNITS.find(x => sameUnit(x, u)) || String(u || '');
+
+        // Lajur Status dalam sheet master: "Siap", "Selesai", "Done" = siap; "Belum siap", "Tak siap" = belum
+        function isStatusSiap(status) {
+            const st = String(status || '').toUpperCase();
+            return /\b(SIAP|SELESAI|DONE|COMPLETED?)\b/.test(st) && !/\b(BELUM|TAK|TIDAK|X|NOT)\b/.test(st);
+        }
 
         // Status satu tugas master: jumlah kuantiti yang dah dilapor (semua laporan, termasuk pending)
         // untuk No File + Kawasan + Tugas yang sama, berbanding skop (Kuantiti dalam sheet master).
@@ -1674,10 +1703,12 @@ function reorderColumns() {
             });
             const skop = parseFloat(String(m.kuantiti || '').replace(',', '.'));
             const hasSkop = Number.isFinite(skop) && skop > 0;
+            const statusSiap = isStatusSiap(m.status);
             return {
                 done, reports, skop: hasSkop ? skop : null,
                 baki: hasSkop ? Math.max(skop - done, 0) : null,
-                siap: hasSkop && done >= skop - 1e-9
+                statusSiap,
+                siap: statusSiap || (hasSkop && done >= skop - 1e-9)
             };
         }
 
@@ -1698,7 +1729,7 @@ function reorderColumns() {
 
         function taskOptionLabel(m, pr) {
             if (pr.reports === 0) return `${m.tugas} — belum mula`;
-            if (pr.skop !== null) return `${m.tugas} — baki ${fmtNum(pr.baki)}/${fmtNum(pr.skop)} ${m.unit || ''}`.trim();
+            if (pr.skop !== null) return `${m.tugas} — baki ${fmtNum(pr.baki)}/${fmtNum(pr.skop)} ${displayUnit(m.unit)}`.trim();
             return `${m.tugas} — dah lapor ${pr.reports} kali`;
         }
 
@@ -1717,6 +1748,7 @@ function reorderColumns() {
             markInvalid('f_noFile', false);
             markInvalid('f_kawasan', false);
             refreshTaskOptions();
+            autoFillOpenTasks();
         }
 
         // ============================================================================
@@ -1732,14 +1764,36 @@ function reorderColumns() {
                 `<option value="${TASK_OTHER}">Lain-lain (taip sendiri)</option>`;
         }
 
+        // Lepas pilih No File & Kawasan: isi semua tugas belum siap sebagai baris tugas.
+        // Hanya jika pengguna belum isi apa-apa sendiri; baris auto yang tak disentuh diganti bila tukar fail/kawasan.
+        function autoFillOpenTasks() {
+            if (taskPlaceholder()) return;
+            const userInput = taskRows().some(r => {
+                const v = rowValue(r);
+                return r.dataset.auto !== '1' ? (v.tugas || v.kuantiti) : !!v.kuantiti;
+            });
+            if (userInput) return;
+            const { open } = openTasksForSelection();
+            if (!open.length) { setTaskRows([]); return; }
+            setTaskRows(open.map(({ m }) => ({ tugas: m.tugas, kuantiti: '', unit: m.unit })), { auto: true });
+        }
+
+        function onKawasanChange() {
+            markInvalid('f_kawasan', false);
+            refreshTaskOptions();
+            autoFillOpenTasks();
+        }
+
         function updateTaskStatusHint() {
             const el = document.getElementById('taskStatusHint');
             if (!el) return;
             if (taskPlaceholder()) { el.classList.add('hidden'); return; }
             const { open, done } = openTasksForSelection();
             if (!open.length && !done.length) { el.classList.add('hidden'); return; }
+            const autoRows = taskRows().filter(r => r.dataset.auto === '1').length;
             el.innerHTML = `<i class="fa-solid fa-list-check text-jm-blue mr-1"></i>${open.length} tugas belum siap` +
-                (done.length ? ` • ${done.length} dah siap disorok (${done.map(d => escapeHtml(d.m.tugas)).join(', ')})` : '');
+                (done.length ? ` • ${done.length} dah siap disorok (${done.map(d => escapeHtml(d.m.tugas)).join(', ')})` : '') +
+                (autoRows ? `<span class="block mt-0.5 text-amber-700 font-semibold">Tugas diisi automatik dari Status Site. Isi kuantiti, dan buang (×) tugas yang tak dibuat hari ini.</span>` : '');
             el.classList.remove('hidden');
         }
 
@@ -1775,10 +1829,11 @@ function reorderColumns() {
             if (isOther && fromUser) p.lain.focus();
 
             const info = isOther ? null : masterTaskInfo(p.tugas.value);
-            if (info && info.unit && !p.unit.value) setSelectValue(p.unit, info.unit);
+            // Unit ikut tugas: isi jika kosong, atau ganti bila pengguna tukar tugas (elak unit tugas lama tertinggal)
+            if (info && info.unit && (!p.unit.value || fromUser)) setSelectValue(p.unit, info.unit);
             const pr = info ? taskProgress(info) : null;
             if (pr && pr.skop !== null) {
-                const u = info.unit || '';
+                const u = displayUnit(info.unit);
                 p.skop.textContent = `Skop ${fmtNum(pr.skop)} ${u} • Dah buat ${fmtNum(pr.done)} • Baki ${fmtNum(pr.baki)} ${u}`.replace(/\s+/g, ' ').trim();
                 p.skop.classList.remove('hidden');
             } else if (pr && pr.reports) {
@@ -1812,7 +1867,9 @@ function reorderColumns() {
             list.appendChild(li);
 
             const p = rowParts(li);
-            p.tugas.addEventListener('change', () => onTaskChange(li, true));
+            const touched = () => { delete li.dataset.auto; updateTaskStatusHint(); };
+            p.tugas.addEventListener('change', () => { touched(); onTaskChange(li, true); });
+            p.kuantiti.addEventListener('input', touched);
             [p.lain, p.kuantiti, p.unit].forEach(el => {
                 el.addEventListener('input', () => el.classList.remove('is-invalid'));
                 el.addEventListener('change', () => el.classList.remove('is-invalid'));
@@ -1840,6 +1897,7 @@ function reorderColumns() {
 
         function removeTaskRow(row) {
             row.remove();
+            updateTaskStatusHint();
             if (taskRows().length === 0) addTaskRow(null, false);
             updateTaskRemoveButtons();
         }
@@ -1850,11 +1908,12 @@ function reorderColumns() {
             rows.forEach(r => r.querySelector('.task-remove').classList.toggle('invisible', rows.length === 1));
         }
 
-        function setTaskRows(tasks) {
+        function setTaskRows(tasks, opts = {}) {
             document.getElementById('taskList').innerHTML = '';
             const list = (tasks || []).filter(t => t.tugas);
             if (list.length === 0) addTaskRow(null, false);
-            else list.forEach(t => addTaskRow(t, false));
+            else list.forEach(t => { const li = addTaskRow(t, false); if (opts.auto) li.dataset.auto = '1'; });
+            updateTaskStatusHint();
         }
 
         // Bila No File / Kawasan bertukar: kemas kini pilihan tugas, kekalkan pilihan sedia ada
@@ -3030,9 +3089,11 @@ function reorderColumns() {
             return /\b(SIAP|SELESAI|COMPLETE|DONE)\b/.test(s);
         }
 
+        // "Tiada", "Tiada halangan.", "Takde isu", "N/A", "Nil" = bukan isu
         function hasIssue(item) {
-            const s = String(item.isu || '').trim().toLowerCase();
-            return !!s && !['-', 'tiada', 'tiada isu', 'nil', 'none', 'tak ada', 'takde', 'x'].includes(s);
+            const s = String(item.isu || '').trim().toLowerCase().replace(/[.!\s]+$/, '');
+            if (!s || s === '-') return false;
+            return !/^(tiada|takde|tak\s*ada|x\s*ada|xde|nil|none|n\/?a|no\s*issues?|x)\b/.test(s);
         }
 
         // dd/mm/yyyy atau dd/mm/yy (juga - atau .) -> Date (tempatan), atau null
@@ -3130,7 +3191,44 @@ function reorderColumns() {
         let surveyorSort = 'laporan';
         let lastSurveyorList = [];
 
-        function switchView(view) {
+        // Mod lihat semua laporan seorang surveyor: borang & KPI disorok, jadual ditapis ikut nama
+        let surveyorReportsMode = false;
+
+        function setSurveyorReportsMode(on, nama) {
+            surveyorReportsMode = !!on;
+            document.getElementById('reportFormCard').classList.toggle('hidden', surveyorReportsMode);
+            document.getElementById('kpiSection').classList.toggle('hidden', surveyorReportsMode);
+            document.getElementById('surveyorFilterBar').classList.toggle('hidden', !surveyorReportsMode);
+            if (surveyorReportsMode) document.getElementById('surveyorFilterName').textContent = nama || '-';
+        }
+
+        let surveyorFilter = '';
+
+        function openSurveyorReports(nama) {
+            switchView('laporan', { keepMode: true });
+            surveyorFilter = nama;
+            setSurveyorReportsMode(true, nama);
+            document.getElementById('searchInput').value = '';
+            filterReports();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Tutup tapisan: kembali ke paparan Laporan Harian penuh (borang + semua laporan)
+        function closeSurveyorReports() {
+            surveyorFilter = '';
+            setSurveyorReportsMode(false);
+            document.getElementById('searchInput').value = '';
+            filterReports();
+        }
+
+        function switchView(view, opts = {}) {
+            // Klik tab "Laporan Harian" biasa -> borang dipapar semula
+            if (!opts.keepMode && surveyorReportsMode) {
+                surveyorFilter = '';
+                setSurveyorReportsMode(false);
+                document.getElementById('searchInput').value = '';
+                filterReports();
+            }
             currentView = view === 'statistik' ? 'statistik' : 'laporan';
             document.getElementById('viewLaporan').classList.toggle('hidden', currentView !== 'laporan');
             document.getElementById('viewStatistik').classList.toggle('hidden', currentView !== 'statistik');
@@ -3287,12 +3385,14 @@ function reorderColumns() {
             const map = new Map();
 
             data.forEach(item => {
-                const key = surveyorKey(item.nama);
-                if (!key || key === '-') return;
+                // Gabung variasi nama surveyor utama ("M.BADRUL", "Mohd Badrul" -> Badrul), sama macam dropdown Nama
+                if (surveyorKey(item.nama) === '-' || !String(item.nama || '').trim()) return;
+                const key = templateKey(item.nama);
+                const pIdx = key.startsWith('NAMA:') ? SURVEYOR_ORDER_KEYS.indexOf(key.slice(5)) : -1;
 
                 if (!map.has(key)) {
                     map.set(key, {
-                        key, nama: String(item.nama).trim(),
+                        key, nama: pIdx >= 0 ? SURVEYOR_ORDER[pIdx] : String(item.nama).trim(),
                         reports: 0, issues: 0, hours: 0, hoursCount: 0,
                         days: new Set(), dayCounts: new Map(), files: new Map(),
                         lastDate: null, lastTarikhRaw: item.tarikh
@@ -3307,7 +3407,7 @@ function reorderColumns() {
                     const t = dt.getTime();
                     s.days.add(t);
                     s.dayCounts.set(t, (s.dayCounts.get(t) || 0) + 1);
-                    if (!s.lastDate || dt > s.lastDate) s.lastDate = dt;
+                    if (!s.lastDate || dt > s.lastDate) { s.lastDate = dt; s.lastTarikhRaw = item.tarikh; }
                 } else if (item.tarikh && item.tarikh !== '-') {
                     s.days.add('raw:' + item.tarikh);
                 }
@@ -3566,21 +3666,6 @@ function reorderColumns() {
                     </article>`;
                 }
 
-                const filesPreview = s.fileList.slice(0, 4).map(f => `
-                    <div>
-                        <div class="flex items-center justify-between gap-2 text-[11px]">
-                            <span class="font-mono font-semibold text-jm-royal truncate" title="${escapeHtml(f.tugasan || '')}">${escapeHtml(f.noFile)}</span>
-                            <span class="flex items-center gap-1.5 shrink-0">
-                                ${f.delayed && !f.done ? '<span class="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[9px] font-bold">LEWAT</span>' : ''}
-                                <span class="font-bold ${f.done ? 'text-jm-royal' : 'text-amber-700'}">${f.progress}%</span>
-                            </span>
-                        </div>
-                        <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
-                            <div class="h-full ${f.done ? 'bg-jm-royal' : 'bg-jm-gold'}" style="width:${f.progress}%"></div>
-                        </div>
-                    </div>
-                `).join('');
-                const moreFiles = s.fileCount > 4 ? `<p class="text-[11px] text-slate-400">+${s.fileCount - 4} fail lagi</p>` : '';
 
                 return `
                 <article class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
@@ -3609,11 +3694,6 @@ function reorderColumns() {
 
                         ${s.filesDelayed > 0 ? `<div class="text-[11px] font-semibold text-red-700 bg-red-50 rounded-xl px-3 py-2"><i class="fa-solid fa-hourglass-half mr-1"></i> ${s.filesDelayed} fail lewat dari jangka asal</div>` : ''}
 
-                        <div class="space-y-2.5">
-                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fail Dalam Tempoh</p>
-                            ${filesPreview || '<p class="text-[11px] text-slate-400">Tiada No File</p>'}
-                            ${moreFiles}
-                        </div>
                     </div>
                     ${footer}
                 </article>`;
@@ -3626,17 +3706,19 @@ function reorderColumns() {
             if (!btn) return;
             const s = lastSurveyorList[Number(btn.dataset.surveyorIdx)];
             if (!s) return;
-            switchView('laporan');
-            const input = document.getElementById('searchInput');
-            input.value = s.nama;
-            filterReports();
-            document.getElementById('reportTableBody').closest('.lg\\:col-span-8').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            openSurveyorReports(s.nama);
         });
 
         function filterReports() {
             const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
-            if (!q) { renderTable(reportsData); return; }
-            const filtered = reportsData.filter(item =>
+            // Mod lihat semua laporan surveyor: tapis ikut NAMA dahulu (semua variasi nama),
+            // kotak carian kemudian cari dalam laporan dia sahaja
+            const base = surveyorFilter
+                ? reportsData.filter(item => templateKey(item.nama) === templateKey(surveyorFilter))
+                : reportsData;
+            if (surveyorFilter) document.getElementById('surveyorFilterCount').textContent = `${base.length} laporan`;
+            if (!q) { renderTable(base); return; }
+            const filtered = base.filter(item =>
                 ['tarikh', 'nama', 'noFile', 'kawasan', 'tugasan', 'status', 'isu', 'maklumat', 'perancangan']
                     .some(k => String(item[k] || '').toLowerCase().includes(q)) ||
                 surveyorKey(item.nama) === surveyorKey(q)
