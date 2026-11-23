@@ -1,43 +1,43 @@
 # JMC Operations Hub — Jurukur Mahabob & Co. Sdn. Bhd.
 
-Portal dashboard dalaman untuk operasi Jurukur Mahabob. Satu hub (`index.html`) yang kumpulkan semua aplikasi HOD — tapak, pelan, BIM, inventori — dalam satu tempat, dengan Dashboard Utama yang ringkaskan status operasi syarikat.
+JMC Operations Hub ialah portal dashboard dalaman bagi pengurusan operasi Jurukur Mahabob & Co. Sdn. Bhd. Portal ini menghimpunkan aplikasi setiap jabatan (HOD) — kerja tapak, pelan, BIM dan inventori peralatan — dalam satu antara muka, di samping Dashboard Utama yang memaparkan ringkasan status operasi syarikat.
 
-Semua aplikasi ialah fail HTML statik (tiada build step). Data datang dari Google Sheets (CSV yang di-publish) dan Google Apps Script Web App, atau disimpan terus dalam browser (localStorage).
+Kesemua aplikasi dibangunkan sebagai fail HTML statik tanpa proses *build*. Data diperoleh daripada Google Sheets (CSV yang diterbitkan) dan Google Apps Script Web App, atau disimpan secara setempat dalam pelayar (localStorage).
 
 ---
 
 ## Kandungan
 
-- [Modul](#modul)
-- [Struktur folder](#struktur-folder)
-- [Cara ia berfungsi](#cara-ia-berfungsi)
-- [Setup](#setup)
-- [Konfigurasi sumber data](#konfigurasi-sumber-data)
-- [Backup & restore](#backup--restore)
-- [Keselamatan & had](#keselamatan--had)
+- [Senarai Modul](#senarai-modul)
+- [Struktur Direktori](#struktur-direktori)
+- [Seni Bina Sistem](#seni-bina-sistem)
+- [Pemasangan dan Konfigurasi](#pemasangan-dan-konfigurasi)
+- [Konfigurasi Sumber Data](#konfigurasi-sumber-data)
+- [Sandaran dan Pemulihan Data](#sandaran-dan-pemulihan-data)
+- [Keselamatan dan Had Sistem](#keselamatan-dan-had-sistem)
 - [Teknologi](#teknologi)
 
 ---
 
-## Modul
+## Senarai Modul
 
-| Modul | Folder | Fungsi | Sumber data |
+| Modul | Direktori | Fungsi | Sumber Data |
 |---|---|---|---|
-| **Dashboard Utama** | `index.html` | Hub + ringkasan operasi semua jabatan | Baca data dari semua modul |
-| **Laporan Harian Tapak** | `HOD Site/Laporan Harian/` | Paste laporan harian kerja lapangan, auto-parse, KPI progres & jam krew | Apps Script Web App + Google Sheets |
-| **Status Site** | `HOD Site/Status Site/` | Progres kerja ukur ikut no. fail, borang tambah kerja lapangan | Google Sheets (CSV) + Apps Script |
-| **Status Pelan** | `HOD Pelan/Status Pelan/` | Pengurusan pelan & lukisan, prestasi pelukis pelan, isu tapak, arkib projek | Apps Script Web App + localStorage |
-| **Kualiti Pelan (QC)** | `HOD Pelan/Kualiti Pelan/` | Semakan data QC ikut bidang, carta | Google Sheets (CSV) |
-| **Checklist Plan** | `HOD Pelan/Checklist Plan/` | Senarai semak digital pelan (MAHABOB DIGITAL PLAN QC) | Apps Script Web App (`doPost`) + Google Sheets |
-| **GEO-BIM Tracker** | `HOD BIM/` | Jejak perjalanan fail Scan to BIM (Belum Mula → Siap) | localStorage |
-| **Inventori Peralatan** | `Inventori Peralatan/` | Daftar peralatan ukur, ikut pemegang & kategori, status kalibrasi | Apps Script Web App + Google Sheets |
-| **Fail Tracking** | `Fail Tracking/` | Jejak fail dari Data Collection hingga Signed by LS & invois | localStorage |
-| **Penjana Sebut Harga** | `Penjana Sebut Harga/` | Jana sebut harga rasmi atas kepala surat, print/PDF | localStorage |
-| **Perancangan & Ramalan** | `Perancangan & Ramalan/` | Ramal tempoh, bilangan krew & kos ikut tarikh akhir dan kadar produktiviti | localStorage |
+| **Dashboard Utama** | `index.html` | Hub utama dan ringkasan operasi semua jabatan | Data daripada semua modul |
+| **Laporan Harian Tapak** | `HOD Site/Laporan Harian/` | Merekod dan menganalisis laporan harian kerja lapangan, termasuk KPI kemajuan dan jam kerja krew | Apps Script Web App, Google Sheets |
+| **Status Site** | `HOD Site/Status Site/` | Memantau kemajuan kerja ukur mengikut nombor fail serta merekod kerja lapangan baharu | Google Sheets (CSV), Apps Script |
+| **Status Pelan** | `HOD Pelan/Status Pelan/` | Pengurusan pelan dan lukisan, prestasi pelukis pelan, isu tapak dan arkib projek | Apps Script Web App, localStorage |
+| **Kualiti Pelan (QC)** | `HOD Pelan/Kualiti Pelan/` | Semakan data kawalan kualiti mengikut bidang beserta paparan carta | Google Sheets (CSV) |
+| **Checklist Plan** | `HOD Pelan/Checklist Plan/` | Senarai semak digital bagi kawalan kualiti pelan (Mahabob Digital Plan QC) | Apps Script Web App, Google Sheets |
+| **GEO-BIM Tracker** | `HOD BIM/` | Penjejakan aliran kerja fail Scan to BIM dari peringkat awal hingga selesai | localStorage |
+| **Inventori Peralatan** | `Inventori Peralatan/` | Pendaftaran peralatan ukur mengikut pemegang dan kategori, serta pemantauan status kalibrasi | Apps Script Web App, Google Sheets |
+| **Fail Tracking** | `Fail Tracking/` | Penjejakan fail dari peringkat pengumpulan data hingga pengesahan Juruukur Tanah Berlesen dan invois | localStorage |
+| **Penjana Sebut Harga** | `Penjana Sebut Harga/` | Penyediaan sebut harga rasmi berkepala surat syarikat, boleh dicetak atau dieksport ke PDF | localStorage |
+| **Perancangan & Ramalan** | `Perancangan & Ramalan/` | Anggaran tempoh kerja, keperluan krew dan kos berdasarkan tarikh akhir serta kadar produktiviti | localStorage |
 
 ---
 
-## Struktur folder
+## Struktur Direktori
 
 ```
 JurukurMahabob/
@@ -56,85 +56,85 @@ JurukurMahabob/
     └── Checklist Plan/index.html
 ```
 
-> **Penting:** Nama fail ikut huruf sebenar (`Index.html` vs `index.html`). GitHub Pages sensitif huruf besar/kecil, jadi jangan tukar nama tanpa kemas kini rujukan dalam `index.html` (`MODULES` dan `APPS`).
+> **Perhatian:** Nama fail adalah sensitif kepada huruf besar dan kecil (`Index.html` berbeza daripada `index.html`) apabila dihoskan di GitHub Pages. Sebarang perubahan nama fail perlu diikuti dengan kemas kini rujukan dalam `index.html`, iaitu pada objek `MODULES` dan `APPS`.
 
 ---
 
-## Cara ia berfungsi
+## Seni Bina Sistem
 
-1. **Hub muat aplikasi dalam iframe.** Setiap modul dibuka dari folder repo masing-masing, jadi bila kau update fail dalam folder, terus nampak dalam hub. Butang "Buka" juga boleh buka modul dalam tab baru.
-2. **Dashboard Utama baca data modul.** Sebab semua modul duduk dalam origin yang sama (GitHub Pages), hub boleh baca localStorage modul lain dan terima ringkasan melalui `postMessage` (contoh: Status Site hantar ringkasan progres fail).
-3. **Data luar dari Google Sheets.** Modul seperti Kualiti Pelan dan Status Site ambil data dari Google Sheets yang di-publish sebagai CSV (dibaca guna PapaParse).
-4. **Tulis data melalui Apps Script.** Modul yang perlu simpan data ke Sheets (Laporan Harian, Checklist Plan, Status Pelan, Inventori) panggil Web App Apps Script melalui `fetch` (`doGet` / `doPost`).
-5. **Hub tak bersarang.** Kalau hub dibuka dalam iframe aplikasi (contoh klik "Portal Utama" dari HOD Site), ia kosongkan diri supaya tak jadi hub dalam hub.
+1. **Pemuatan modul melalui iframe.** Setiap modul dimuatkan terus dari direktori masing-masing. Oleh itu, sebarang kemas kini pada fail modul akan dipaparkan dalam hub secara automatik. Modul juga boleh dibuka dalam tab baharu melalui butang "Buka".
+2. **Pengumpulan data oleh Dashboard Utama.** Memandangkan semua modul berada dalam *origin* yang sama, hub dapat membaca data localStorage setiap modul dan menerima ringkasan melalui `postMessage` (contohnya, ringkasan kemajuan fail daripada modul Status Site).
+3. **Pembacaan data daripada Google Sheets.** Modul seperti Kualiti Pelan dan Status Site membaca data daripada Google Sheets yang diterbitkan dalam format CSV, menggunakan pustaka PapaParse.
+4. **Penulisan data melalui Apps Script.** Modul yang menyimpan data ke Google Sheets (Laporan Harian, Checklist Plan, Status Pelan dan Inventori Peralatan) berkomunikasi dengan Google Apps Script Web App melalui `fetch` (`doGet` / `doPost`).
+5. **Pencegahan hub bersarang.** Sekiranya hub dibuka di dalam iframe sesebuah modul (contohnya melalui pautan "Portal Utama" dalam HOD Site), hub tidak akan dipaparkan bagi mengelakkan paparan berganda.
 
 ---
 
-## Setup
+## Pemasangan dan Konfigurasi
 
-### 1. Hosting (GitHub Pages)
+### 1. Pengehosan (GitHub Pages)
 
-1. Push repo ke GitHub.
-2. Pergi **Settings → Pages**, pilih branch `main` dan folder `/ (root)`.
-3. Buka `https://<username>.github.io/<repo>/` — itu Dashboard Utama.
+1. Muat naik repositori ini ke GitHub.
+2. Pergi ke **Settings → Pages**, kemudian pilih cawangan `main` dan direktori `/ (root)`.
+3. Akses `https://<username>.github.io/<repo>/` untuk membuka Dashboard Utama.
 
-Untuk test secara lokal, guna server ringkas (jangan buka terus guna `file://`, sebab iframe & fetch akan disekat):
+Bagi pengujian secara setempat, gunakan pelayan web ringkas. Fail tidak boleh dibuka terus melalui `file://` kerana pelayar akan menyekat iframe dan permintaan `fetch`.
 
 ```bash
 python3 -m http.server 8000
-# buka http://localhost:8000
+# Akses http://localhost:8000
 ```
 
 ### 2. Google Sheets (CSV)
 
-Untuk setiap Sheet yang dibaca sebagai CSV:
+Bagi setiap Google Sheet yang dibaca dalam format CSV:
 
-1. Buka Google Sheet → **File → Share → Publish to web**.
-2. Pilih tab yang betul, format **Comma-separated values (.csv)**.
-3. Salin URL `.../pub?gid=...&single=true&output=csv` dan tampal dalam config modul berkenaan.
+1. Buka Google Sheet, kemudian pilih **File → Share → Publish to web**.
+2. Pilih tab yang berkaitan dan format **Comma-separated values (.csv)**.
+3. Salin URL `.../pub?gid=...&single=true&output=csv` dan masukkan ke dalam konfigurasi modul yang berkenaan.
 
 ### 3. Google Apps Script Web App
 
-Untuk modul yang tulis data:
+Bagi modul yang menulis data ke Google Sheets:
 
-1. Dari Google Sheet, buka **Extensions → Apps Script**.
-2. Tampal kod `Code.gs` (untuk Laporan Harian, kod penuh dah disediakan dalam aplikasi itu sendiri — buka tab **Kod Apps Script**).
-3. Skrip akan bina tab & header sendiri kalau belum wujud.
-4. **Deploy → New deployment → Web app**
+1. Daripada Google Sheet, pilih **Extensions → Apps Script**.
+2. Masukkan kod `Code.gs`. Bagi modul Laporan Harian, kod lengkap disediakan dalam aplikasi itu sendiri di bawah tab **Kod Apps Script**.
+3. Skrip akan mencipta tab dan pengepala lajur secara automatik sekiranya belum wujud.
+4. Pilih **Deploy → New deployment → Web app** dengan tetapan berikut:
    - Execute as: **Me**
    - Who has access: **Anyone**
-5. Salin URL `/exec` dan tampal dalam config modul.
+5. Salin URL `/exec` dan masukkan ke dalam konfigurasi modul.
 
-> Setiap kali ubah kod Apps Script, buat **Deploy → Manage deployments → Edit → New version**. Kalau tak, Web App masih jalan versi lama.
+> **Nota:** Setiap kali kod Apps Script dikemas kini, pilih **Deploy → Manage deployments → Edit → New version**. Tanpa langkah ini, Web App akan terus menjalankan versi terdahulu.
 
 ---
 
-## Konfigurasi sumber data
+## Konfigurasi Sumber Data
 
-URL Sheets dan Web App ditetapkan terus dalam setiap fail HTML. Cari pemalar berikut:
+URL Google Sheets dan Web App ditetapkan secara terus dalam setiap fail HTML melalui pemalar berikut:
 
 | Fail | Pemalar |
 |---|---|
-| `index.html` | Objek sumber data (`inv`, `qc`, `lh`, dll.) untuk Dashboard Utama |
+| `index.html` | Objek sumber data (`inv`, `qc`, `lh` dan lain-lain) bagi Dashboard Utama |
 | `HOD Site/Status Site/index.html` | `CSV_REKOD_URL`, `CSV_LAPORAN_URL`, `APPS_SCRIPT_URL` |
 | `HOD Site/Laporan Harian/index.html` | `MACRO_URL` |
 | `HOD Pelan/Checklist Plan/index.html` | `PUBLISHED_BASE_URL`, `GAS_API_URL` |
 | `HOD Pelan/Status Pelan/index.html` | `CFG.API_URL` |
-| `Inventori Peralatan/index.html` | URL Web App dalam config |
+| `Inventori Peralatan/index.html` | URL Web App dalam bahagian konfigurasi |
 
-Kalau tukar Sheet atau deploy semula Web App dengan URL baru, kemas kini kedua-dua fail modul **dan** `index.html` (sebab Dashboard Utama baca sumber yang sama).
+Sekiranya Google Sheet ditukar atau Web App dideploy semula dengan URL baharu, kemas kini perlu dibuat pada fail modul **dan** `index.html`, kerana Dashboard Utama membaca sumber data yang sama.
 
 ---
 
-## Backup & restore
+## Sandaran dan Pemulihan Data
 
-Modul yang guna localStorage (Fail Tracking, Penjana Sebut Harga, Perancangan & Ramalan, GEO-BIM Tracker, Status Pelan) simpan data **dalam browser itu sahaja**.
+Modul yang menggunakan localStorage (Fail Tracking, Penjana Sebut Harga, Perancangan & Ramalan, GEO-BIM Tracker dan Status Pelan) menyimpan data **dalam pelayar yang digunakan sahaja**.
 
-- Hub ada fungsi **Backup** — muat turun satu fail JSON yang kumpul semua key localStorage modul (termasuk `stb_*` untuk BIM).
-- **Restore** akan ganti data sedia ada dalam browser dengan isi fail backup.
-- Buat backup berkala. Clear browser data, tukar komputer atau guna incognito = data hilang.
+- Fungsi **Backup** dalam hub menjana satu fail JSON yang mengandungi semua data localStorage bagi setiap modul, termasuk data BIM (`stb_*`).
+- Fungsi **Restore** akan menggantikan data sedia ada dalam pelayar dengan kandungan fail sandaran.
+- Sandaran perlu dibuat secara berkala. Data akan hilang sekiranya data pelayar dipadam, komputer ditukar atau mod inkognito digunakan.
 
-Key localStorage yang digunakan:
+Kunci localStorage yang digunakan:
 
 ```
 mjt_ops_db, survey_tracker_v1, jmc_instrument_inventory_v1, jmc_quotation_v1,
@@ -145,29 +145,29 @@ stb_projects, stb_staff, stb_reports, jm_status_site_v1, mahabob_active_user_id
 
 ---
 
-## Keselamatan & had
+## Keselamatan dan Had Sistem
 
-Benda ni perlu tahu sebelum guna untuk data sebenar:
+Perkara berikut perlu diambil kira sebelum sistem digunakan untuk data sebenar:
 
-- **CSV yang di-publish adalah awam.** Sesiapa yang ada URL boleh baca data. Jangan publish tab yang ada maklumat sensitif yang tak perlu untuk dashboard.
-- **Web App "Anyone" tiada login.** Sesiapa yang tahu URL `/exec` boleh hantar data. Untuk kegunaan lebih serius, tambah semakan token/kunci dalam `doPost`, atau hadkan akses kepada akaun Google Workspace syarikat.
-- **Repo awam = URL terdedah.** Kalau repo ini public, semua URL Sheets & Web App dalam kod boleh dilihat. Pertimbang jadikan repo private (GitHub Pages untuk repo private perlukan plan berbayar) atau pindahkan URL ke satu fail config yang tak di-commit.
-- **localStorage bukan pangkalan data.** Tiada sync antara pengguna atau peranti. Data satu orang tak nampak pada komputer orang lain.
-- **Modul `ops` (`modules/ops.html`)** dirujuk dalam `index.html` tetapi fail itu tiada dalam repo sekarang. Bahagian Operasi HOD dalam hub tak akan dimuat sehingga fail itu ditambah.
-- Bergantung pada CDN luar (Tailwind CDN, Chart.js, PapaParse, Lucide, Bootstrap, Font Awesome). Perlu internet untuk berfungsi.
+- **Data CSV yang diterbitkan boleh diakses secara awam.** Sesiapa yang mempunyai URL boleh membaca data tersebut. Hanya terbitkan tab yang diperlukan oleh dashboard dan elakkan menerbitkan maklumat sensitif.
+- **Web App dengan akses "Anyone" tidak memerlukan log masuk.** Sesiapa yang mengetahui URL `/exec` boleh menghantar data. Bagi penggunaan yang lebih selamat, tambahkan pengesahan token dalam `doPost` atau hadkan akses kepada akaun Google Workspace syarikat.
+- **URL terdedah dalam repositori awam.** Sekiranya repositori ini bersifat awam, semua URL Google Sheets dan Web App dalam kod boleh dilihat. Pertimbangkan untuk menjadikan repositori ini persendirian (GitHub Pages bagi repositori persendirian memerlukan pelan berbayar) atau memindahkan URL ke fail konfigurasi yang tidak dimasukkan ke dalam repositori.
+- **localStorage bukan pangkalan data berpusat.** Tiada penyelarasan data antara pengguna atau peranti. Data yang direkod oleh seorang pengguna tidak akan dipaparkan pada komputer pengguna lain.
+- **Modul `ops` (`modules/ops.html`)** dirujuk dalam `index.html` tetapi fail tersebut belum terdapat dalam repositori. Bahagian Operasi HOD dalam hub tidak akan dimuatkan sehingga fail ini ditambah.
+- Sistem bergantung kepada CDN luaran (Tailwind CSS, Chart.js, PapaParse, Lucide, Bootstrap dan Font Awesome) dan memerlukan sambungan internet untuk berfungsi.
 
 ---
 
 ## Teknologi
 
-- HTML, CSS, JavaScript (vanilla) — tiada framework, tiada build step
-- [Tailwind CSS (CDN)](https://tailwindcss.com/) / Bootstrap 5
-- [Chart.js](https://www.chartjs.org/) — carta
-- [PapaParse](https://www.papaparse.com/) — parse CSV dari Google Sheets
-- [Lucide](https://lucide.dev/) & Font Awesome — ikon
-- Google Sheets + Google Apps Script — backend data
-- GitHub Pages — hosting
+- HTML, CSS dan JavaScript (*vanilla*) — tanpa *framework* dan proses *build*
+- [Tailwind CSS](https://tailwindcss.com/) dan Bootstrap 5 — reka bentuk antara muka
+- [Chart.js](https://www.chartjs.org/) — paparan carta
+- [PapaParse](https://www.papaparse.com/) — penghuraian data CSV daripada Google Sheets
+- [Lucide](https://lucide.dev/) dan Font Awesome — ikon
+- Google Sheets dan Google Apps Script — penyimpanan dan pemprosesan data
+- GitHub Pages — pengehosan
 
 ---
 
-© Jurukur Mahabob & Co. Sdn. Bhd. Kegunaan dalaman.
+© Jurukur Mahabob & Co. Sdn. Bhd. Untuk kegunaan dalaman sahaja.
