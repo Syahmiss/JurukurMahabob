@@ -1,0 +1,27 @@
+{
+  "id": "./",
+  "name": "JMC Operations Hub — Jurukur Mahabob",
+  "short_name": "JMC Hub",
+  "description": "Portal dashboard operasi dalaman Jurukur Mahabob & Co. Sdn. Bhd.",
+  "lang": "ms",
+  "dir": "ltr",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0A2540",
+  "theme_color": "#0A2540",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Laporan Harian", "url": "./HOD%20Site/Laporan%20Harian/index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Status Site", "url": "./HOD%20Site/Status%20Site/index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Inventori Peralatan", "url": "./Inventori%20Peralatan/index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
