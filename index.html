@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JMC Operations Hub</title>
+<!-- PWA: boleh install di Android (Chrome/Edge/Samsung Internet) sebagai app -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0A2540">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="JMC Hub">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="JMC Hub">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
@@ -74,6 +84,8 @@ button{font-family:inherit;cursor:pointer}
 .btn.back:hover{background:var(--yel);border-color:var(--yel);color:var(--yel-ink)}
 .btn i{font-size:13px;width:15px;text-align:center}
 .btn[hidden]{display:none}
+.btn.install{background:var(--yel);border-color:var(--yel);color:var(--yel-ink)}
+.btn.install:hover{background:var(--yel-600);border-color:var(--yel-600);color:#fff}
 .burger{display:none;border:0;background:none;padding:6px;margin-left:-6px;border-radius:8px}
 .burger i{font-size:19px;color:var(--ink)}
 .content{flex:1;position:relative;min-height:0}
@@ -449,6 +461,7 @@ tr:last-child td{border-bottom:0}
     <div class="sp"></div>
     <span class="clock" id="clock"></span>
     <button class="btn" id="btnOpen" hidden title="Buka aplikasi ini dalam tab baru"><i class="fa-solid fa-up-right-from-square"></i><span>Tab baru</span></button>
+    <button class="btn install" id="btnInstall" hidden title="Install JMC Hub sebagai app di peranti ini"><i class="fa-solid fa-download"></i><span>Install App</span></button>
     <button class="btn" id="btnRefresh" title="Muat semula data dari semua modul"><i class="fa-solid fa-arrows-rotate"></i><span>Refresh</span></button>
     <button class="btn p" id="btnPrint" title="Cetak laporan ringkas"><i class="fa-solid fa-print"></i><span>Cetak Laporan</span></button>
   </header>
@@ -1577,6 +1590,49 @@ render();
 const h0=location.hash.slice(1).replace('-',':');
 const valid=[...document.querySelectorAll('#nav button[data-v]')].map(b=>b.dataset.v);
 show(valid.includes(h0)?h0:'home');
+})();
+</script>
+<script>
+/* ================= PWA: service worker + butang Install =================
+   Hanya untuk hub di tetingkap utama (bukan bila hub termuat dalam iframe modul). */
+(function(){
+  if (window.top !== window) return;
+  const btn = document.getElementById('btnInstall');
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const note = (m) => { const t=document.getElementById('toast'); if(!t) return; t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),3500); };
+
+  // Service worker perlukan HTTPS (GitHub Pages ok) atau localhost
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).catch((e) => console.warn('[PWA] SW gagal didaftar:', e));
+    });
+  }
+
+  if (isStandalone()) return; // dah dipasang & dibuka sebagai app — tak perlu butang
+
+  // Android / Chrome / Edge / Samsung Internet
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e;
+    btn.hidden = false;
+  });
+  btn.addEventListener('click', async () => {
+    if (deferred) {
+      deferred.prompt();
+      const { outcome } = await deferred.userChoice;
+      deferred = null;
+      if (outcome === 'accepted') btn.hidden = true;
+      return;
+    }
+    // iOS Safari tiada prompt automatik
+    note('iPhone/iPad: tekan butang Share, kemudian "Add to Home Screen".');
+  });
+  window.addEventListener('appinstalled', () => { btn.hidden = true; deferred = null; note('JMC Hub dah dipasang. Buka dari home screen.'); });
+
+  // iOS: tunjuk butang juga, sebab beforeinstallprompt tak wujud di Safari
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)) btn.hidden = false;
 })();
 </script>
 </body>
