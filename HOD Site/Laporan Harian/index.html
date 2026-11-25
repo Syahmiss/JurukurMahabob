@@ -28,6 +28,7 @@
     --color-yellow-200: oklch(94.5% 0.129 101.54);
     --color-yellow-300: oklch(90.5% 0.182 98.111);
     --color-emerald-400: oklch(76.5% 0.177 163.223);
+    --color-emerald-700: oklch(50.8% 0.118 165.612);
     --color-blue-50: oklch(97% 0.014 254.604);
     --color-blue-100: oklch(93.2% 0.032 255.585);
     --color-blue-200: oklch(88.2% 0.059 254.128);
@@ -1045,6 +1046,9 @@
   }
   .text-blue-100 {
     color: var(--color-blue-100);
+  }
+  .text-emerald-700 {
+    color: var(--color-emerald-700);
   }
   .text-blue-200 {
     color: var(--color-blue-200);
@@ -2129,14 +2133,14 @@
                                     </label>
                                     <button type="button" id="removeImgBtn" onclick="clearAttachedImage()" class="hidden text-[11px] font-semibold text-red-600 hover:underline">Buang Gambar</button>
                                 </div>
-                                <input type="file" id="imageFileInput" accept="image/*" onchange="handleImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
+                                <input type="file" id="imageFileInput" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" onchange="handleImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
                                 <input type="text" id="imageUrlInput" placeholder="Atau tampal URL gambar (https://...)" oninput="handleImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
                                 <div id="imagePreviewContainer" class="hidden">
                                     <div class="rounded-lg overflow-hidden border border-slate-200 bg-white max-h-44 flex items-center justify-center">
                                         <img id="imagePreview" alt="Pratonton Lampiran" class="max-h-44 w-auto object-contain" />
                                     </div>
                                 </div>
-                                <p class="text-[11px] text-slate-500"><i class="fa-brands fa-google-drive text-jm-blue mr-1"></i>Disimpan dalam Google Drive.</p>
+                                <p id="imageStatus" class="text-[11px] text-slate-500"><i class="fa-brands fa-google-drive text-jm-blue mr-1"></i>Disimpan dalam Google Drive.</p>
                             </div>
                             <div>
                                 <label for="f_isu" class="form-label">Isu</label>
@@ -2426,7 +2430,7 @@
                     <div id="editImagePreviewWrap" class="hidden rounded-lg overflow-hidden border border-slate-200 bg-white max-h-40 flex items-center justify-center">
                         <img id="editImagePreview" alt="Gambar laporan" class="max-h-40 w-auto object-contain" />
                     </div>
-                    <input type="file" id="editImageFile" accept="image/*" onchange="handleEditImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
+                    <input type="file" id="editImageFile" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" onchange="handleEditImageUpload(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-jm-navy file:text-white hover:file:bg-jm-blue cursor-pointer" />
                     <input type="text" id="editImageUrl" placeholder="Atau tampal URL gambar baharu (https://...)" oninput="handleEditImageUrl(event)" class="w-full rounded-lg bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs text-slate-700 px-3 py-2 transition-all" />
                 </div>
             </form>
@@ -4117,6 +4121,64 @@ function reorderColumns() {
         }
 
         // Kecilkan gambar (maks 1600px) dan mampatkan berperingkat jika masih terlalu besar
+        // ============================================================================
+        // PROSES GAMBAR (desktop & mobile)
+        // createImageBitmap: decode terus dari fail (jimat memori, ikut orientasi EXIF).
+        // Fallback: Object URL + <img> (tanpa salin seluruh fail ke Base64 dahulu).
+        // ============================================================================
+        const IMAGE_EXT = /\.(jpe?g|png|gif|webp|heic|heif|bmp)$/i;
+
+        // Sesetengah galeri Android beri fail tanpa jenis MIME & tanpa extension: cuba baca juga
+        // (jika bukan gambar, decode gagal dan pengguna dapat mesej). Tolak hanya jenis bukan gambar yang jelas.
+        function isImageFile(file) {
+            if (!file.type || file.type === 'application/octet-stream') return true;
+            return file.type.startsWith('image/') || IMAGE_EXT.test(file.name || '');
+        }
+
+        async function decodeImageFile(file) {
+            if (window.createImageBitmap) {
+                try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (e) {}
+                try { return await createImageBitmap(file); } catch (e) {}
+            }
+            return await new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+                img.src = url;
+            });
+        }
+
+        // Pulangkan dataURL JPEG termampat, atau throw { title, msg } untuk dipapar kepada pengguna
+        async function processImageFile(file) {
+            if (!isImageFile(file)) {
+                throw { title: 'Fail Tidak Sah', msg: 'Sila pilih fail gambar sahaja.' };
+            }
+            let img;
+            try {
+                img = await decodeImageFile(file);
+            } catch (e) {
+                const heic = /hei[cf]/i.test(`${file.type} ${file.name}`);
+                throw {
+                    title: 'Gambar Tak Dapat Dibaca',
+                    msg: heic
+                        ? 'Format HEIC tak disokong oleh pelayar ni. Tukar tetapan kamera ke JPG ("Most Compatible"), atau pilih gambar lain.'
+                        : 'Gambar tak dapat dibaca. Cuba ambil semula, atau pilih gambar lain.'
+                };
+            }
+            try {
+                const data = compressImage(img);
+                if (!data) throw { title: 'Gambar Terlalu Besar', msg: 'Gambar tak dapat dimampatkan bawah 3MB. Cuba gambar lain atau guna URL.' };
+                return data;
+            } finally {
+                if (img && typeof img.close === 'function') img.close();
+            }
+        }
+
+        function kbOf(dataUrl) {
+            return Math.round(dataUrl.length * 0.75 / 1024);
+        }
+
         function compressImage(img) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -4129,6 +4191,8 @@ function reorderColumns() {
                 canvas.height = Math.round(img.height * scale);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 const out = canvas.toDataURL('image/jpeg', quality);
+                // Phone kehabisan memori: toDataURL boleh pulangkan "data:," (kosong) tanpa ralat
+                if (!out.startsWith('data:image/jpeg')) return '';
                 if (out.length <= MAX_IMAGE_CHARS) return out;
                 width = Math.round(width * 0.85);
                 quality = Math.max(0.5, quality - 0.05);
@@ -4136,40 +4200,67 @@ function reorderColumns() {
             return '';
         }
 
-        function handleImageUpload(event) {
+        let imageJob = null;       // Promise gambar sedang diproses
+        let imageToken = 0;        // elak hasil gambar lama tindih gambar baru
+        let imageFailed = false;   // gambar dipilih tapi gagal diproses
+
+        function setImageStatus(state, text) {
+            const el = document.getElementById('imageStatus');
+            if (!el) return;
+            const map = {
+                idle: ['text-slate-500', '<i class="fa-brands fa-google-drive text-jm-blue mr-1"></i>Disimpan dalam Google Drive.'],
+                busy: ['text-jm-blue font-semibold', `<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>${escapeHtml(text)}`],
+                ok: ['text-emerald-700 font-semibold', `<i class="fa-solid fa-circle-check mr-1"></i>${escapeHtml(text)}`],
+                error: ['text-red-600 font-semibold', `<i class="fa-solid fa-triangle-exclamation mr-1"></i>${escapeHtml(text)}`]
+            };
+            const [cls, html] = map[state] || map.idle;
+            el.className = `text-[11px] ${cls}`;
+            el.innerHTML = html;
+        }
+
+        async function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-            if (!file.type.startsWith('image/')) {
-                showToast('error', 'Fail Tidak Sah', 'Sila pilih fail gambar sahaja.');
-                return;
-            }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const data = compressImage(img);
-                    if (!data) {
-                        clearAttachedImage();
-                        showToast('warning', 'Gambar Terlalu Besar', 'Gambar tak dapat dimampatkan bawah 3MB. Cuba gambar lain atau guna URL.');
-                        return;
-                    }
-                    attachedImageData = data;
-                    document.getElementById('imageUrlInput').value = '';
-                    updateImagePreview(attachedImageData);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            const token = ++imageToken;
+            attachedImageData = '';
+            imageFailed = false;
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('removeImgBtn').classList.add('hidden');
+            setImageStatus('busy', 'Memproses gambar...');
+
+            const job = processImageFile(file).then(data => {
+                if (token !== imageToken) return;
+                attachedImageData = data;
+                document.getElementById('imageUrlInput').value = '';
+                updateImagePreview(data);
+                setImageStatus('ok', `Gambar sedia (${kbOf(data)} KB)`);
+            }).catch(err => {
+                if (token !== imageToken) return;
+                attachedImageData = '';
+                imageFailed = true;
+                document.getElementById('imageFileInput').value = '';
+                setImageStatus('error', err.msg || 'Gambar gagal diproses.');
+                showToast('error', err.title || 'Gambar Gagal', err.msg || 'Gambar gagal diproses.');
+                console.warn('Gambar gagal diproses:', err);
+            });
+
+            imageJob = job;
+            await job;
+            if (imageJob === job) imageJob = null;
         }
 
         function handleImageUrl(event) {
             const url = event.target.value.trim();
             if (!url) { clearAttachedImage(); return; }
             const safe = safeImageSrc(url);
+            imageToken++;
+            imageJob = null;
+            imageFailed = false;
             if (safe) {
                 attachedImageData = safe;
                 updateImagePreview(safe);
+                setImageStatus('ok', 'Gambar dari URL');
             } else {
                 attachedImageData = '';
                 document.getElementById('imagePreviewContainer').classList.add('hidden');
@@ -4184,6 +4275,10 @@ function reorderColumns() {
         }
 
         function clearAttachedImage() {
+            imageToken++;
+            imageJob = null;
+            imageFailed = false;
+            setImageStatus('idle');
             attachedImageData = "";
             document.getElementById('imageFileInput').value = "";
             document.getElementById('imageUrlInput').value = "";
@@ -4285,6 +4380,16 @@ function reorderColumns() {
 
         async function submitReportForm() {
             if (document.getElementById('submitReportBtn').disabled) return;
+
+            // Gambar besar dari kamera phone ambil beberapa saat untuk diproses: tunggu dulu,
+            // jangan hantar laporan tanpa gambar
+            if (imageJob) {
+                setSubmitting(true, 'Memproses gambar...');
+                try { await imageJob; } finally { setSubmitting(false); }
+            }
+            if (imageFailed && !confirm('Gambar gagal diproses dan TIDAK akan dihantar. Teruskan hantar laporan tanpa gambar?')) {
+                return;
+            }
 
             const errors = validateReportForm();
             if (errors.length) {
@@ -4580,30 +4685,28 @@ function reorderColumns() {
             }
         }
 
-        function handleEditImageUpload(event) {
+        let editImageJob = null;
+        let editImageToken = 0;
+
+        async function handleEditImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-            if (!file.type.startsWith('image/')) {
-                showToast('error', 'Fail Tidak Sah', 'Sila pilih fail gambar sahaja.');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const data = compressImage(img);
-                    if (!data) {
-                        showToast('warning', 'Gambar Terlalu Besar', 'Gambar tak dapat dimampatkan bawah 3MB. Cuba gambar lain atau guna URL.');
-                        return;
-                    }
-                    editImageData = data;
-                    editImageChanged = true;
-                    document.getElementById('editImageUrl').value = '';
-                    refreshEditImagePreview();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            const token = ++editImageToken;
+            const job = processImageFile(file).then(data => {
+                if (token !== editImageToken) return;
+                editImageData = data;
+                editImageChanged = true;
+                document.getElementById('editImageUrl').value = '';
+                refreshEditImagePreview();
+                showToast('success', 'Gambar Sedia', `Gambar baru (${kbOf(data)} KB) akan disimpan bila tekan Simpan.`);
+            }).catch(err => {
+                if (token !== editImageToken) return;
+                event.target.value = '';
+                showToast('error', err.title || 'Gambar Gagal', err.msg || 'Gambar gagal diproses.');
+            });
+            editImageJob = job;
+            await job;
+            if (editImageJob === job) editImageJob = null;
         }
 
         function handleEditImageUrl(event) {
@@ -4637,6 +4740,11 @@ function reorderColumns() {
 
         async function saveEdit() {
             if (!editingId) return;
+            // Tunggu gambar baru siap diproses (phone ambil masa beberapa saat)
+            if (editImageJob) {
+                setEditSaving(true, 'Memproses gambar...');
+                try { await editImageJob; } finally { setEditSaving(false); }
+            }
             const idx = reportsData.findIndex(r => r.id === editingId);
             if (idx === -1) {
                 showToast('error', 'Rekod Tidak Dijumpai', 'Rekod ini mungkin telah dibuang. Sync semula data.');
