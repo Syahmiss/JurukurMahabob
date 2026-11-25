@@ -3856,7 +3856,8 @@ function reorderColumns() {
             setSelectValue(document.getElementById('f_noFile'), clean(rec.noFile));
             renderKawasanOptions(clean(rec.kawasan));
 
-            if (clean(rec.nama)) setNama(rec.nama);
+            // Contoh laporan (keepNama): Nama dalam borang dikekalkan; hanya diisi jika masih kosong
+            if (clean(rec.nama) && !(opts.keepNama && getField('f_nama'))) setNama(rec.nama);
             setField('f_waktuMula', toInputTime(rec.waktuMula));
             setField('f_waktuTamat', toInputTime(rec.waktuTamat));
             let tasks = reportTasks(rec);
@@ -4070,7 +4071,9 @@ function reorderColumns() {
             const templates = getTemplates();
             // Pilihan lama mungkin tersimpan sebagai "ALIAS:BADRUL" / "M.BADRUL": normalkan
             const raw = getTemplatePref() || select.value;
-            const current = templates.has(raw) ? raw : templateKey(raw);
+            // Ikut Nama dalam borang dahulu (jika ada contoh untuk nama tu), kemudian pilihan tersimpan
+            const namaKey = getField('f_nama') ? templateKey(getField('f_nama')) : '';
+            const current = namaKey && templates.has(namaKey) ? namaKey : (templates.has(raw) ? raw : templateKey(raw));
 
             const known = SURVEYOR_ORDER.map(n => {
                 const key = 'NAMA:' + n.toUpperCase();
@@ -4109,12 +4112,18 @@ function reorderColumns() {
             }
             if (formHasContent() && !confirm('Borang dah ada isi. Ganti dengan laporan terakhir?')) return;
 
-            fillReportForm(rec, { today: true });
+            fillReportForm(rec, { today: true, keepNama: true });
             clearAttachedImage();
             setTemplatePref(key);
 
+            // 2. Contoh dari orang lain: beritahu dengan jelas bahawa Nama tak berubah
+            const namaBorang = getField('f_nama');
+            const orangLain = namaBorang && templateKey(namaBorang) !== key;
+            const namaContoh = key.startsWith('NAMA:') ? (SURVEYOR_ORDER.find(n => 'NAMA:' + n.toUpperCase() === key) || rec.nama) : rec.nama;
+            const sumber = orangLain ? `laporan ${String(namaContoh || '').trim()} ` : 'laporan ';
             const hint = document.getElementById('templateHint');
-            hint.textContent = `Diisi dari laporan ${rec.tarikh || '-'} (${rec.noFile || '-'}). Tarikh dah ditukar ke hari ini. Semak masa, kuantiti & isu sebelum hantar.`;
+            hint.textContent = `Diisi dari ${sumber}${rec.tarikh || '-'} (${rec.noFile || '-'}). Tarikh dah ditukar ke hari ini.` +
+                (orangLain ? ` Nama kekal ${namaBorang}.` : '') + ' Semak masa, kuantiti & isu sebelum hantar.';
             hint.classList.remove('hidden');
             const firstTask = document.querySelector('#taskList .task-tugas');
             if (firstTask) firstTask.focus();
