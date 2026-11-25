@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow">
     <title>Dashboard Jualan & Invois | Jurukur Mahabob</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PapaParse untuk menghurai CSV dengan tepat (termasuk koma dalam nilai RM) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Chart.js untuk visualisasi graf -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Font Awesome untuk ikon korporat -->
+    <!-- Chart.js (versi dipin) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,9 +18,7 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         jm: {
                             navy: '#0A2540',
@@ -39,307 +37,329 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-jm-gold selection:text-jm-navy">
 
-    <!-- Toolbar: Tab Bahagian & Kemaskini Data (header dibuang) -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Kategori Bahagian">
-                <button onclick="switchDepartmentTab('ENGINEERING')" id="dept-tab-ENGINEERING" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-jm-gold text-jm-navy shadow-md transition-all flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-helmet-safety"></i>
-                    <span>1. Engineering</span>
-                </button>
-                <button onclick="switchDepartmentTab('UTILITY')" id="dept-tab-UTILITY" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-bolt"></i>
-                    <span>2. Utility</span>
-                </button>
-                <button onclick="switchDepartmentTab('LASER')" id="dept-tab-LASER" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-crosshairs"></i>
-                    <span>3. Laser Scanning</span>
-                </button>
-                <button onclick="switchDepartmentTab('CADASTRAL')" id="dept-tab-CADASTRAL" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-map-location-dot"></i>
-                    <span>4. Cadastral</span>
-                </button>
-            </nav>
-            <div class="flex items-center space-x-3 justify-end">
-                <div id="lastUpdatedBadge" class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span id="syncStatusText">Menyambung data...</span>
-                </div>
-                <button onclick="fetchDashboardData()" id="refreshBtn" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i>
-                    <span>Kemaskini Data</span>
-                </button>
-            </div>
+    <!-- ===================== SKRIN MEMUAT (semak sesi) ===================== -->
+    <div id="bootScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-jm-navy to-jm-blue">
+        <div class="text-center text-blue-100">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-jm-gold mb-3"></i>
+            <p class="text-sm font-medium">Menyemak sesi...</p>
         </div>
     </div>
 
-    <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-
-        <!-- Active Department Sub-Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-3">
-                <span class="w-3 h-3 rounded-full bg-jm-blue ring-4 ring-blue-100"></span>
+    <!-- ===================== SKRIN LOG MASUK ===================== -->
+    <div id="loginScreen" class="hidden min-h-screen flex items-center justify-center bg-gradient-to-br from-jm-navy to-jm-blue px-4 py-10">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-jm-navy px-6 py-5 flex items-center gap-3 border-b-4 border-jm-gold">
+                <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow"><i class="fa-solid fa-lock"></i></div>
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Paparan Bahagian Semasa:</span>
-                    <h2 id="activeDeptTitle" class="text-base sm:text-lg font-extrabold text-jm-navy">Bahagian Engineering</h2>
+                    <p class="text-xs uppercase tracking-wider text-blue-200 font-semibold">Jurukur Mahabob</p>
+                    <h1 class="text-white font-extrabold text-lg leading-tight">Dashboard Jualan & Invois</h1>
                 </div>
             </div>
-            <div class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">
-                Sumber Tab: <span id="activeDeptGidLabel" class="font-mono font-bold text-jm-blue">Default (Tab 1)</span>
-            </div>
+            <form id="loginForm" class="p-6 space-y-4" novalidate>
+                <div id="loginMsg" class="hidden text-sm rounded-xl px-4 py-3 border"></div>
+                <div>
+                    <label for="loginEmel" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Emel</label>
+                    <input id="loginEmel" type="email" autocomplete="username" maxlength="254" required
+                        class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue">
+                </div>
+                <div>
+                    <label for="loginPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Password</label>
+                    <input id="loginPassword" type="password" autocomplete="current-password" maxlength="128" required
+                        class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue">
+                </div>
+                <button id="loginBtn" type="submit" class="w-full bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold text-sm py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60">
+                    <i class="fa-solid fa-right-to-bracket"></i><span>Log Masuk</span>
+                </button>
+                <!-- Notis PDPA -->
+                <div class="text-[11px] leading-relaxed text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p class="font-semibold text-slate-600 mb-1"><i class="fa-solid fa-shield-halved text-jm-blue mr-1"></i>Notis Privasi (PDPA 2010)</p>
+                    Dengan log masuk, anda bersetuju emel dan nama anda diproses oleh Jurukur Mahabob untuk tujuan kawalan akses sistem ini sahaja.
+                    Rekod cubaan log masuk disimpan selama 180 hari, dan sesi dipadam selepas tamat tempoh.
+                    Data tidak dikongsi dengan pihak ketiga. Untuk akses atau pembetulan data, hubungi pentadbir sistem.
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Alert / Notification Banner (Untuk ralat atau info semasa) -->
-        <div id="statusBanner" class="hidden rounded-xl p-4 border text-sm flex items-center justify-between shadow-sm">
-            <div class="flex items-center gap-3">
-                <i id="statusBannerIcon" class="fa-solid fa-circle-info text-lg"></i>
-                <span id="statusBannerMsg" class="font-medium"></span>
+    <!-- ===================== SKRIN TUKAR PASSWORD (wajib) ===================== -->
+    <div id="changePwScreen" class="hidden min-h-screen flex items-center justify-center bg-gradient-to-br from-jm-navy to-jm-blue px-4 py-10">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-jm-navy px-6 py-5 flex items-center gap-3 border-b-4 border-jm-gold">
+                <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow"><i class="fa-solid fa-key"></i></div>
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-blue-200 font-semibold">Keselamatan Akaun</p>
+                    <h1 class="text-white font-extrabold text-lg leading-tight">Tukar Password</h1>
+                </div>
             </div>
-            <button onclick="document.getElementById('statusBanner').classList.add('hidden')" class="text-current opacity-70 hover:opacity-100 p-1">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+            <form id="changePwForm" class="p-6 space-y-4" novalidate>
+                <p class="text-sm text-slate-600">Anda perlu tukar password sementara sebelum boleh guna sistem.</p>
+                <div id="changePwMsg" class="hidden text-sm rounded-xl px-4 py-3 border"></div>
+                <div>
+                    <label for="pwLama" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Password Semasa</label>
+                    <input id="pwLama" type="password" autocomplete="current-password" maxlength="128" required
+                        class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue">
+                </div>
+                <div>
+                    <label for="pwBaru" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Password Baharu</label>
+                    <input id="pwBaru" type="password" autocomplete="new-password" maxlength="128" required
+                        class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue">
+                </div>
+                <div>
+                    <label for="pwSahkan" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Sahkan Password Baharu</label>
+                    <input id="pwSahkan" type="password" autocomplete="new-password" maxlength="128" required
+                        class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue">
+                </div>
+                <ul class="text-[11px] text-slate-500 list-disc pl-5 space-y-0.5">
+                    <li>Sekurang-kurangnya 8 aksara</li>
+                    <li>Ada huruf dan nombor</li>
+                    <li>Tidak sama dengan password lama</li>
+                </ul>
+                <button id="changePwBtn" type="submit" class="w-full bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold text-sm py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60">
+                    <i class="fa-solid fa-floppy-disk"></i><span>Simpan Password Baharu</span>
+                </button>
+                <button type="button" onclick="logout()" class="w-full text-xs text-slate-500 hover:text-jm-navy font-semibold py-1">Log keluar</button>
+            </form>
         </div>
+    </div>
 
-        <!-- 4 KPI SUMMARY CARDS (Keperluan Utama) -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            
-            <!-- Card 1: Jumlah Jualan Keseluruhan -->
-            <div class="bg-gradient-to-br from-jm-navy to-jm-blue text-white rounded-2xl p-5 shadow-md border border-blue-900 relative overflow-hidden group">
-                <div class="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-jm-gold/10 group-hover:scale-110 transition-transform"></div>
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Jumlah Jualan Keseluruhan</p>
-                        <h2 id="kpiTotalSales" class="text-2xl sm:text-3xl font-extrabold text-white mt-2 tracking-tight">RM 0.00</h2>
-                    </div>
-                    <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow">
-                        <i class="fa-solid fa-sack-dollar text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-blue-100">
-                    <span>Jumlah Rekod Fail / Projek</span>
-                    <span id="kpiTotalProjects" class="font-bold bg-white/15 px-2.5 py-0.5 rounded-full text-jm-gold">0 Rekod</span>
-                </div>
-            </div>
+    <!-- ===================== APLIKASI (selepas log masuk) ===================== -->
+    <div id="appShell" class="hidden">
 
-            <!-- Card 2: Invois Dituntut (Sudah Dibayar / Selesai) -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-royal hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Invois Dituntut (Dibayar)</p>
-                        <h2 id="kpiClaimedAmount" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">RM 0.00</h2>
-                    </div>
-                    <div class="p-3 bg-blue-50 text-jm-royal rounded-xl">
-                        <i class="fa-solid fa-file-circle-check text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span class="text-slate-500 font-medium">Bilangan No. Invois:</span>
-                    <span id="kpiClaimedCount" class="font-bold text-jm-royal bg-blue-50 px-2.5 py-1 rounded-lg">0 Invois</span>
-                </div>
-            </div>
-
-            <!-- Card 3: Invois Belum Dibayar (Tertunggak / Menunggu Bayaran) -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-gold hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Invois Belum Dibayar</p>
-                        <h2 id="kpiUnpaidAmount" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">RM 0.00</h2>
-                    </div>
-                    <div class="p-3 bg-yellow-50 text-jm-goldDark rounded-xl">
-                        <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span class="text-slate-500 font-medium">Bilangan No. Invois:</span>
-                    <span id="kpiUnpaidCount" class="font-bold text-amber-800 bg-yellow-100 px-2.5 py-1 rounded-lg">0 Invois</span>
-                </div>
-            </div>
-
-            <!-- Card 4: Belum Dituntut (Kerja Dalam Proses / Belum Invois) -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-slate-700 hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Belum Dituntut</p>
-                        <h2 id="kpiUnclaimedAmount" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">RM 0.00</h2>
-                    </div>
-                    <div class="p-3 bg-slate-100 text-slate-700 rounded-xl">
-                        <i class="fa-solid fa-file-invoice text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span class="text-slate-500 font-medium">Bilangan Rekod / Invois:</span>
-                    <span id="kpiUnclaimedCount" class="font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">0 Rekod</span>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- CHARTS & ANALYTICS ROW -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Pecahan Nilai Jualan (Doughnut Chart) -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <h3 class="font-bold text-jm-navy text-base">Komposisi Status Jualan (RM)</h3>
-                        <span class="text-xs font-medium text-slate-400">Peratusan</span>
-                    </div>
-                    <p class="text-xs text-slate-500 mb-4">Perbandingan nilai dibayar, belum dibayar & belum dituntut</p>
-                </div>
-                <div class="relative h-56 w-full flex items-center justify-center">
-                    <canvas id="salesDoughnutChart"></canvas>
-                </div>
-                <div id="chartLegendSummary" class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-xs">
-                    <!-- Diisi secara dinamik oleh JS -->
-                </div>
-            </div>
-
-            <!-- Analisis Umur Hutang / Aging Invois Belum Dibayar (Bar Chart) -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 lg:col-span-2 flex flex-col justify-between">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                    <div>
-                        <h3 class="font-bold text-jm-navy text-base">Analisis Umur Invois Belum Dibayar (Aging)</h3>
-                        <p class="text-xs text-slate-500">Berdasarkan bilangan hari tertunggak dari tarikh invois dikeluarkan</p>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs">
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-jm-blue font-semibold">
-                            <i class="fa-solid fa-chart-column"></i> Fokus Kutipan
-                        </span>
-                    </div>
-                </div>
-                <div class="relative h-64 w-full">
-                    <canvas id="agingBarChart"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <!-- DATA TABLE SECTION -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <!-- Table Toolbar -->
-            <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h3 class="font-bold text-jm-navy text-lg flex items-center gap-2">
-                        <span>Senarai Terperinci Fail & Invois</span>
-                        <span id="filteredBadgeCount" class="text-xs font-bold bg-jm-navy text-jm-gold px-2.5 py-0.5 rounded-full">0</span>
-                    </h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Tapis mengikut status tuntutan atau cari nama klien / nombor fail</p>
-                </div>
-
-                <!-- Filters & Search -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    <!-- Status Filter Pills -->
-                    <div class="inline-flex rounded-xl bg-slate-200/70 p-1 text-xs font-semibold overflow-x-auto">
-                        <button onclick="setStatusFilter('ALL')" id="filter-ALL" class="filter-btn px-3 py-1.5 rounded-lg bg-jm-navy text-white shadow-sm transition-all whitespace-nowrap">Semua</button>
-                        <button onclick="setStatusFilter('DIBAYAR')" id="filter-DIBAYAR" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Dituntut</button>
-                        <button onclick="setStatusFilter('BELUM_BAYAR')" id="filter-BELUM_BAYAR" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Belum Bayar</button>
-                        <button onclick="setStatusFilter('BELUM_DITUNTUT')" id="filter-BELUM_DITUNTUT" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Belum Tuntut</button>
-                    </div>
-
-                    <!-- Search Box -->
-                    <div class="relative">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                        <input type="text" id="searchInput" onkeyup="applyFilters()" placeholder="Cari No. Fail, Klien, Invois..." 
-                            class="w-full sm:w-64 pl-9 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
-                    </div>
-
-                    <!-- Export CSV Button -->
-                    <button onclick="exportFilteredCSV()" title="Muat Turun Laporan CSV" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
-                        <i class="fa-solid fa-file-arrow-down text-jm-blue"></i>
-                        <span>Eksport</span>
+        <!-- Toolbar: Tab Bahagian & Kemaskini Data -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+            <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Kategori Bahagian">
+                    <button onclick="switchDepartmentTab('ENGINEERING')" id="dept-tab-ENGINEERING" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-helmet-safety"></i><span>1. Engineering</span>
                     </button>
+                    <button onclick="switchDepartmentTab('UTILITY')" id="dept-tab-UTILITY" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-bolt"></i><span>2. Utility</span>
+                    </button>
+                    <button onclick="switchDepartmentTab('LASER')" id="dept-tab-LASER" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-crosshairs"></i><span>3. Laser Scanning</span>
+                    </button>
+                    <button onclick="switchDepartmentTab('CADASTRAL')" id="dept-tab-CADASTRAL" class="dept-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-map-location-dot"></i><span>4. Cadastral</span>
+                    </button>
+                </nav>
+                <div class="flex flex-wrap items-center gap-2 justify-end">
+                    <div id="lastUpdatedBadge" class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="syncStatusText">Menyambung data...</span>
+                    </div>
+                    <button onclick="fetchDashboardData(true)" id="refreshBtn" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                        <i class="fa-solid fa-rotate-right" id="refreshIcon"></i><span>Kemaskini Data</span>
+                    </button>
+                    <div class="flex items-center gap-2 bg-white/10 rounded-xl pl-3 pr-1 py-1">
+                        <i class="fa-solid fa-user-shield text-jm-gold text-xs"></i>
+                        <span id="userNameLabel" class="text-xs text-white font-semibold max-w-[140px] truncate"></span>
+                        <button onclick="logout()" title="Log Keluar" class="text-blue-100 hover:text-white hover:bg-white/10 text-xs px-2.5 py-1.5 rounded-lg transition-all">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Container -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+            <!-- Active Department Sub-Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-jm-blue ring-4 ring-blue-100"></span>
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Paparan Bahagian Semasa:</span>
+                        <h2 id="activeDeptTitle" class="text-base sm:text-lg font-extrabold text-jm-navy">Bahagian Engineering</h2>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock text-jm-blue"></i>
+                    Akses: <span id="userRoleLabel" class="font-mono font-bold text-jm-blue"></span>
                 </div>
             </div>
 
-            <!-- Responsive Table Wrapper -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-jm-navy text-white text-xs uppercase tracking-wider">
-                            <th class="py-3.5 px-4 font-semibold cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('noFail')">
-                                No. Fail <i class="fa-solid fa-sort ml-1 opacity-60"></i>
-                            </th>
-                            <th class="py-3.5 px-4 font-semibold cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('client')">
-                                Nama Client <i class="fa-solid fa-sort ml-1 opacity-60"></i>
-                            </th>
-                            <th class="py-3.5 px-4 font-semibold cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('noInvois')">
-                                No. Invois <i class="fa-solid fa-sort ml-1 opacity-60"></i>
-                            </th>
-                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('dibayar')">
-                                Dibayar (RM) <i class="fa-solid fa-sort ml-1 opacity-60"></i>
-                            </th>
-                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('belumBayar')">
-                                Belum Bayar (RM) <i class="fa-solid fa-sort ml-1 opacity-60"></i>
-                            </th>
-                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('belumDituntut')">
-                                Belum Dituntut (RM) <i class="fa-solid fa-sort ml-1 opacity-60"></i>
-                            </th>
-                            <th class="py-3.5 px-4 font-semibold text-center cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('hariTertunggak')">
-                                Hari Tertunggak <i class="fa-solid fa-sort ml-1 opacity-60"></i>
-                            </th>
-                            <th class="py-3.5 px-4 font-semibold text-center">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="invoiceTableBody" class="divide-y divide-slate-200 text-xs sm:text-sm">
-                        <!-- Loading Skeleton Rows -->
-                        <tr>
-                            <td colspan="8" class="py-12 text-center text-slate-400">
-                                <i class="fa-solid fa-circle-notch fa-spin text-2xl text-jm-blue mb-2"></i>
-                                <p>Memuat turun data daripada Google Sheets...</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <!-- Table Footer Totals -->
-                    <tfoot id="invoiceTableFoot" class="bg-blue-50/90 font-bold text-jm-navy border-t-2 border-jm-navy text-xs sm:text-sm">
-                    </tfoot>
-                </table>
+            <!-- Alert / Notification Banner -->
+            <div id="statusBanner" class="hidden rounded-xl p-4 border text-sm flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-3">
+                    <i id="statusBannerIcon" class="fa-solid fa-circle-info text-lg"></i>
+                    <span id="statusBannerMsg" class="font-medium"></span>
+                </div>
+                <button onclick="document.getElementById('statusBanner').classList.add('hidden')" class="text-current opacity-70 hover:opacity-100 p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-        </section>
 
-    </main>
+            <!-- 4 KPI SUMMARY CARDS -->
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="bg-gradient-to-br from-jm-navy to-jm-blue text-white rounded-2xl p-5 shadow-md border border-blue-900 relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-jm-gold/10 group-hover:scale-110 transition-transform"></div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Jumlah Jualan Keseluruhan</p>
+                            <h2 id="kpiTotalSales" class="text-2xl sm:text-3xl font-extrabold text-white mt-2 tracking-tight">RM 0.00</h2>
+                        </div>
+                        <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow"><i class="fa-solid fa-sack-dollar text-lg"></i></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-blue-100">
+                        <span>Jumlah Rekod Fail / Projek</span>
+                        <span id="kpiTotalProjects" class="font-bold bg-white/15 px-2.5 py-0.5 rounded-full text-jm-gold">0 Rekod</span>
+                    </div>
+                </div>
 
-    <!-- Footer -->
-    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-400 border-t border-slate-200 mt-8">
-        <p>&copy; <span id="currentYear"></span> <strong class="text-jm-navy">Jurukur Mahabob</strong>. Hak Cipta Terpelihara. Papan Pemuka Pengurusan Jualan & Akaun.</p>
-    </footer>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-royal hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Invois Dituntut (Dibayar)</p>
+                            <h2 id="kpiClaimedAmount" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">RM 0.00</h2>
+                        </div>
+                        <div class="p-3 bg-blue-50 text-jm-royal rounded-xl"><i class="fa-solid fa-file-circle-check text-lg"></i></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span class="text-slate-500 font-medium">Bilangan No. Invois:</span>
+                        <span id="kpiClaimedCount" class="font-bold text-jm-royal bg-blue-50 px-2.5 py-1 rounded-lg">0 Invois</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-gold hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Invois Belum Dibayar</p>
+                            <h2 id="kpiUnpaidAmount" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">RM 0.00</h2>
+                        </div>
+                        <div class="p-3 bg-yellow-50 text-jm-goldDark rounded-xl"><i class="fa-solid fa-clock-rotate-left text-lg"></i></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span class="text-slate-500 font-medium">Bilangan No. Invois:</span>
+                        <span id="kpiUnpaidCount" class="font-bold text-amber-800 bg-yellow-100 px-2.5 py-1 rounded-lg">0 Invois</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-slate-700 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Belum Dituntut</p>
+                            <h2 id="kpiUnclaimedAmount" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">RM 0.00</h2>
+                        </div>
+                        <div class="p-3 bg-slate-100 text-slate-700 rounded-xl"><i class="fa-solid fa-file-invoice text-lg"></i></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span class="text-slate-500 font-medium">Bilangan Rekod / Invois:</span>
+                        <span id="kpiUnclaimedCount" class="font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">0 Rekod</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHARTS & ANALYTICS ROW -->
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-bold text-jm-navy text-base">Komposisi Status Jualan (RM)</h3>
+                            <span class="text-xs font-medium text-slate-400">Peratusan</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">Perbandingan nilai dibayar, belum dibayar & belum dituntut</p>
+                    </div>
+                    <div class="relative h-56 w-full flex items-center justify-center">
+                        <canvas id="salesDoughnutChart"></canvas>
+                    </div>
+                    <div id="chartLegendSummary" class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-xs"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 lg:col-span-2 flex flex-col justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="font-bold text-jm-navy text-base">Analisis Umur Invois Belum Dibayar (Aging)</h3>
+                            <p class="text-xs text-slate-500">Berdasarkan bilangan hari tertunggak dari tarikh invois dikeluarkan</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-jm-blue font-semibold">
+                                <i class="fa-solid fa-chart-column"></i> Fokus Kutipan
+                            </span>
+                        </div>
+                    </div>
+                    <div class="relative h-64 w-full">
+                        <canvas id="agingBarChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DATA TABLE SECTION -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-jm-navy text-lg flex items-center gap-2">
+                            <span>Senarai Terperinci Fail & Invois</span>
+                            <span id="filteredBadgeCount" class="text-xs font-bold bg-jm-navy text-jm-gold px-2.5 py-0.5 rounded-full">0</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Tapis mengikut status tuntutan atau cari nama klien / nombor fail</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        <div class="inline-flex rounded-xl bg-slate-200/70 p-1 text-xs font-semibold overflow-x-auto">
+                            <button onclick="setStatusFilter('ALL')" id="filter-ALL" class="filter-btn px-3 py-1.5 rounded-lg bg-jm-navy text-white shadow-sm transition-all whitespace-nowrap">Semua</button>
+                            <button onclick="setStatusFilter('DIBAYAR')" id="filter-DIBAYAR" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Dituntut</button>
+                            <button onclick="setStatusFilter('BELUM_BAYAR')" id="filter-BELUM_BAYAR" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Belum Bayar</button>
+                            <button onclick="setStatusFilter('BELUM_DITUNTUT')" id="filter-BELUM_DITUNTUT" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-jm-navy transition-all whitespace-nowrap">Belum Tuntut</button>
+                        </div>
+
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" id="searchInput" maxlength="100" placeholder="Cari No. Fail, Klien, Invois..."
+                                class="w-full sm:w-64 pl-9 pr-4 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue transition-all">
+                        </div>
+
+                        <button onclick="exportFilteredCSV()" title="Muat Turun Laporan CSV" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-file-arrow-down text-jm-blue"></i><span>Eksport</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-jm-navy text-white text-xs uppercase tracking-wider">
+                                <th class="py-3.5 px-4 font-semibold cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('noFail')">No. Fail <i class="fa-solid fa-sort ml-1 opacity-60"></i></th>
+                                <th class="py-3.5 px-4 font-semibold cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('client')">Nama Client <i class="fa-solid fa-sort ml-1 opacity-60"></i></th>
+                                <th class="py-3.5 px-4 font-semibold cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('noInvois')">No. Invois <i class="fa-solid fa-sort ml-1 opacity-60"></i></th>
+                                <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('dibayar')">Dibayar (RM) <i class="fa-solid fa-sort ml-1 opacity-60"></i></th>
+                                <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('belumBayar')">Belum Bayar (RM) <i class="fa-solid fa-sort ml-1 opacity-60"></i></th>
+                                <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('belumDituntut')">Belum Dituntut (RM) <i class="fa-solid fa-sort ml-1 opacity-60"></i></th>
+                                <th class="py-3.5 px-4 font-semibold text-center cursor-pointer hover:bg-jm-blue transition-colors" onclick="sortTable('hariTertunggak')">Hari Tertunggak <i class="fa-solid fa-sort ml-1 opacity-60"></i></th>
+                                <th class="py-3.5 px-4 font-semibold text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceTableBody" class="divide-y divide-slate-200 text-xs sm:text-sm"></tbody>
+                        <tfoot id="invoiceTableFoot" class="bg-blue-50/90 font-bold text-jm-navy border-t-2 border-jm-navy text-xs sm:text-sm"></tfoot>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-400 border-t border-slate-200 mt-8">
+            <p>&copy; <span id="currentYear"></span> <strong class="text-jm-navy">Jurukur Mahabob</strong>. Hak Cipta Terpelihara. Papan Pemuka Pengurusan Jualan & Akaun.</p>
+        </footer>
+    </div>
 
     <script>
-        // Konfigurasi URL asas & GID bagi keempat-empat tab Google Sheets
-        const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhfZUc5cKXNfZb9SRhDrgtYZx5EDzm_EKUyO8ikZr_597FLfbunhBUSzCziL0_yp_bNysL6Z3MCiAg/pub?output=csv';
+        // ===== TAMPAL URL APPS SCRIPT DI SINI SELEPAS DEPLOY =====
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyyOmN3t9gzdnnOyRN_uRKtU7cD8EL1g088VV6-0FpTw_tmRXe9t7_XqkzGxwSXWKff/exec";
 
+        // Nota: GID tab tidak lagi disimpan di frontend. Pemetaan bahagian -> tab
+        // dibuat di server (Code.gs, objek DEPARTMENTS).
         const DEPARTMENT_TABS = {
-            ENGINEERING: {
-                key: 'ENGINEERING',
-                name: 'Bahagian Engineering',
-                shortName: 'Engineering',
-                gid: null,
-                gidLabel: 'Tab 1 (Utama)'
-            },
-            UTILITY: {
-                key: 'UTILITY',
-                name: 'Bahagian Utility',
-                shortName: 'Utility',
-                gid: '1414262541',
-                gidLabel: 'GID: 1414262541'
-            },
-            LASER: {
-                key: 'LASER',
-                name: 'Bahagian Laser Scanning',
-                shortName: 'Laser Scanning',
-                gid: '1718144234',
-                gidLabel: 'GID: 1718144234'
-            },
-            CADASTRAL: {
-                key: 'CADASTRAL',
-                name: 'Bahagian Cadastral',
-                shortName: 'Cadastral',
-                gid: '1905156815',
-                gidLabel: 'GID: 1905156815'
-            }
+            ENGINEERING: { key: 'ENGINEERING', name: 'Bahagian Engineering',    shortName: 'Engineering' },
+            UTILITY:     { key: 'UTILITY',     name: 'Bahagian Utility',        shortName: 'Utility' },
+            LASER:       { key: 'LASER',       name: 'Bahagian Laser Scanning', shortName: 'Laser Scanning' },
+            CADASTRAL:   { key: 'CADASTRAL',   name: 'Bahagian Cadastral',      shortName: 'Cadastral' }
         };
+        const TOKEN_KEY = 'jm_sales_token';
 
         // State Aplikasi
-        let activeDepartment = 'ENGINEERING';
-        let departmentDataCache = {}; // Simpan cache data setiap tab supaya penukaran tab pantas
+        let authToken = null;
+        let currentUser = null;
+        let activeDepartment = null;
+        let departmentDataCache = {};
         let rawRecords = [];
         let filteredRecords = [];
         let currentStatusFilter = 'ALL';
@@ -347,29 +367,198 @@
         let doughnutChartInstance = null;
         let agingChartInstance = null;
 
-        // Set tahun semasa di footer
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-        // Format matawang Ringgit Malaysia (RM)
-        function formatRM(amount) {
-            return 'RM ' + Number(amount || 0).toLocaleString('en-MY', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+        // ================== SIMPANAN TOKEN ==================
+        // sessionStorage: token hilang bila tab browser ditutup (lebih selamat dari localStorage)
+        function saveToken(token) {
+            authToken = token;
+            try { sessionStorage.setItem(TOKEN_KEY, token); } catch (e) { /* storage disekat: kekal dalam memori */ }
+        }
+        function loadToken() {
+            try { return sessionStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
+        }
+        function clearSession() {
+            authToken = null;
+            currentUser = null;
+            try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* abaikan */ }
         }
 
-        // Membersihkan string nombor/matawang dari CSV kepada float
+        // ================== PANGGILAN API ==================
+        // WAJIB text/plain: elak CORS preflight (OPTIONS) yang Apps Script tak handle
+        async function api(action, data = {}) {
+            if (!GAS_URL || GAS_URL.startsWith('GANTI_')) {
+                throw new Error('GAS_URL belum diisi dalam index.html.');
+            }
+            const body = Object.assign({}, data, { action });
+            if (action !== 'LOGIN' && authToken) body.token = authToken;
+
+            let res;
+            try {
+                res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(body),
+                    redirect: 'follow'
+                });
+            } catch (e) {
+                throw new Error('Gagal sambung ke pelayan. Semak sambungan internet.');
+            }
+            if (!res.ok) throw new Error('Pelayan membalas ralat ' + res.status + '.');
+
+            let json;
+            try { json = await res.json(); }
+            catch (e) { throw new Error('Respons pelayan tidak sah. Semak deployment Apps Script (Who has access: Anyone).'); }
+
+            if (!json.ok) {
+                const err = new Error(json.mesej || 'Ralat tidak diketahui.');
+                err.kod = json.kod;
+                if (json.kod === 'SESI_TAMAT') {
+                    clearSession();
+                    showScreen('login');
+                    setMsg('loginMsg', 'error', json.mesej);
+                } else if (json.kod === 'MESTI_TUKAR') {
+                    showScreen('changePw');
+                }
+                throw err;
+            }
+            return json;
+        }
+
+        // ================== PAPARAN SKRIN ==================
+        function showScreen(nama) {
+            document.getElementById('bootScreen').classList.toggle('hidden', nama !== 'boot');
+            document.getElementById('loginScreen').classList.toggle('hidden', nama !== 'login');
+            document.getElementById('changePwScreen').classList.toggle('hidden', nama !== 'changePw');
+            document.getElementById('appShell').classList.toggle('hidden', nama !== 'app');
+            if (nama === 'login') setTimeout(() => document.getElementById('loginEmel').focus(), 50);
+            if (nama === 'changePw') setTimeout(() => document.getElementById('pwLama').focus(), 50);
+        }
+
+        function setMsg(id, type, text) {
+            const el = document.getElementById(id);
+            if (!text) { el.classList.add('hidden'); return; }
+            el.className = 'text-sm rounded-xl px-4 py-3 border ' + (type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : 'bg-blue-50 border-blue-200 text-jm-navy');
+            el.textContent = text; // textContent: elak XSS
+        }
+
+        function setBusy(btnId, busy) {
+            const btn = document.getElementById(btnId);
+            btn.disabled = busy;
+            const icon = btn.querySelector('i');
+            if (icon) icon.classList.toggle('fa-spin', busy);
+        }
+
+        // ================== LOG MASUK / KELUAR ==================
+        document.getElementById('loginForm').addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const emel = document.getElementById('loginEmel').value.trim();
+            const pwInput = document.getElementById('loginPassword');
+            if (!emel || !pwInput.value) { setMsg('loginMsg', 'error', 'Sila isi emel dan password.'); return; }
+
+            setBusy('loginBtn', true);
+            setMsg('loginMsg', null, '');
+            try {
+                const r = await api('LOGIN', { emel, password: pwInput.value });
+                saveToken(r.token);
+                pwInput.value = '';
+                onAuthenticated(r.pengguna);
+            } catch (e) {
+                setMsg('loginMsg', 'error', e.message);
+                pwInput.value = '';
+            } finally {
+                setBusy('loginBtn', false);
+            }
+        });
+
+        document.getElementById('changePwForm').addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const lama = document.getElementById('pwLama');
+            const baru = document.getElementById('pwBaru');
+            const sahkan = document.getElementById('pwSahkan');
+
+            // Semakan di sini untuk UX sahaja. Server tetap semak polisi password.
+            if (baru.value !== sahkan.value) { setMsg('changePwMsg', 'error', 'Password baharu dan pengesahan tidak sama.'); return; }
+            if (baru.value.length < 8 || !/[A-Za-z]/.test(baru.value) || !/[0-9]/.test(baru.value)) {
+                setMsg('changePwMsg', 'error', 'Password baharu mesti 8 aksara ke atas, ada huruf dan nombor.'); return;
+            }
+
+            setBusy('changePwBtn', true);
+            setMsg('changePwMsg', null, '');
+            try {
+                const r = await api('CHANGE_PASSWORD', { passwordLama: lama.value, passwordBaru: baru.value });
+                saveToken(r.token);
+                [lama, baru, sahkan].forEach(i => i.value = '');
+                onAuthenticated(r.pengguna);
+                showBanner('info', 'Password berjaya ditukar.');
+            } catch (e) {
+                if (e.kod !== 'SESI_TAMAT') setMsg('changePwMsg', 'error', e.message);
+            } finally {
+                setBusy('changePwBtn', false);
+            }
+        });
+
+        async function logout() {
+            try { if (authToken) await api('LOGOUT'); } catch (e) { /* abaikan */ }
+            clearSession();
+            resetDashboardState();
+            showScreen('login');
+            setMsg('loginMsg', 'info', 'Anda telah log keluar.');
+        }
+
+        function resetDashboardState() {
+            departmentDataCache = {};
+            rawRecords = [];
+            filteredRecords = [];
+            activeDepartment = null;
+            if (doughnutChartInstance) { doughnutChartInstance.destroy(); doughnutChartInstance = null; }
+            if (agingChartInstance) { agingChartInstance.destroy(); agingChartInstance = null; }
+            document.getElementById('invoiceTableBody').innerHTML = '';
+            document.getElementById('invoiceTableFoot').innerHTML = '';
+        }
+
+        function onAuthenticated(pengguna) {
+            currentUser = pengguna;
+            if (pengguna.mestiTukar) {
+                showScreen('changePw');
+                return;
+            }
+
+            document.getElementById('userNameLabel').textContent = pengguna.nama || pengguna.emel;
+            document.getElementById('userRoleLabel').textContent = pengguna.role;
+
+            // Sembunyi tab yang user tiada akses (UI sahaja — server tetap semak setiap permintaan)
+            const allowed = pengguna.bahagian || [];
+            Object.keys(DEPARTMENT_TABS).forEach(k => {
+                document.getElementById(`dept-tab-${k}`).classList.toggle('hidden', !allowed.includes(k));
+            });
+
+            showScreen('app');
+
+            if (allowed.length === 0) {
+                showBanner('error', 'Akaun anda belum diberi akses ke mana-mana bahagian. Sila hubungi admin.');
+                document.getElementById('syncStatusText').textContent = 'Tiada akses';
+                return;
+            }
+            switchDepartmentTab(allowed.includes(activeDepartment) ? activeDepartment : allowed[0]);
+        }
+
+        // ================== FORMAT & PARSE ==================
+        function formatRM(amount) {
+            return 'RM ' + Number(amount || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
         function parseCurrency(val) {
             if (val === null || val === undefined) return 0;
             if (typeof val === 'number') return isNaN(val) ? 0 : val;
-            // Buang 'RM', koma, ruang kosong dan aksara bukan digit kecuali titik perpuluhan dan tanda negatif
             const cleaned = String(val).replace(/RM/gi, '').replace(/,/g, '').replace(/\s+/g, '').trim();
             if (cleaned === '' || cleaned === '-') return 0;
             const num = parseFloat(cleaned);
             return isNaN(num) ? 0 : num;
         }
 
-        // Membersihkan bilangan hari tertunggak kepada integer
         function parseDays(val) {
             if (val === null || val === undefined) return 0;
             const cleaned = String(val).replace(/hari/gi, '').replace(/,/g, '').trim();
@@ -377,12 +566,10 @@
             return isNaN(num) ? 0 : num;
         }
 
-        // Papar mesej pemberitahuan (tanpa alert())
         function showBanner(type, message) {
             const banner = document.getElementById('statusBanner');
             const icon = document.getElementById('statusBannerIcon');
             const msg = document.getElementById('statusBannerMsg');
-
             banner.className = 'rounded-xl p-4 border text-sm flex items-center justify-between shadow-sm mb-4';
             if (type === 'error') {
                 banner.classList.add('bg-red-50', 'border-red-200', 'text-red-800');
@@ -395,13 +582,13 @@
             banner.classList.remove('hidden');
         }
 
-        // Tukar Tab Bahagian (Engineering, Utility, Laser Scanning, Cadastral)
+        // ================== TAB BAHAGIAN ==================
         function switchDepartmentTab(deptKey) {
             if (!DEPARTMENT_TABS[deptKey]) return;
+            if (!currentUser || !(currentUser.bahagian || []).includes(deptKey)) return;
             activeDepartment = deptKey;
             const deptConfig = DEPARTMENT_TABS[deptKey];
 
-            // Kemaskini gaya butang tab aktif
             document.querySelectorAll('.dept-tab-btn').forEach(btn => {
                 btn.classList.remove('bg-jm-gold', 'text-jm-navy', 'font-bold', 'shadow-md');
                 btn.classList.add('text-blue-100', 'font-semibold', 'hover:bg-white/10', 'hover:text-white');
@@ -412,15 +599,10 @@
                 activeBtn.classList.add('bg-jm-gold', 'text-jm-navy', 'font-bold', 'shadow-md');
             }
 
-            // Kemaskini tajuk sub-header
             document.getElementById('activeDeptTitle').textContent = deptConfig.name;
-            document.getElementById('activeDeptGidLabel').textContent = deptConfig.gidLabel;
             document.getElementById('statusBanner').classList.add('hidden');
-
-            // Reset carian & susunan apabila bertukar tab
             currentSort = { field: null, asc: true };
 
-            // Gunakan cache jika data tab ini telah dimuat turun, jika belum muat turun dari Google Sheets
             if (departmentDataCache[deptKey]) {
                 rawRecords = departmentDataCache[deptKey].records;
                 document.getElementById('syncStatusText').textContent = `Dikemaskini: ${departmentDataCache[deptKey].updatedAt}`;
@@ -432,89 +614,65 @@
             }
         }
 
-        // Bina URL CSV mengikut GID tab yang dipilih
-        function getDepartmentCsvUrl(deptKey) {
-            const dept = DEPARTMENT_TABS[deptKey];
-            const timestamp = new Date().getTime();
-            if (dept && dept.gid) {
-                return `${BASE_CSV_URL}&gid=${dept.gid}&single=true&t=${timestamp}`;
-            }
-            return `${BASE_CSV_URL}&t=${timestamp}`;
-        }
-
-        // Muat turun & hurai data dari Google Sheets CSV
-        function fetchDashboardData(forceRefreshAll = true) {
+        // ================== AMBIL DATA DARI APPS SCRIPT ==================
+        async function fetchDashboardData(forceRefreshAll = true) {
+            if (!activeDepartment) return;
             const refreshIcon = document.getElementById('refreshIcon');
             const syncStatusText = document.getElementById('syncStatusText');
             const targetDeptKey = activeDepartment;
+            const dept = DEPARTMENT_TABS[targetDeptKey];
 
-            // Jika pengguna tekan butang "Kemaskini Data", kosongkan cache supaya semua tab ambil data terkini
-            if (forceRefreshAll) {
-                departmentDataCache = {};
-            }
-            
+            if (forceRefreshAll) departmentDataCache = {};
+
             refreshIcon.classList.add('fa-spin');
-            syncStatusText.textContent = `Memuatkan ${DEPARTMENT_TABS[targetDeptKey].shortName}...`;
+            syncStatusText.textContent = `Memuatkan ${dept.shortName}...`;
 
-            // Papar loading state dalam jadual sementara menunggu data tab baharu
             document.getElementById('invoiceTableBody').innerHTML = `
                 <tr>
                     <td colspan="8" class="py-12 text-center text-slate-400">
                         <i class="fa-solid fa-circle-notch fa-spin text-2xl text-jm-blue mb-2"></i>
-                        <p>Memuat turun data <strong>${DEPARTMENT_TABS[targetDeptKey].name}</strong> daripada Google Sheets...</p>
+                        <p>Memuat turun data <strong>${escapeHtml(dept.name)}</strong>...</p>
                     </td>
-                </tr>
-            `;
+                </tr>`;
+            document.getElementById('invoiceTableFoot').innerHTML = '';
 
-            const targetUrl = getDepartmentCsvUrl(targetDeptKey);
+            try {
+                const r = await api('GET_DATA', { bahagian: targetDeptKey });
+                const parsed = parseRawCsvRows(r.rows || []);
+                const timeStr = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' });
+                departmentDataCache[targetDeptKey] = { records: parsed, updatedAt: timeStr };
 
-            Papa.parse(targetUrl, {
-                download: true,
-                header: false,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    refreshIcon.classList.remove('fa-spin');
-                    try {
-                        const parsed = parseRawCsvRows(results.data);
-                        const now = new Date();
-                        const timeStr = now.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' });
-
-                        // Simpan dalam cache mengikut tab
-                        departmentDataCache[targetDeptKey] = {
-                            records: parsed,
-                            updatedAt: timeStr
-                        };
-
-                        // Kemaskini paparan jika tab ini masih aktif
-                        if (activeDepartment === targetDeptKey) {
-                            rawRecords = parsed;
-                            syncStatusText.textContent = `Dikemaskini: ${timeStr}`;
-                            updateKPIs();
-                            renderCharts();
-                            applyFilters();
-                        }
-                    } catch (err) {
-                        console.error('Ralat memproses CSV:', err);
-                        syncStatusText.textContent = 'Ralat Format Data';
-                        showBanner('error', `Berlaku ralat semasa memproses jadual ${DEPARTMENT_TABS[targetDeptKey].name}: ` + err.message);
-                    }
-                },
-                error: function(err) {
-                    refreshIcon.classList.remove('fa-spin');
-                    syncStatusText.textContent = 'Gagal Sambungan';
-                    showBanner('error', `Gagal memuat turun data ${DEPARTMENT_TABS[targetDeptKey].name}. Sila pastikan sambungan internet aktif dan pautan Google Sheets diterbitkan.`);
+                if (activeDepartment === targetDeptKey) {
+                    rawRecords = parsed;
+                    syncStatusText.textContent = `Dikemaskini: ${timeStr}`;
+                    updateKPIs();
+                    renderCharts();
+                    applyFilters();
                 }
-            });
+            } catch (err) {
+                if (err.kod === 'SESI_TAMAT' || err.kod === 'MESTI_TUKAR') return; // api() dah urus skrin
+                console.error('Ralat ambil data:', err);
+                if (activeDepartment === targetDeptKey) {
+                    syncStatusText.textContent = 'Gagal Sambungan';
+                    showBanner('error', `Gagal memuat data ${dept.name}: ${err.message}`);
+                    document.getElementById('invoiceTableBody').innerHTML = `
+                        <tr><td colspan="8" class="py-10 text-center text-slate-500">
+                            <i class="fa-solid fa-triangle-exclamation text-2xl text-red-300 mb-2"></i>
+                            <p class="font-medium">Data tidak dapat dimuatkan.</p>
+                        </td></tr>`;
+                }
+            } finally {
+                refreshIcon.classList.remove('fa-spin');
+            }
         }
 
-        // Pengesanan pintar baris header & pemetaan lajur CSV
+        // Pengesanan baris header & pemetaan lajur (rows = array 2D dari server)
         function parseRawCsvRows(rows) {
             if (!rows || rows.length === 0) {
-                showBanner('error', 'Fail CSV bagi bahagian ini kosong atau tiada rekod ditemui.');
+                showBanner('error', 'Tab bagi bahagian ini kosong atau tiada rekod ditemui.');
                 return [];
             }
 
-            // Cari baris header (mengandungi "No. Fail" atau "Nama Client")
             let headerRowIndex = 0;
             for (let i = 0; i < Math.min(rows.length, 10); i++) {
                 const rowStr = rows[i].join(' ').toLowerCase();
@@ -525,8 +683,6 @@
             }
 
             const headers = rows[headerRowIndex].map(h => String(h || '').trim().toLowerCase());
-            
-            // Cari indeks lajur secara dinamik berdasarkan nama header atau kedudukan standard
             let idxNoFail = headers.findIndex(h => h.includes('fail'));
             let idxClient = headers.findIndex(h => h.includes('client') || h.includes('pelanggan') || h.includes('nama'));
             let idxInvois = headers.findIndex(h => h.includes('invois') && !h.includes('tarikh') && !h.includes('hari'));
@@ -535,7 +691,6 @@
             let idxBelumDituntut = headers.findIndex(h => h.includes('belum dituntut') || h.includes('belum tuntut'));
             let idxHari = headers.findIndex(h => h.includes('hari') || h.includes('tertunggak'));
 
-            // Fallback kedudukan jika header menggunakan sub-header atau gabungan
             if (idxNoFail === -1) idxNoFail = 0;
             if (idxClient === -1) idxClient = 1;
             if (idxInvois === -1) idxInvois = 2;
@@ -544,7 +699,6 @@
             if (idxBelumDituntut === -1) idxBelumDituntut = 5;
             if (idxHari === -1) idxHari = 6;
 
-            // Semak jika baris selepas header adalah sub-header (contohnya baris 1: "Harga (RM)", baris 2: "Dibayar | Belum Bayar | Belum Dituntut")
             let dataStartIndex = headerRowIndex + 1;
             if (dataStartIndex < rows.length) {
                 const nextRowStr = rows[dataStartIndex].join(' ').toLowerCase();
@@ -553,7 +707,6 @@
                     const subDibayar = subHeaders.findIndex(h => h.includes('dibayar') || (h.includes('bayar') && !h.includes('belum')));
                     const subBelumBayar = subHeaders.findIndex(h => h.includes('belum bayar') || h.includes('belum dibayar'));
                     const subBelumDituntut = subHeaders.findIndex(h => h.includes('belum dituntut') || h.includes('belum tuntut'));
-                    
                     if (subDibayar !== -1) idxDibayar = subDibayar;
                     if (subBelumBayar !== -1) idxBelumBayar = subBelumBayar;
                     if (subBelumDituntut !== -1) idxBelumDituntut = subBelumDituntut;
@@ -562,7 +715,6 @@
             }
 
             const parsedData = [];
-
             for (let i = dataStartIndex; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -571,109 +723,70 @@
                 const client = String(row[idxClient] || '').trim();
                 const noInvois = String(row[idxInvois] || '').trim();
 
-                // Langkau baris jumlah keseluruhan (Total / Jumlah) jika ada di bawah helaian
                 const firstColsLower = (noFail + ' ' + client).toLowerCase();
-                if (firstColsLower.includes('jumlah') || firstColsLower.includes('total') || firstColsLower.includes('keseluruhan')) {
-                    continue;
-                }
+                if (firstColsLower.includes('jumlah') || firstColsLower.includes('total') || firstColsLower.includes('keseluruhan')) continue;
 
                 const dibayar = parseCurrency(row[idxDibayar]);
                 const belumBayar = parseCurrency(row[idxBelumBayar]);
                 const belumDituntut = parseCurrency(row[idxBelumDituntut]);
                 const hariTertunggak = parseDays(row[idxHari]);
 
-                // Langkau baris kosong sepenuhnya
-                if (!noFail && !client && !noInvois && dibayar === 0 && belumBayar === 0 && belumDituntut === 0) {
-                    continue;
-                }
+                if (!noFail && !client && !noInvois && dibayar === 0 && belumBayar === 0 && belumDituntut === 0) continue;
 
-                // Tentukan status utama rekod
                 let status = 'BELUM_DITUNTUT';
-                if (dibayar > 0 && belumBayar === 0) {
-                    status = 'DIBAYAR';
-                } else if (belumBayar > 0) {
-                    status = 'BELUM_BAYAR';
-                } else if (belumDituntut > 0) {
-                    status = 'BELUM_DITUNTUT';
-                } else if (noInvois && noInvois !== '-' && noInvois.toLowerCase() !== 'tiada') {
-                    status = 'DIBAYAR';
-                }
+                if (dibayar > 0 && belumBayar === 0) status = 'DIBAYAR';
+                else if (belumBayar > 0) status = 'BELUM_BAYAR';
+                else if (belumDituntut > 0) status = 'BELUM_DITUNTUT';
+                else if (noInvois && noInvois !== '-' && noInvois.toLowerCase() !== 'tiada') status = 'DIBAYAR';
 
                 parsedData.push({
                     noFail: noFail || '-',
                     client: client || 'Tiada Nama Client',
                     noInvois: noInvois || '-',
-                    dibayar,
-                    belumBayar,
-                    belumDituntut,
-                    hariTertunggak,
-                    status
+                    dibayar, belumBayar, belumDituntut, hariTertunggak, status
                 });
             }
-
             return parsedData;
         }
 
-        // Kira dan kemaskini semua metrik KPI
+        // ================== KPI ==================
         function updateKPIs() {
-            let totalDibayar = 0;
-            let totalBelumBayar = 0;
-            let totalBelumDituntut = 0;
-
-            let countInvoisDituntut = 0;     // Bilangan nombor invois dituntut (dibayar)
-            let countInvoisBelumBayar = 0;   // Bilangan nombor invois belum dibayar
-            let countBelumDituntut = 0;      // Bilangan rekod/invois belum dituntut
+            let totalDibayar = 0, totalBelumBayar = 0, totalBelumDituntut = 0;
+            let countInvoisDituntut = 0, countInvoisBelumBayar = 0, countBelumDituntut = 0;
 
             rawRecords.forEach(item => {
                 totalDibayar += item.dibayar;
                 totalBelumBayar += item.belumBayar;
                 totalBelumDituntut += item.belumDituntut;
 
-                const hasValidInvoiceNo = item.noInvois && item.noInvois !== '-' && item.noInvois.toLowerCase() !== 'tiada' && item.noInvois.toLowerCase() !== 'belum';
+                const inv = item.noInvois.toLowerCase();
+                const hasValidInvoiceNo = item.noInvois && item.noInvois !== '-' && inv !== 'tiada' && inv !== 'belum';
 
-                // Invois dituntut (telah dibayar)
-                if (item.dibayar > 0) {
-                    countInvoisDituntut++;
-                }
-
-                // Invois belum dibayar
-                if (item.belumBayar > 0) {
-                    countInvoisBelumBayar++;
-                }
-
-                // Belum dituntut
-                if (item.belumDituntut > 0 || (item.dibayar === 0 && item.belumBayar === 0 && !hasValidInvoiceNo)) {
-                    countBelumDituntut++;
-                }
+                if (item.dibayar > 0) countInvoisDituntut++;
+                if (item.belumBayar > 0) countInvoisBelumBayar++;
+                if (item.belumDituntut > 0 || (item.dibayar === 0 && item.belumBayar === 0 && !hasValidInvoiceNo)) countBelumDituntut++;
             });
 
             const totalJualan = totalDibayar + totalBelumBayar + totalBelumDituntut;
-
-            // Kemaskini DOM
             document.getElementById('kpiTotalSales').textContent = formatRM(totalJualan);
             document.getElementById('kpiTotalProjects').textContent = `${rawRecords.length} Fail`;
-
             document.getElementById('kpiClaimedAmount').textContent = formatRM(totalDibayar);
             document.getElementById('kpiClaimedCount').textContent = `${countInvoisDituntut} Invois`;
-
             document.getElementById('kpiUnpaidAmount').textContent = formatRM(totalBelumBayar);
             document.getElementById('kpiUnpaidCount').textContent = `${countInvoisBelumBayar} Invois`;
-
             document.getElementById('kpiUnclaimedAmount').textContent = formatRM(totalBelumDituntut);
             document.getElementById('kpiUnclaimedCount').textContent = `${countBelumDituntut} Rekod`;
         }
 
-        // Bina / Kemaskini Graf Chart.js
+        // ================== GRAF ==================
         function renderCharts() {
-            const totalDibayar = rawRecords.reduce((sum, r) => sum + r.dibayar, 0);
-            const totalBelumBayar = rawRecords.reduce((sum, r) => sum + r.belumBayar, 0);
-            const totalBelumDituntut = rawRecords.reduce((sum, r) => sum + r.belumDituntut, 0);
+            const totalDibayar = rawRecords.reduce((s, r) => s + r.dibayar, 0);
+            const totalBelumBayar = rawRecords.reduce((s, r) => s + r.belumBayar, 0);
+            const totalBelumDituntut = rawRecords.reduce((s, r) => s + r.belumDituntut, 0);
             const grandTotal = totalDibayar + totalBelumBayar + totalBelumDituntut || 1;
 
-            // 1. Doughnut Chart - Komposisi Status
             const ctxDoughnut = document.getElementById('salesDoughnutChart').getContext('2d');
             if (doughnutChartInstance) doughnutChartInstance.destroy();
-
             doughnutChartInstance = new Chart(ctxDoughnut, {
                 type: 'doughnut',
                 data: {
@@ -681,120 +794,70 @@
                     datasets: [{
                         data: [totalDibayar, totalBelumBayar, totalBelumDituntut],
                         backgroundColor: ['#1D4ED8', '#FACC15', '#334155'],
-                        borderColor: '#FFFFFF',
-                        borderWidth: 3,
-                        hoverOffset: 6
+                        borderColor: '#FFFFFF', borderWidth: 3, hoverOffset: 6
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
+                    responsive: true, maintainAspectRatio: false, cutout: '68%',
                     plugins: {
                         legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.raw || 0;
-                                    const pct = ((val / grandTotal) * 100).toFixed(1);
-                                    return ` ${context.label}: ${formatRM(val)} (${pct}%)`;
-                                }
-                            }
-                        }
+                        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${formatRM(c.raw || 0)} (${(((c.raw || 0) / grandTotal) * 100).toFixed(1)}%)` } }
                     }
                 }
             });
 
-            // Kemaskini ringkasan peratusan di bawah Doughnut Chart
             const pctDibayar = ((totalDibayar / grandTotal) * 100).toFixed(1);
             const pctBelumBayar = ((totalBelumBayar / grandTotal) * 100).toFixed(1);
             const pctBelumTuntut = ((totalBelumDituntut / grandTotal) * 100).toFixed(1);
-
             document.getElementById('chartLegendSummary').innerHTML = `
                 <div class="p-2 rounded-xl bg-blue-50">
-                    <div class="flex items-center justify-center gap-1.5 text-slate-600 font-medium">
-                        <span class="w-2.5 h-2.5 rounded-full bg-jm-royal"></span> Dituntut
-                    </div>
+                    <div class="flex items-center justify-center gap-1.5 text-slate-600 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-jm-royal"></span> Dituntut</div>
                     <div class="font-bold text-jm-navy mt-0.5">${pctDibayar}%</div>
                 </div>
                 <div class="p-2 rounded-xl bg-yellow-50">
-                    <div class="flex items-center justify-center gap-1.5 text-slate-600 font-medium">
-                        <span class="w-2.5 h-2.5 rounded-full bg-jm-gold"></span> Belum Bayar
-                    </div>
+                    <div class="flex items-center justify-center gap-1.5 text-slate-600 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-jm-gold"></span> Belum Bayar</div>
                     <div class="font-bold text-jm-navy mt-0.5">${pctBelumBayar}%</div>
                 </div>
                 <div class="p-2 rounded-xl bg-slate-100">
-                    <div class="flex items-center justify-center gap-1.5 text-slate-600 font-medium">
-                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700"></span> Belum Tuntut
-                    </div>
+                    <div class="flex items-center justify-center gap-1.5 text-slate-600 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-slate-700"></span> Belum Tuntut</div>
                     <div class="font-bold text-jm-navy mt-0.5">${pctBelumTuntut}%</div>
-                </div>
-            `;
+                </div>`;
 
-            // 2. Bar Chart - Analisis Umur Invois Belum Dibayar (Aging)
-            let aging0_30 = 0;
-            let aging31_60 = 0;
-            let aging61_90 = 0;
-            let agingOver90 = 0;
-
+            let a0 = 0, a31 = 0, a61 = 0, a90 = 0;
             rawRecords.forEach(r => {
                 if (r.belumBayar > 0) {
-                    if (r.hariTertunggak <= 30) aging0_30 += r.belumBayar;
-                    else if (r.hariTertunggak <= 60) aging31_60 += r.belumBayar;
-                    else if (r.hariTertunggak <= 90) aging61_90 += r.belumBayar;
-                    else agingOver90 += r.belumBayar;
+                    if (r.hariTertunggak <= 30) a0 += r.belumBayar;
+                    else if (r.hariTertunggak <= 60) a31 += r.belumBayar;
+                    else if (r.hariTertunggak <= 90) a61 += r.belumBayar;
+                    else a90 += r.belumBayar;
                 }
             });
 
             const ctxAging = document.getElementById('agingBarChart').getContext('2d');
             if (agingChartInstance) agingChartInstance.destroy();
-
             agingChartInstance = new Chart(ctxAging, {
                 type: 'bar',
                 data: {
                     labels: ['0 - 30 Hari', '31 - 60 Hari', '61 - 90 Hari', '> 90 Hari (Kritikal)'],
                     datasets: [{
                         label: 'Jumlah Belum Dibayar (RM)',
-                        data: [aging0_30, aging31_60, aging61_90, agingOver90],
+                        data: [a0, a31, a61, a90],
                         backgroundColor: ['#3B82F6', '#1D4ED8', '#FACC15', '#DC2626'],
-                        borderRadius: 8,
-                        barPercentage: 0.55
+                        borderRadius: 8, barPercentage: 0.55
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return ' Tertunggak: ' + formatRM(context.raw);
-                                }
-                            }
-                        }
-                    },
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' Tertunggak: ' + formatRM(c.raw) } } },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#F1F5F9' },
-                            ticks: {
-                                font: { size: 11 },
-                                callback: function(value) {
-                                    return 'RM ' + value.toLocaleString('en-MY');
-                                }
-                            }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11, weight: '600' } }
-                        }
+                        y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { font: { size: 11 }, callback: (v) => 'RM ' + v.toLocaleString('en-MY') } },
+                        x: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } }
                     }
                 }
             });
         }
 
-        // Penapisan Status Butang
+        // ================== TAPISAN, SUSUNAN, JADUAL ==================
         function setStatusFilter(status) {
             currentStatusFilter = status;
             document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -804,61 +867,43 @@
             const activeBtn = document.getElementById(`filter-${status}`);
             activeBtn.classList.remove('text-slate-600');
             activeBtn.classList.add('bg-jm-navy', 'text-white', 'shadow-sm');
-            
             applyFilters();
         }
 
-        // Carian & Penapisan Rekod Jadual
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+
         function applyFilters() {
             const query = document.getElementById('searchInput').value.toLowerCase().trim();
-
             filteredRecords = rawRecords.filter(item => {
-                // Tapis status
                 if (currentStatusFilter === 'DIBAYAR' && item.dibayar <= 0) return false;
                 if (currentStatusFilter === 'BELUM_BAYAR' && item.belumBayar <= 0) return false;
                 if (currentStatusFilter === 'BELUM_DITUNTUT' && item.belumDituntut <= 0) return false;
-
-                // Tapis carian teks
                 if (query) {
-                    const matchFail = item.noFail.toLowerCase().includes(query);
-                    const matchClient = item.client.toLowerCase().includes(query);
-                    const matchInvois = item.noInvois.toLowerCase().includes(query);
-                    return matchFail || matchClient || matchInvois;
+                    return item.noFail.toLowerCase().includes(query) ||
+                           item.client.toLowerCase().includes(query) ||
+                           item.noInvois.toLowerCase().includes(query);
                 }
                 return true;
             });
-
-            if (currentSort.field) {
-                sortDataArray(currentSort.field, currentSort.asc);
-            }
-
+            if (currentSort.field) sortDataArray(currentSort.field, currentSort.asc);
             renderTable();
         }
 
-        // Susunan Lajur Jadual (Sorting)
         function sortTable(field) {
-            if (currentSort.field === field) {
-                currentSort.asc = !currentSort.asc;
-            } else {
-                currentSort.field = field;
-                currentSort.asc = true;
-            }
+            if (currentSort.field === field) currentSort.asc = !currentSort.asc;
+            else { currentSort.field = field; currentSort.asc = true; }
             sortDataArray(field, currentSort.asc);
             renderTable();
         }
 
         function sortDataArray(field, asc) {
             filteredRecords.sort((a, b) => {
-                let valA = a[field];
-                let valB = b[field];
-                if (typeof valA === 'string') {
-                    return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                }
+                const valA = a[field], valB = b[field];
+                if (typeof valA === 'string') return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
                 return asc ? valA - valB : valB - valA;
             });
         }
 
-        // Papar baris dalam jadual HTML
         function renderTable() {
             const tbody = document.getElementById('invoiceTableBody');
             const tfoot = document.getElementById('invoiceTableFoot');
@@ -866,40 +911,30 @@
 
             if (filteredRecords.length === 0) {
                 tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="py-10 text-center text-slate-500">
-                            <i class="fa-solid fa-folder-open text-2xl text-slate-300 mb-2"></i>
-                            <p class="font-medium">Tiada rekod ditemui untuk tapisan semasa.</p>
-                        </td>
-                    </tr>
-                `;
+                    <tr><td colspan="8" class="py-10 text-center text-slate-500">
+                        <i class="fa-solid fa-folder-open text-2xl text-slate-300 mb-2"></i>
+                        <p class="font-medium">Tiada rekod ditemui untuk tapisan semasa.</p>
+                    </td></tr>`;
                 tfoot.innerHTML = '';
                 return;
             }
 
-            let sumDibayar = 0;
-            let sumBelumBayar = 0;
-            let sumBelumDituntut = 0;
+            let sumDibayar = 0, sumBelumBayar = 0, sumBelumDituntut = 0;
 
-            const rowsHtml = filteredRecords.map(item => {
+            tbody.innerHTML = filteredRecords.map(item => {
                 sumDibayar += item.dibayar;
                 sumBelumBayar += item.belumBayar;
                 sumBelumDituntut += item.belumDituntut;
 
-                // Lencana Hari Tertunggak
+                const hari = Number(item.hariTertunggak) || 0;
                 let daysBadge = '<span class="text-slate-400">-</span>';
-                if (item.belumBayar > 0 || item.hariTertunggak > 0) {
-                    if (item.hariTertunggak > 60) {
-                        daysBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">${item.hariTertunggak} Hari</span>`;
-                    } else if (item.hariTertunggak > 30) {
-                        daysBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-100 text-amber-800">${item.hariTertunggak} Hari</span>`;
-                    } else {
-                        daysBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-jm-blue">${item.hariTertunggak} Hari</span>`;
-                    }
+                if (item.belumBayar > 0 || hari > 0) {
+                    if (hari > 60) daysBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">${hari} Hari</span>`;
+                    else if (hari > 30) daysBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-100 text-amber-800">${hari} Hari</span>`;
+                    else daysBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-jm-blue">${hari} Hari</span>`;
                 }
 
-                // Lencana Status Utama
-                let statusPill = '';
+                let statusPill;
                 if (item.dibayar > 0 && item.belumBayar === 0) {
                     statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-jm-blue"><i class="fa-solid fa-check-circle"></i> Dituntut</span>`;
                 } else if (item.belumBayar > 0) {
@@ -913,75 +948,77 @@
                         <td class="py-3.5 px-4 font-bold text-jm-navy whitespace-nowrap">${escapeHtml(item.noFail)}</td>
                         <td class="py-3.5 px-4 font-medium text-slate-800">${escapeHtml(item.client)}</td>
                         <td class="py-3.5 px-4 font-mono text-xs text-slate-600 whitespace-nowrap">${escapeHtml(item.noInvois)}</td>
-                        <td class="py-3.5 px-4 text-right font-semibold ${item.dibayar > 0 ? 'text-jm-royal' : 'text-slate-400'} whitespace-nowrap">
-                            ${item.dibayar > 0 ? formatRM(item.dibayar) : '-'}
-                        </td>
-                        <td class="py-3.5 px-4 text-right font-semibold ${item.belumBayar > 0 ? 'text-amber-700' : 'text-slate-400'} whitespace-nowrap">
-                            ${item.belumBayar > 0 ? formatRM(item.belumBayar) : '-'}
-                        </td>
-                        <td class="py-3.5 px-4 text-right font-semibold ${item.belumDituntut > 0 ? 'text-slate-700' : 'text-slate-400'} whitespace-nowrap">
-                            ${item.belumDituntut > 0 ? formatRM(item.belumDituntut) : '-'}
-                        </td>
+                        <td class="py-3.5 px-4 text-right font-semibold ${item.dibayar > 0 ? 'text-jm-royal' : 'text-slate-400'} whitespace-nowrap">${item.dibayar > 0 ? formatRM(item.dibayar) : '-'}</td>
+                        <td class="py-3.5 px-4 text-right font-semibold ${item.belumBayar > 0 ? 'text-amber-700' : 'text-slate-400'} whitespace-nowrap">${item.belumBayar > 0 ? formatRM(item.belumBayar) : '-'}</td>
+                        <td class="py-3.5 px-4 text-right font-semibold ${item.belumDituntut > 0 ? 'text-slate-700' : 'text-slate-400'} whitespace-nowrap">${item.belumDituntut > 0 ? formatRM(item.belumDituntut) : '-'}</td>
                         <td class="py-3.5 px-4 text-center whitespace-nowrap">${daysBadge}</td>
                         <td class="py-3.5 px-4 text-center whitespace-nowrap">${statusPill}</td>
-                    </tr>
-                `;
+                    </tr>`;
             }).join('');
 
-            tbody.innerHTML = rowsHtml;
-
-            // Baris Jumlah di bawah jadual
             tfoot.innerHTML = `
                 <tr>
                     <td colspan="3" class="py-3.5 px-4 text-right uppercase tracking-wider text-xs">Jumlah Tapisan Semasa:</td>
                     <td class="py-3.5 px-4 text-right text-jm-royal whitespace-nowrap">${formatRM(sumDibayar)}</td>
                     <td class="py-3.5 px-4 text-right text-amber-800 whitespace-nowrap">${formatRM(sumBelumBayar)}</td>
                     <td class="py-3.5 px-4 text-right text-slate-800 whitespace-nowrap">${formatRM(sumBelumDituntut)}</td>
-                    <td colspan="2" class="py-3.5 px-4 text-center text-xs text-jm-navy">
-                        Total: ${formatRM(sumDibayar + sumBelumBayar + sumBelumDituntut)}
-                    </td>
-                </tr>
-            `;
+                    <td colspan="2" class="py-3.5 px-4 text-center text-xs text-jm-navy">Total: ${formatRM(sumDibayar + sumBelumBayar + sumBelumDituntut)}</td>
+                </tr>`;
         }
 
-        // Eksport data yang sedang ditapis kepada fail CSV
+        // ================== EKSPORT CSV ==================
+        // Sel yang bermula dengan = + - @ diberi prefix ' supaya Excel tak jalankan sebagai formula
+        function csvCell(v) {
+            let s = String(v ?? '');
+            if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+
         function exportFilteredCSV() {
             if (filteredRecords.length === 0) return;
-
             const headers = ['No. Fail', 'Nama Client', 'No Invois', 'Dibayar (RM)', 'Belum Bayar (RM)', 'Belum Dituntut (RM)', 'Bil Hari Tertunggak'];
             const csvRows = [
-                headers.join(','),
+                headers.map(csvCell).join(','),
                 ...filteredRecords.map(r => [
-                    `"${r.noFail.replace(/"/g, '""')}"`,
-                    `"${r.client.replace(/"/g, '""')}"`,
-                    `"${r.noInvois.replace(/"/g, '""')}"`,
-                    r.dibayar.toFixed(2),
-                    r.belumBayar.toFixed(2),
-                    r.belumDituntut.toFixed(2),
-                    r.hariTertunggak
+                    csvCell(r.noFail), csvCell(r.client), csvCell(r.noInvois),
+                    r.dibayar.toFixed(2), r.belumBayar.toFixed(2), r.belumDituntut.toFixed(2), r.hariTertunggak
                 ].join(','))
             ];
 
-            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(['﻿' + csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             const deptSlug = DEPARTMENT_TABS[activeDepartment].shortName.replace(/\s+/g, '_');
             link.href = url;
-            link.setAttribute('download', `Laporan_${deptSlug}_Jurukur_Mahabob_${new Date().toISOString().slice(0,10)}.csv`);
+            link.download = `Laporan_${deptSlug}_Jurukur_Mahabob_${new Date().toISOString().slice(0, 10)}.csv`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
-        // Elak XSS semasa paparan teks CSV
+        // Elak XSS semasa paparan teks dari Sheets
         function escapeHtml(text) {
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = String(text ?? '');
             return div.innerHTML;
         }
 
-        // Mulakan muat turun data apabila halaman sedia
-        window.addEventListener('DOMContentLoaded', () => fetchDashboardData(true));
+        // ================== MULA ==================
+        window.addEventListener('DOMContentLoaded', async () => {
+            authToken = loadToken();
+            if (!authToken) { showScreen('login'); return; }
+            try {
+                const r = await api('ME');
+                onAuthenticated(r.pengguna);
+            } catch (e) {
+                if (e.kod !== 'SESI_TAMAT' && e.kod !== 'MESTI_TUKAR') {
+                    clearSession();
+                    showScreen('login');
+                    setMsg('loginMsg', 'error', e.message);
+                }
+            }
+        });
     </script>
 </body>
 </html>
