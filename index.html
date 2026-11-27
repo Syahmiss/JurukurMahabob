@@ -391,7 +391,6 @@ tr:last-child td{border-bottom:0}
       <div class="sub" id="sub-site"><div><div class="inner">
         <button data-v="app:site" title="Laporan Harian"><span class="tx">Laporan Harian</span></button>
         <button data-v="app:site-status" title="Status Site"><span class="tx">Status Site</span></button>
-        <button data-v="app:site-kenderaan" title="Laporan Kenderaan"><span class="tx">Laporan Kenderaan</span></button>
       </div></div></div>
     </div>
     <div class="ngrp" data-g="pelan">
@@ -490,7 +489,6 @@ const MOD_TITLES={tracking:['Fail Tracking','Jejak fail dari kutipan data hingga
 const APPS={
   'site':{url:'HOD Site/Laporan Harian/index.html',t:'Laporan Harian Tapak',c:'HOD Site · Google Sheets'},
   'site-status':{url:'HOD Site/Status Site/index.html',t:'Status Site',c:'HOD Site · Status tapak'},
-  'site-kenderaan':{url:'HOD Site/Laporan Kenderaan/index.html',t:'Laporan Kenderaan',c:'HOD Site · Log perjalanan & kos kenderaan'},
   'pelan-status':{url:'HOD Pelan/Status Pelan/index.html',t:'Status Pelan',c:'HOD Pelan · Laporan pelukis pelan'},
   'pelan-qc':{url:'HOD Pelan/Kualiti Pelan/index.html',t:'Kualiti Pelan (QC)',c:'HOD Pelan · Semakan QC dari Google Sheets'},
   'pelan-checklist':{url:'HOD Pelan/Checklist Plan/index.html',t:'Checklist Plan',c:'HOD Pelan · Senarai semak digital pelan'},
@@ -784,7 +782,11 @@ function trackProg(f){return Math.round(STAGES.filter(([k])=>f.stages&&f.stages[
 const EXT={inv:null,qc:null,ck:null,lh:null,akaun:lsGet('jm_akaun_summary_v1'),err:{},loading:false};
 const EXT_SRC={
   inv:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTo5oCD7Wd6vTJNFs1WZti8ZKgkHjp869JylM1NbJwFll8rQ6VoHtgkNSoFHnAjON77i9xZC4QwnA91/pub?gid=0&single=true&output=csv',
-  qc:[{name:'QC',url:'https://docs.google.com/spreadsheets/d/e/2PACX-1vSu5gATXzC5n6KzCNO5mk54h2EORGalqNs0XrGcxEeUXdIINtUZZfA2f7kNhAnFVPFnWFYXumEnx4FC/pub?output=csv',cat:'UMUM'}],
+  /* QC: samakan gid dengan QC_TABS dalam HOD Pelan/Kualiti Pelan/index.html. Gid kosong = tab pertama sahaja */
+  qc:(()=>{const id='2PACX-1vSu5gATXzC5n6KzCNO5mk54h2EORGalqNs0XrGcxEeUXdIINtUZZfA2f7kNhAnFVPFnWFYXumEnx4FC',
+    u=g=>'https://docs.google.com/spreadsheets/d/e/'+id+'/pub?'+(g?'gid='+encodeURIComponent(g)+'&single=true&':'')+'output=csv',
+    tabs=[{name:'ENGINEERING',gid:'399274151'},{name:'TITLE',gid:'1201764382'},{name:'UMAP',gid:'421455856'},{name:'FOC & AMAL',gid:'1388053727'}].filter(t=>t.gid);
+    return tabs.length?tabs.map(t=>({name:t.name,url:u(t.gid),cat:t.name})):[{name:'QC',url:u(''),cat:''}];})(),
   lh:'https://docs.google.com/spreadsheets/d/e/2PACX-1vR9K9IiWtk4r4MouH9wGT5DeKJWGXyaKcKgj43dnC48KG_87QE7jO7wOJF6jzKQn2XwsJipuQRRj9MZ/pub?gid=1353013862&single=true&output=csv',
   ckApi:'https://script.google.com/macros/s/AKfycbxZtlvQERuGapebTBHFHT2i6ZFEGRdUnRSDfEyVKPNUDNDsRO28iNKuZYRqFGoWHn5d/exec'
 };
@@ -868,15 +870,24 @@ function parseLH(rows){
       asal:parseTarikh(g(C.ja)),semasa:parseTarikh(g(C.js))};
   });
 }
+/* Auto-kesan kategori QC — sama dengan CAT_RULES dalam Kualiti Pelan */
+const QC_CAT_RULES=[['LASER SCANNING',/\b(TLS|LIDAR|LASER|SCAN|SCANNING|POINT ?CLOUD)\b/],['UMAP',/\b(UMP|UMAP|GIS|UTILITI|UTILITY|PAIP|KABEL)\b/],
+  ['TITLE',/\b(TTL|TITLE|HAKMILIK|SEMPADAN|STRATA|KADASTER|CADASTRAL)\b/],['ENGINEERING',/\b(ENG|ENGINEERING|KEJURUTERAAN|TOPO|TOPOGRAFI|ARAS|KONTUR|AS[- ]?BUILT|SETTING ?OUT)\b/]];
+function qcInferCat(noFail,perkara){for(const t of [String(noFail||'').toUpperCase().replace(/[\/_\-.]/g,' '),String(perkara||'').toUpperCase()]){if(!t.trim())continue;for(const [c,re] of QC_CAT_RULES)if(re.test(t))return c;}return '';}
 function parseQC(rows,cat){
   const h=(rows[0]||[]).map(nk);
   const get=(r,names)=>{for(const n of names){const i=h.indexOf(nk(n));if(i>=0&&r[i]!=null&&String(r[i]).trim())return String(r[i]).trim();}return '';};
-  return rows.slice(1).filter(r=>r.join('').trim()).map(r=>{
+  let section='';
+  return rows.slice(1).filter(r=>r.join('').trim()).filter(r=>{
+    const f=r.map((v,j)=>[j,String(v==null?'':v).trim()]).filter(x=>x[1]);
+    if(f.length===1&&f[0][0]<2&&!/\d/.test(f[0][1])&&f[0][1].length<=40){section=f[0][1].toUpperCase();return false;}
+    r._sec=section;return true;
+  }).map(r=>{
     const sl=get(r,['STATUS','STATUS QC','KEPUTUSAN','STATE']).toLowerCase();
     const st=/rework|tolak|baiki|reject|gagal|tidak lulus|tak lulus/.test(sl)?'REWORK REQUIRED':/lul|siap|pass|selesai|approved/.test(sl)?'LULUS':'DALAM PROSES QC';
     const rl=get(r,['REWORK','SEMAK SEMULA','BAIKI']).toLowerCase();
     const rwCol=!rl||/^(tiada|tidak|tak|no|none|false|n|nil)\b/.test(rl)||/^[-–0]+$/.test(rl)?false:/ada|ya|yes|true|\d/.test(rl);
-    return {MAKLUMAT:(get(r,['MAKLUMAT','BIDANG','KATEGORI'])||cat).toUpperCase(),'NO. FAIL':get(r,['NO. FAIL','NO_FAIL','FILE NO','NO REF'])||'–',
+    return {MAKLUMAT:(cat||get(r,['MAKLUMAT','BIDANG','KATEGORI'])||r._sec||qcInferCat(get(r,['NO. FAIL','NO_FAIL','FILE NO','NO REF']),get(r,['PERKARA','PROJEK','TAJUK','DESCRIPTION','PROJECT']))||'UMUM').toUpperCase(),'NO. FAIL':get(r,['NO. FAIL','NO_FAIL','FILE NO','NO REF'])||'–',
       PERKARA:get(r,['PERKARA','PROJEK','TAJUK','DESCRIPTION','PROJECT']),'NAMA SURVEYOR':get(r,['NAMA SURVEYOR','SURVEYOR','PEGAWAI'])||'Tiada nama',STATUS:st,
       RW:rwCol||st==='REWORK REQUIRED'};
   });
