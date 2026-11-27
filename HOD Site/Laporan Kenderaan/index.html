@@ -101,7 +101,7 @@
                 </div>
             </div>
             <div class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto flex items-center gap-1.5">
-                <i class="fa-solid fa-database text-jm-blue"></i><span>Sumber: Google Sheets (CSV)</span>
+                <i class="fa-solid fa-database text-jm-blue"></i><span id="srcLabel">Sumber: Google Sheets</span>
             </div>
         </div>
 
@@ -300,13 +300,14 @@
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-3 text-sm text-slate-600">
                 <h3 class="font-bold text-jm-navy text-base">Cara pasang (sekali sahaja)</h3>
                 <ol class="list-decimal pl-5 space-y-1">
-                    <li>Buka Google Sheet yang sama dengan link CSV → <b>Extensions → Apps Script</b>.</li>
-                    <li>Padam kod sedia ada, tampal kod di bawah, kemudian <b>Save</b>.</li>
+                    <li>Buka Google Sheet laporan kenderaan → <b>Extensions → Apps Script</b>.</li>
+                    <li>Padam kod sedia ada dalam <code>Code.gs</code>, tampal kod di bawah, kemudian <b>Save</b>.</li>
+                    <li>Pilih fungsi <b>setup</b> → <b>Run</b> → benarkan akses (Authorize). Tab &amp; header akan dibina jika tiada.</li>
                     <li><b>Deploy → New deployment → Web app</b>. Execute as: <b>Me</b>. Who has access: <b>Anyone</b>.</li>
                     <li>Salin URL <code>/exec</code>, letak dalam <code>MACRO_URL</code> dalam fail <code>HOD Site/Laporan Kenderaan/index.html</code>, kemudian push ke GitHub.</li>
                 </ol>
-                <p class="text-xs">Laporan ditulis ke tab pertama (gid=0, sama dengan link CSV). Header dibina auto jika tab kosong, dan header yang tiada ditambah di hujung.
-                Link CSV "Publish to web" lambat kemas kini (biasanya sehingga 5 minit) — laporan yang baru dihantar dipapar dulu dari pelayar sehingga muncul dalam CSV.</p>
+                <p class="text-xs">Skrip guna active spreadsheet. Tab <b>Laporan Kenderaan</b> digunakan; jika tiada, tab pertama digunakan kalau header dia dah ada No Pendaftaran &amp; Tarikh, kalau tidak tab baharu dibina.
+                Bila ubah kod: <b>Deploy → Manage deployments → Edit → New version</b> supaya URL kekal sama. Salinan kod juga ada dalam fail <code>Code.gs</code> dalam folder ini.</p>
             </div>
             <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
                 <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-800">
@@ -323,22 +324,36 @@
      ====================================================================== -->
 <script type="text/plain" id="gsCode">
 /**
- * Laporan Kenderaan — Jurukur Mahabob (HOD Site)
- * Web App untuk butang "Hantar Laporan".
- * - Guna active spreadsheet (skrip terikat pada Sheet yang sama dengan link CSV).
- * - Tulis ke tab gid=0 (tab yang di-publish sebagai CSV). Jika tiada, bina tab baharu.
- * - Header dibina auto jika kosong; header yang tiada ditambah di hujung.
- * - Tarikh disimpan sebagai TEKS DD/MM/YYYY supaya CSV sentiasa format Malaysia
- *   (tak terikut locale Sheet yang mungkin MM/DD/YYYY).
+ * ============================================================================
+ * LAPORAN KENDERAAN — Jurukur Mahabob (HOD Site)
+ * Backend Google Apps Script Web App
+ * ============================================================================
+ * - Guna ACTIVE SPREADSHEET (skrip terikat pada Google Sheet: Extensions → Apps Script).
+ * - Tab "Laporan Kenderaan" & header dibina AUTO jika tiada.
+ *   (Jika tab tu tiada tapi tab pertama dah ada header laporan kenderaan, tab pertama digunakan.)
+ * - Header yang hilang ditambah di hujung — data lama tak diusik.
+ *
+ * ENDPOINT
+ *   GET  ?action=list   → semua rekod {status, headers, rows}
+ *   GET  ?action=ping   → semak Web App aktif
+ *   POST {action:'create', ...}  → tambah laporan (body JSON, Content-Type text/plain)
+ *
+ * DEPLOY
+ *   Deploy → New deployment → Web app
+ *   Execute as: Me | Who has access: Anyone
+ *   Salin URL /exec → letak dalam MACRO_URL dalam HOD Site/Laporan Kenderaan/index.html
+ *   Setiap kali ubah kod: Deploy → Manage deployments → Edit → Version: New version
+ *   (URL kekal sama).
+ * ============================================================================
  */
 
-const TARGET_GID = 0;
-const FALLBACK_SHEET_NAME = 'Laporan Kenderaan';
+const SERVER_VERSION = '2.0';
+const SHEET_NAME = 'Laporan Kenderaan';
 const HEADERS = ['Tarikh', 'Nama', 'No Pendaftaran', 'Air', 'Minyak hitam', 'Tayar', 'Angin', 'Roadtax',
                  'Lampu depan', 'Lampu Belakang', 'Lampu brake', 'Signal', 'Odometer', 'Tarikh servis', 'Tujuan'];
 const DATE_COLS = ['Tarikh', 'Roadtax', 'Tarikh servis'];
 
-/* Nilai yang dibenarkan untuk setiap item semakan — mesti sama dengan borang */
+/* Nilai dibenarkan untuk item semakan — mesti sama dengan borang dalam index.html */
 const ALLOWED = {
   'Air':            ['OK', 'Kurang'],
   'Minyak hitam':   ['OK', 'Kurang'],
@@ -350,29 +365,76 @@ const ALLOWED = {
   'Signal':         ['OK', 'Rosak']
 };
 
-function getSheet() {
+const MAX_ROWS_RETURN = 5000; // had rekod dipulangkan (terbaru) supaya respons tak terlalu besar
+
+// ============================================================================
+// SHEET
+// ============================================================================
+
+const norm = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function styleHeader(range) {
+  range.setFontWeight('bold').setBackground('#0A2540').setFontColor('#FFFFFF').setVerticalAlignment('middle');
+}
+
+/** Tab pertama dikira "tab laporan" jika header dia mengandungi No Pendaftaran & Tarikh. */
+function looksLikeReportSheet(sheet) {
+  if (sheet.getLastRow() < 1 || sheet.getLastColumn() < 1) return false;
+  const head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(norm);
+  return head.indexOf(norm('No Pendaftaran')) >= 0 && head.indexOf(norm('Tarikh')) >= 0;
+}
+
+/**
+ * Dapatkan tab laporan. Bina tab & header jika tiada; tambah header yang hilang.
+ */
+function getOrCreateSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheets().filter(s => s.getSheetId() === TARGET_GID)[0]
-           || ss.getSheetByName(FALLBACK_SHEET_NAME)
-           || ss.insertSheet(FALLBACK_SHEET_NAME);
+  let sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    const first = ss.getSheets()[0];
+    sheet = looksLikeReportSheet(first) ? first : ss.insertSheet(SHEET_NAME);
+  }
 
   if (sheet.getLastRow() === 0) {
-    const r = sheet.getRange(1, 1, 1, HEADERS.length);
-    r.setValues([HEADERS]).setFontWeight('bold').setBackground('#0A2540').setFontColor('#FFFFFF');
+    const range = sheet.getRange(1, 1, 1, HEADERS.length);
+    range.setValues([HEADERS]);
+    styleHeader(range);
     sheet.setFrozenRows(1);
+    DATE_COLS.forEach(h => {
+      const c = HEADERS.indexOf(h) + 1;
+      sheet.getRange(2, c, sheet.getMaxRows() - 1, 1).setNumberFormat('@'); // tarikh = teks DD/MM/YYYY
+    });
+    sheet.autoResizeColumns(1, HEADERS.length);
   } else {
-    const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cur = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0].map(norm);
+    const lastCol = Math.max(sheet.getLastColumn(), 1);
+    const cur = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(norm);
     HEADERS.forEach(h => {
       if (cur.indexOf(norm(h)) === -1) {
-        sheet.getRange(1, sheet.getLastColumn() + 1).setValue(h)
-             .setFontWeight('bold').setBackground('#0A2540').setFontColor('#FFFFFF');
+        const c = sheet.getLastColumn() + 1;
+        styleHeader(sheet.getRange(1, c).setValue(h));
         cur.push(norm(h));
       }
     });
+    if (sheet.getFrozenRows() === 0) sheet.setFrozenRows(1);
   }
   return sheet;
 }
+
+/** Peta header → nombor kolum (1-based), ikut nama (tak kisah huruf besar/kecil & jarak). */
+function getColumnMap(sheet) {
+  const head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const map = {};
+  head.forEach((h, i) => {
+    const k = HEADERS.filter(x => norm(x) === norm(h))[0];
+    if (k && !map[k]) map[k] = i + 1;
+  });
+  return map;
+}
+
+// ============================================================================
+// UTIL
+// ============================================================================
 
 function jsonOutput(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
@@ -385,19 +447,60 @@ function safeText(v, max) {
   return s;
 }
 
-/** Terima YYYY-MM-DD dari borang → 'DD/MM/YYYY'. Pulangkan '' jika tak sah. */
+/** YYYY-MM-DD (dari input type=date) → 'DD/MM/YYYY'. '' jika tak sah. */
 function toDmy(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ''));
   if (!m) return '';
   const d = new Date(+m[1], +m[2] - 1, +m[3]);
-  if (d.getMonth() !== +m[2] - 1) return '';
+  if (d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return '';
   return m[3] + '/' + m[2] + '/' + m[1];
 }
 
-/** Ujian ringkas dari URL /exec dalam browser */
-function doGet() {
-  return jsonOutput({ status: 'success', message: 'Laporan Kenderaan Web App aktif' });
+/** Nilai sel → teks untuk dashboard. Tarikh (Date) → DD/MM/YYYY ikut timezone skrip. */
+function cellText(v, tz) {
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return '';
+    return Utilities.formatDate(v, tz, 'dd/MM/yyyy');
+  }
+  if (v === null || v === undefined) return '';
+  return String(v);
 }
+
+// ============================================================================
+// GET
+// ============================================================================
+
+function doGet(e) {
+  const action = (e && e.parameter && e.parameter.action) || 'list';
+  try {
+    if (action === 'ping') {
+      return jsonOutput({ status: 'success', version: SERVER_VERSION, message: 'Laporan Kenderaan Web App aktif' });
+    }
+    if (action !== 'list') return jsonOutput({ status: 'error', message: 'Action tidak dikenali' });
+
+    const sheet = getOrCreateSheet();
+    const map = getColumnMap(sheet);
+    const tz = Session.getScriptTimeZone();
+    const lastRow = sheet.getLastRow();
+    const out = { status: 'success', version: SERVER_VERSION, sheet: sheet.getName(), headers: HEADERS, rows: [] };
+    if (lastRow < 2) return jsonOutput(out);
+
+    const startRow = Math.max(2, lastRow - MAX_ROWS_RETURN + 1);
+    const values = sheet.getRange(startRow, 1, lastRow - startRow + 1, sheet.getLastColumn()).getValues();
+
+    // Pulangkan ikut susunan HEADERS (bukan susunan kolum Sheet) supaya client konsisten
+    out.rows = values
+      .map(r => HEADERS.map(h => (map[h] ? cellText(r[map[h] - 1], tz).trim() : '')))
+      .filter(r => r.some(x => x !== ''));
+    return jsonOutput(out);
+  } catch (err) {
+    return jsonOutput({ status: 'error', message: String(err) });
+  }
+}
+
+// ============================================================================
+// POST
+// ============================================================================
 
 function doPost(e) {
   let p;
@@ -406,6 +509,8 @@ function doPost(e) {
   } catch (err) {
     return jsonOutput({ status: 'error', message: 'Payload tidak sah' });
   }
+  const action = p.action || 'create';
+  if (action !== 'create') return jsonOutput({ status: 'error', message: 'Action tidak dikenali' });
 
   // ---- Validasi di server (jangan percaya browser) ----
   const v = {};
@@ -418,14 +523,17 @@ function doPost(e) {
   const odo = Number(p.odometer);
 
   if (!v['Tarikh']) return jsonOutput({ status: 'error', message: 'Tarikh tidak sah' });
-  if (!v['Nama'] || !v['No Pendaftaran'] || !v['Tujuan']) return jsonOutput({ status: 'error', message: 'Nama, No Pendaftaran dan Tujuan wajib diisi' });
+  if (!v['Nama']) return jsonOutput({ status: 'error', message: 'Nama wajib diisi' });
+  if (!v['No Pendaftaran'] || !/^[A-Z0-9 ]{2,12}$/.test(v['No Pendaftaran'])) return jsonOutput({ status: 'error', message: 'No Pendaftaran tidak sah' });
+  if (!v['Tujuan']) return jsonOutput({ status: 'error', message: 'Tujuan wajib diisi' });
   if (!v['Roadtax']) return jsonOutput({ status: 'error', message: 'Tarikh tamat roadtax tidak sah' });
   if (p.servis && !v['Tarikh servis']) return jsonOutput({ status: 'error', message: 'Tarikh servis tidak sah' });
-  if (!isFinite(odo) || odo < 0 || odo > 2000000) return jsonOutput({ status: 'error', message: 'Odometer tidak sah' });
+  if (String(p.odometer).trim() === '' || !isFinite(odo) || odo < 0 || odo > 2000000) return jsonOutput({ status: 'error', message: 'Odometer tidak sah' });
   v['Odometer'] = Math.round(odo);
 
+  const check = p.check || {};
   for (const h in ALLOWED) {
-    const val = String((p.check || {})[h] || '');
+    const val = String(check[h] || '');
     if (ALLOWED[h].indexOf(val) === -1) return jsonOutput({ status: 'error', message: 'Nilai tidak sah untuk ' + h });
     v[h] = val;
   }
@@ -433,27 +541,33 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(15000)) return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
   try {
-    const sheet = getSheet();
-    const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-    const head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const byNorm = {};
-    HEADERS.forEach(h => { byNorm[norm(h)] = h; });
-    const row = head.map(h => { const k = byNorm[norm(h)]; return k ? v[k] : ''; });
+    const sheet = getOrCreateSheet();
+    const map = getColumnMap(sheet);
+    const lastCol = sheet.getLastColumn();
+    const row = new Array(lastCol).fill('');
+    HEADERS.forEach(h => { if (map[h]) row[map[h] - 1] = v[h]; });
 
     const rowNo = sheet.getLastRow() + 1;
-    const range = sheet.getRange(rowNo, 1, 1, row.length);
-    // Kolum tarikh = teks biasa, supaya tak ditukar ikut locale Sheet
-    head.forEach((h, i) => {
-      const k = byNorm[norm(h)];
-      if (DATE_COLS.indexOf(k) >= 0) sheet.getRange(rowNo, i + 1).setNumberFormat('@');
-    });
-    range.setValues([row]);
-    return jsonOutput({ status: 'success', message: 'Laporan disimpan', row: rowNo });
+    // Kolum tarikh disimpan sebagai TEKS supaya tak ditukar ikut locale Sheet (MM/DD vs DD/MM)
+    DATE_COLS.forEach(h => { if (map[h]) sheet.getRange(rowNo, map[h]).setNumberFormat('@'); });
+    sheet.getRange(rowNo, 1, 1, lastCol).setValues([row]);
+
+    return jsonOutput({ status: 'success', message: 'Laporan disimpan', row: rowNo, version: SERVER_VERSION });
   } catch (err) {
     return jsonOutput({ status: 'error', message: String(err) });
   } finally {
     lock.releaseLock();
   }
+}
+
+// ============================================================================
+// MANUAL (jalankan dari editor Apps Script)
+// ============================================================================
+
+/** Run sekali dari editor untuk bina tab & header, dan beri kebenaran (authorize) skrip. */
+function setup() {
+  const sheet = getOrCreateSheet();
+  Logger.log('Tab sedia: ' + sheet.getName() + ' | ' + (sheet.getLastRow() - 1) + ' rekod');
 }
 </script>
 
@@ -464,7 +578,7 @@ function doPost(e) {
     /* ================= CONFIG ================= */
     /* MACRO_URL = URL Web App Apps Script (/exec) untuk butang "Hantar Laporan".
        Kosong = borang dipapar tapi tak boleh hantar. Lihat tab "Kod Apps Script". */
-    const MACRO_URL = "";
+    const MACRO_URL = "https://script.google.com/macros/s/AKfycbwoB6T5zj3m4_Qnqr_56SgzzEsbao8bNYd8GN3OlzrGKSOKnxx_-Zb4TdT3XP5hKRjTgQ/exec";
     const LIVE = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(MACRO_URL);
     const PENDING_KEY = 'jm_kenderaan_pending_v1';
     const PENDING_TTL = 30 * 60 * 1000; // buang laporan tertunda selepas 30 minit walau tak jumpa dalam CSV
@@ -594,19 +708,33 @@ function doPost(e) {
     };
 
     /* ================= DATA (CSV Publish to web) ================= */
+    /* Sumber utama: Apps Script Web App (GET ?action=list) → [headers, ...rows] */
+    async function loadFromAppsScript() {
+        const res = await fetch(MACRO_URL + '?action=list&t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        let j;
+        try { j = await res.json(); } catch (e) { throw new Error('Respons Web App bukan JSON'); }
+        if (j.status !== 'success') throw new Error(j.message || 'Respons tidak sah');
+        if (!Array.isArray(j.headers) || !Array.isArray(j.rows)) throw new Error('Format respons tidak sah');
+        return [j.headers].concat(j.rows);
+    }
+    /* Sandaran bila MACRO_URL kosong: CSV "Publish to web" (read-only) */
+    async function loadFromCsv() {
+        if (!window.Papa) throw new Error('PapaParse gagal dimuat');
+        const sep = CSV_URL.includes('?') ? '&' : '?';
+        const res = await fetch(CSV_URL + sep + 't=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        if (/^\s*<!doctype html|<html/i.test(text)) throw new Error('Sheet belum "Publish to web" sebagai CSV');
+        return Papa.parse(text, { skipEmptyLines: 'greedy' }).data;
+    }
+
     async function fetchData(manual) {
         const icon = $('#refreshIcon');
         icon.classList.add('fa-spin'); setSync('Memuat...', null);
         try {
-            if (!window.Papa) throw new Error('PapaParse gagal dimuat');
-            const sep = CSV_URL.includes('?') ? '&' : '?';
-            const res = await fetch(CSV_URL + sep + 't=' + Date.now(), { cache: 'no-store' });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const text = await res.text();
-            if (/^\s*<!doctype html|<html/i.test(text)) throw new Error('Sheet belum "Publish to web" sebagai CSV');
-            const parsed = Papa.parse(text, { skipEmptyLines: 'greedy' });
-            const rows = parsed.data;
-            if (!rows.length) { DATA = []; }
+            const rows = LIVE ? await loadFromAppsScript() : await loadFromCsv();
+            if (!rows.length) { DATA = pendingNotInCsv([]); }
             else {
                 // Padankan header ikut nama (tak kisah huruf besar/kecil & jarak), bukan ikut kedudukan
                 const head = rows[0].map(norm);
@@ -622,10 +750,10 @@ function doPost(e) {
                 if (!missing.length && manual) banner(DATA.length + ' rekod dimuat dari Google Sheets.', 'ok');
                 else if (!missing.length) hideBanner();
             }
-            setSync('Live ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), true);
+            setSync((LIVE ? 'Apps Script ' : 'CSV ') + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), true);
         } catch (err) {
             setSync('Gagal sync', false);
-            banner('Gagal muat data: ' + err.message + '. Semak link CSV (File → Share → Publish to web → CSV).', 'bad');
+            banner('Gagal muat data: ' + err.message + (LIVE ? '. Semak deploy Web App (Execute as: Me, access: Anyone) dan MACRO_URL.' : '. Semak link CSV (File → Share → Publish to web → CSV).'), 'bad');
         } finally {
             icon.classList.remove('fa-spin');
             buildFilters(); render();
@@ -818,8 +946,9 @@ function doPost(e) {
             resetForm();
             msg.className = 'text-sm font-medium text-emerald-700'; msg.textContent = 'Laporan dihantar.';
             buildFilters(); render();
-            banner(`Laporan ${pend.plat} (${pend.tarikh}) dihantar ke Google Sheets. Link CSV mungkin ambil masa sehingga 5 minit untuk kemas kini.`, 'ok');
+            banner(`Laporan ${pend.plat} (${pend.tarikh}) disimpan ke Google Sheets.`, 'ok');
             switchView('ringkasan');
+            setTimeout(() => fetchData(false), 800);
         } catch (e) {
             fail('Gagal hantar: ' + e.message + '. Laporan BELUM disimpan — cuba lagi.');
         } finally {
@@ -838,6 +967,7 @@ function doPost(e) {
 
     /* ================= INIT ================= */
     F('tarikh').value = isoToday();
+    $('#srcLabel').textContent = LIVE ? 'Sumber: Google Sheets (Apps Script)' : 'Sumber: Google Sheets (CSV, baca sahaja)';
     if (!LIVE) { $('#noMacro').classList.remove('hidden'); $('#btnSimpan').disabled = true; }
     ['#fBulan', '#fKenderaan'].forEach(s => $(s).addEventListener('change', render));
     $('#fCari').addEventListener('input', render);
