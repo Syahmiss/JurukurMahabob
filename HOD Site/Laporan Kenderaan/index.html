@@ -31,7 +31,7 @@
     </script>
     <style>
         html, body { overflow-x: hidden; }
-        .hidden { display: none !important; } /* sandaran jika Tailwind CDN gagal dimuat */
+        .hidden:not([class*="md:"]) { display: none !important; } /* sandaran jika Tailwind CDN gagal; elemen responsif (md:block) dibiar pada Tailwind */
         .form-input { width: 100%; padding: .6rem .85rem; font-size: .875rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: #fff; transition: all .15s; }
         .form-input:focus { outline: none; border-color: #1E40AF; box-shadow: 0 0 0 3px rgba(30,64,175,.18); }
         .lbl { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin-bottom: .35rem; }
@@ -82,7 +82,7 @@
                 <button type="button" onclick="fetchData(true)" title="Sync Data Sheet" class="bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 active:scale-95">
                     <i class="fa-solid fa-rotate-right" id="refreshIcon"></i><span>Sync</span>
                 </button>
-                <button type="button" onclick="switchView('hantar')" id="btnHantarLaporan" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                <button type="button" onclick="newReport()" id="btnHantarLaporan" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
                     <i class="fa-solid fa-paper-plane"></i><span>Hantar Laporan</span>
                 </button>
             </div>
@@ -226,10 +226,10 @@
             </div>
             <form id="frm" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" novalidate>
                 <div class="bg-jm-navy px-5 py-4 flex items-center gap-3 border-b-4 border-jm-gold">
-                    <div class="p-2.5 bg-jm-gold text-jm-navy rounded-xl shadow"><i class="fa-solid fa-car"></i></div>
+                    <div class="p-2.5 bg-jm-gold text-jm-navy rounded-xl shadow"><i id="frmIcon" class="fa-solid fa-car"></i></div>
                     <div>
-                        <p class="text-xs uppercase tracking-wider text-blue-200 font-semibold">Laporan Baharu</p>
-                        <h3 class="text-white font-extrabold text-base leading-tight">Semakan Kenderaan</h3>
+                        <p id="frmEyebrow" class="text-xs uppercase tracking-wider text-blue-200 font-semibold">Laporan Baharu</p>
+                        <h3 id="frmTitle" class="text-white font-extrabold text-base leading-tight">Semakan Kenderaan</h3>
                     </div>
                 </div>
 
@@ -286,9 +286,10 @@
                 <div class="px-5 pb-5 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
                     <p id="frmMsg" class="text-sm font-medium text-slate-500"></p>
                     <div class="flex gap-2">
-                        <button type="reset" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">Kosongkan</button>
+                        <button type="button" id="btnBatalEdit" onclick="cancelEdit()" class="hidden px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">Batal</button>
+                        <button type="reset" id="btnReset" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">Kosongkan</button>
                         <button id="btnSimpan" type="submit" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold text-sm px-5 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-[0.98] disabled:opacity-60">
-                            <i class="fa-solid fa-paper-plane"></i><span>Hantar Laporan</span>
+                            <i id="btnSimpanIcon" class="fa-solid fa-paper-plane"></i><span id="btnSimpanLbl">Hantar Laporan</span>
                         </button>
                     </div>
                 </div>
@@ -326,31 +327,36 @@
 /**
  * ============================================================================
  * LAPORAN KENDERAAN — Jurukur Mahabob (HOD Site)
- * Backend Google Apps Script Web App
+ * Backend Google Apps Script Web App  (v2.2 — feature EDIT)
  * ============================================================================
  * - Guna ACTIVE SPREADSHEET (skrip terikat pada Google Sheet: Extensions → Apps Script).
- * - Tab "Laporan Kenderaan" & header dibina AUTO jika tiada.
- *   (Jika tab tu tiada tapi tab pertama dah ada header laporan kenderaan, tab pertama digunakan.)
+ * - Tab "Laporan Kenderaan", "Log Edit" & header dibina AUTO jika tiada.
+ *   (Jika tab "Laporan Kenderaan" tiada tapi tab pertama dah ada header laporan, tab pertama digunakan.)
  * - Header yang hilang ditambah di hujung — data lama tak diusik.
+ * - Kolum ID & Kemaskini (di hujung) digunakan untuk edit. Rekod lama tanpa ID diberi ID automatik.
  *
  * ENDPOINT
  *   GET  ?action=list   → semua rekod {status, headers, rows}
  *   GET  ?action=ping   → semak Web App aktif
- *   POST {action:'create', ...}  → tambah laporan (body JSON, Content-Type text/plain)
+ *   POST {action:'create', ...}                       → tambah laporan
+ *   POST {action:'update', id, kemaskini, ...}        → edit laporan
+ *   (body JSON, Content-Type text/plain)
  *
  * DEPLOY
- *   Deploy → New deployment → Web app
- *   Execute as: Me | Who has access: Anyone
- *   Salin URL /exec → letak dalam MACRO_URL dalam HOD Site/Laporan Kenderaan/index.html
- *   Setiap kali ubah kod: Deploy → Manage deployments → Edit → Version: New version
- *   (URL kekal sama).
+ *   Deploy → New deployment → Web app | Execute as: Me | Who has access: Anyone
+ *   Salin URL /exec → MACRO_URL dalam HOD Site/Laporan Kenderaan/index.html
+ *   Setiap kali ubah kod: Deploy → Manage deployments → Edit → Version: New version (URL kekal).
  * ============================================================================
  */
 
-const SERVER_VERSION = '2.0';
+const SERVER_VERSION = '2.2';
 const SHEET_NAME = 'Laporan Kenderaan';
+const LOG_SHEET_NAME = 'Log Edit';
 const HEADERS = ['Tarikh', 'Nama', 'No Pendaftaran', 'Air', 'Minyak hitam', 'Tayar', 'Angin', 'Roadtax',
                  'Lampu depan', 'Lampu Belakang', 'Lampu brake', 'Signal', 'Odometer', 'Tarikh servis', 'Tujuan'];
+const META_HEADERS = ['ID', 'Kemaskini'];
+const ALL_HEADERS = HEADERS.concat(META_HEADERS);
+const LOG_HEADERS = ['Masa', 'ID', 'Baris', 'Medan', 'Nilai Lama', 'Nilai Baru'];
 const DATE_COLS = ['Tarikh', 'Roadtax', 'Tarikh servis'];
 
 /* Nilai dibenarkan untuk item semakan — mesti sama dengan borang dalam index.html */
@@ -365,7 +371,7 @@ const ALLOWED = {
   'Signal':         ['OK', 'Rosak']
 };
 
-const MAX_ROWS_RETURN = 5000; // had rekod dipulangkan (terbaru) supaya respons tak terlalu besar
+const MAX_ROWS_RETURN = 5000; // had rekod dipulangkan (terbaru)
 
 // ============================================================================
 // SHEET
@@ -377,46 +383,52 @@ function styleHeader(range) {
   range.setFontWeight('bold').setBackground('#0A2540').setFontColor('#FFFFFF').setVerticalAlignment('middle');
 }
 
-/** Tab pertama dikira "tab laporan" jika header dia mengandungi No Pendaftaran & Tarikh. */
+/** Tab dikira "tab laporan" jika header dia ada No Pendaftaran & Tarikh. */
 function looksLikeReportSheet(sheet) {
   if (sheet.getLastRow() < 1 || sheet.getLastColumn() < 1) return false;
   const head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(norm);
   return head.indexOf(norm('No Pendaftaran')) >= 0 && head.indexOf(norm('Tarikh')) >= 0;
 }
 
-/**
- * Dapatkan tab laporan. Bina tab & header jika tiada; tambah header yang hilang.
- */
+/** Dapatkan tab laporan. Bina tab & header jika tiada; tambah header yang hilang. */
 function getOrCreateSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAME);
-
   if (!sheet) {
     const first = ss.getSheets()[0];
     sheet = looksLikeReportSheet(first) ? first : ss.insertSheet(SHEET_NAME);
   }
 
   if (sheet.getLastRow() === 0) {
-    const range = sheet.getRange(1, 1, 1, HEADERS.length);
-    range.setValues([HEADERS]);
+    const range = sheet.getRange(1, 1, 1, ALL_HEADERS.length);
+    range.setValues([ALL_HEADERS]);
     styleHeader(range);
     sheet.setFrozenRows(1);
     DATE_COLS.forEach(h => {
-      const c = HEADERS.indexOf(h) + 1;
-      sheet.getRange(2, c, sheet.getMaxRows() - 1, 1).setNumberFormat('@'); // tarikh = teks DD/MM/YYYY
+      sheet.getRange(2, HEADERS.indexOf(h) + 1, sheet.getMaxRows() - 1, 1).setNumberFormat('@');
     });
-    sheet.autoResizeColumns(1, HEADERS.length);
   } else {
-    const lastCol = Math.max(sheet.getLastColumn(), 1);
-    const cur = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(norm);
-    HEADERS.forEach(h => {
+    const cur = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0].map(norm);
+    ALL_HEADERS.forEach(h => {
       if (cur.indexOf(norm(h)) === -1) {
-        const c = sheet.getLastColumn() + 1;
-        styleHeader(sheet.getRange(1, c).setValue(h));
+        styleHeader(sheet.getRange(1, sheet.getLastColumn() + 1).setValue(h));
         cur.push(norm(h));
       }
     });
     if (sheet.getFrozenRows() === 0) sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getOrCreateLogSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(LOG_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(LOG_SHEET_NAME);
+  if (sheet.getLastRow() === 0) {
+    const range = sheet.getRange(1, 1, 1, LOG_HEADERS.length);
+    range.setValues([LOG_HEADERS]);
+    styleHeader(range);
+    sheet.setFrozenRows(1);
   }
   return sheet;
 }
@@ -426,10 +438,33 @@ function getColumnMap(sheet) {
   const head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const map = {};
   head.forEach((h, i) => {
-    const k = HEADERS.filter(x => norm(x) === norm(h))[0];
+    const k = ALL_HEADERS.filter(x => norm(x) === norm(h))[0];
     if (k && !map[k]) map[k] = i + 1;
   });
   return map;
+}
+
+/** Beri ID kepada rekod lama yang belum ada ID (contoh: data sebelum v2.1 / isi manual). */
+function ensureIds(sheet, map) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2 || !map['ID']) return;
+  const rng = sheet.getRange(2, map['ID'], lastRow - 1, 1);
+  const ids = rng.getValues();
+  const plat = sheet.getRange(2, map['No Pendaftaran'], lastRow - 1, 1).getValues();
+  let changed = false;
+  ids.forEach((r, i) => {
+    if (!String(r[0]).trim() && String(plat[i][0]).trim()) { r[0] = Utilities.getUuid(); changed = true; }
+  });
+  if (changed) rng.setValues(ids);
+}
+
+/** Cari baris (1-based) ikut ID. Pulangkan 0 jika tiada. */
+function findRowById(sheet, map, id) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2 || !map['ID']) return 0;
+  const ids = sheet.getRange(2, map['ID'], lastRow - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === id) return i + 2;
+  return 0;
 }
 
 // ============================================================================
@@ -447,7 +482,7 @@ function safeText(v, max) {
   return s;
 }
 
-/** YYYY-MM-DD (dari input type=date) → 'DD/MM/YYYY'. '' jika tak sah. */
+/** YYYY-MM-DD (input type=date) → 'DD/MM/YYYY'. '' jika tak sah. */
 function toDmy(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ''));
   if (!m) return '';
@@ -456,14 +491,51 @@ function toDmy(v) {
   return m[3] + '/' + m[2] + '/' + m[1];
 }
 
-/** Nilai sel → teks untuk dashboard. Tarikh (Date) → DD/MM/YYYY ikut timezone skrip. */
+/** Nilai sel → teks. Tarikh (Date) → DD/MM/YYYY ikut timezone skrip. */
 function cellText(v, tz) {
-  if (v instanceof Date) {
-    if (isNaN(v.getTime())) return '';
-    return Utilities.formatDate(v, tz, 'dd/MM/yyyy');
-  }
+  if (v instanceof Date) return isNaN(v.getTime()) ? '' : Utilities.formatDate(v, tz, 'dd/MM/yyyy');
   if (v === null || v === undefined) return '';
   return String(v);
+}
+
+/** Validasi payload borang → objek {header: nilai}. Throw Error jika tak sah. */
+function validateReport(p) {
+  const v = {};
+  v['Tarikh'] = toDmy(p.tarikh);
+  v['Nama'] = safeText(p.nama, 60);
+  v['No Pendaftaran'] = safeText(p.plat, 12).toUpperCase().replace(/\s+/g, ' ');
+  v['Roadtax'] = toDmy(p.roadtax);
+  v['Tarikh servis'] = p.servis ? toDmy(p.servis) : '';
+  v['Tujuan'] = safeText(p.tujuan, 150);
+  const odo = Number(p.odometer);
+
+  if (!v['Tarikh']) throw new Error('Tarikh tidak sah');
+  if (!v['Nama']) throw new Error('Nama wajib diisi');
+  if (!/^[A-Z0-9 ]{2,12}$/.test(v['No Pendaftaran'])) throw new Error('No Pendaftaran tidak sah');
+  if (!v['Tujuan']) throw new Error('Tujuan wajib diisi');
+  if (!v['Roadtax']) throw new Error('Tarikh tamat roadtax tidak sah');
+  if (p.servis && !v['Tarikh servis']) throw new Error('Tarikh servis tidak sah');
+  if (String(p.odometer == null ? '' : p.odometer).trim() === '' || !isFinite(odo) || odo < 0 || odo > 2000000) throw new Error('Odometer tidak sah');
+  v['Odometer'] = Math.round(odo);
+
+  const check = p.check || {};
+  for (const h in ALLOWED) {
+    const val = String(check[h] || '');
+    if (ALLOWED[h].indexOf(val) === -1) throw new Error('Nilai tidak sah untuk ' + h);
+    v[h] = val;
+  }
+  return v;
+}
+
+/** Tulis nilai ke satu baris (hanya kolum yang dikenali). Kolum tarikh = teks. */
+function writeRow(sheet, map, rowNo, v) {
+  const lastCol = sheet.getLastColumn();
+  const range = sheet.getRange(rowNo, 1, 1, lastCol);
+  const row = rowNo <= sheet.getLastRow() ? range.getValues()[0] : new Array(lastCol).fill('');
+  ALL_HEADERS.forEach(h => { if (map[h] && h in v) row[map[h] - 1] = v[h]; });
+  // Tarikh, ID & Kemaskini = teks biasa (elak Sheet tukar ikut locale / jadi Date)
+  DATE_COLS.concat(META_HEADERS).forEach(h => { if (map[h]) sheet.getRange(rowNo, map[h]).setNumberFormat('@'); });
+  range.setValues([row]);
 }
 
 // ============================================================================
@@ -472,29 +544,38 @@ function cellText(v, tz) {
 
 function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) || 'list';
-  try {
-    if (action === 'ping') {
-      return jsonOutput({ status: 'success', version: SERVER_VERSION, message: 'Laporan Kenderaan Web App aktif' });
-    }
-    if (action !== 'list') return jsonOutput({ status: 'error', message: 'Action tidak dikenali' });
+  if (action === 'ping') {
+    return jsonOutput({ status: 'success', version: SERVER_VERSION, message: 'Laporan Kenderaan Web App aktif' });
+  }
+  if (action !== 'list') return jsonOutput({ status: 'error', message: 'Action tidak dikenali' });
 
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
+  try {
     const sheet = getOrCreateSheet();
     const map = getColumnMap(sheet);
+    ensureIds(sheet, map);
     const tz = Session.getScriptTimeZone();
     const lastRow = sheet.getLastRow();
-    const out = { status: 'success', version: SERVER_VERSION, sheet: sheet.getName(), headers: HEADERS, rows: [] };
+    const out = { status: 'success', version: SERVER_VERSION, sheet: sheet.getName(), headers: ALL_HEADERS, rows: [] };
     if (lastRow < 2) return jsonOutput(out);
 
     const startRow = Math.max(2, lastRow - MAX_ROWS_RETURN + 1);
     const values = sheet.getRange(startRow, 1, lastRow - startRow + 1, sheet.getLastColumn()).getValues();
-
-    // Pulangkan ikut susunan HEADERS (bukan susunan kolum Sheet) supaya client konsisten
+    // Susunan ikut ALL_HEADERS (bukan susunan kolum Sheet) supaya client konsisten
     out.rows = values
-      .map(r => HEADERS.map(h => (map[h] ? cellText(r[map[h] - 1], tz).trim() : '')))
-      .filter(r => r.some(x => x !== ''));
+      .map(r => ALL_HEADERS.map(h => {
+        if (!map[h]) return '';
+        const v = r[map[h] - 1];
+        if (h === 'Kemaskini') return v instanceof Date ? v.toISOString() : String(v || '');
+        return cellText(v, tz).trim();
+      }))
+      .filter(r => r.slice(0, HEADERS.length).some(x => x !== ''));
     return jsonOutput(out);
   } catch (err) {
-    return jsonOutput({ status: 'error', message: String(err) });
+    return jsonOutput({ status: 'error', message: String(err.message || err) });
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -510,32 +591,13 @@ function doPost(e) {
     return jsonOutput({ status: 'error', message: 'Payload tidak sah' });
   }
   const action = p.action || 'create';
-  if (action !== 'create') return jsonOutput({ status: 'error', message: 'Action tidak dikenali' });
+  if (action !== 'create' && action !== 'update') return jsonOutput({ status: 'error', message: 'Action tidak dikenali' });
 
-  // ---- Validasi di server (jangan percaya browser) ----
-  const v = {};
-  v['Tarikh'] = toDmy(p.tarikh);
-  v['Nama'] = safeText(p.nama, 60);
-  v['No Pendaftaran'] = safeText(p.plat, 12).toUpperCase().replace(/\s+/g, ' ');
-  v['Roadtax'] = toDmy(p.roadtax);
-  v['Tarikh servis'] = p.servis ? toDmy(p.servis) : '';
-  v['Tujuan'] = safeText(p.tujuan, 150);
-  const odo = Number(p.odometer);
-
-  if (!v['Tarikh']) return jsonOutput({ status: 'error', message: 'Tarikh tidak sah' });
-  if (!v['Nama']) return jsonOutput({ status: 'error', message: 'Nama wajib diisi' });
-  if (!v['No Pendaftaran'] || !/^[A-Z0-9 ]{2,12}$/.test(v['No Pendaftaran'])) return jsonOutput({ status: 'error', message: 'No Pendaftaran tidak sah' });
-  if (!v['Tujuan']) return jsonOutput({ status: 'error', message: 'Tujuan wajib diisi' });
-  if (!v['Roadtax']) return jsonOutput({ status: 'error', message: 'Tarikh tamat roadtax tidak sah' });
-  if (p.servis && !v['Tarikh servis']) return jsonOutput({ status: 'error', message: 'Tarikh servis tidak sah' });
-  if (String(p.odometer).trim() === '' || !isFinite(odo) || odo < 0 || odo > 2000000) return jsonOutput({ status: 'error', message: 'Odometer tidak sah' });
-  v['Odometer'] = Math.round(odo);
-
-  const check = p.check || {};
-  for (const h in ALLOWED) {
-    const val = String(check[h] || '');
-    if (ALLOWED[h].indexOf(val) === -1) return jsonOutput({ status: 'error', message: 'Nilai tidak sah untuk ' + h });
-    v[h] = val;
+  let v;
+  try {
+    v = validateReport(p);
+  } catch (err) {
+    return jsonOutput({ status: 'error', message: err.message });
   }
 
   const lock = LockService.getScriptLock();
@@ -543,18 +605,48 @@ function doPost(e) {
   try {
     const sheet = getOrCreateSheet();
     const map = getColumnMap(sheet);
-    const lastCol = sheet.getLastColumn();
-    const row = new Array(lastCol).fill('');
-    HEADERS.forEach(h => { if (map[h]) row[map[h] - 1] = v[h]; });
+    const now = new Date().toISOString();
+    v['Kemaskini'] = now;
 
-    const rowNo = sheet.getLastRow() + 1;
-    // Kolum tarikh disimpan sebagai TEKS supaya tak ditukar ikut locale Sheet (MM/DD vs DD/MM)
-    DATE_COLS.forEach(h => { if (map[h]) sheet.getRange(rowNo, map[h]).setNumberFormat('@'); });
-    sheet.getRange(rowNo, 1, 1, lastCol).setValues([row]);
+    if (action === 'create') {
+      v['ID'] = Utilities.getUuid();
+      const rowNo = sheet.getLastRow() + 1;
+      writeRow(sheet, map, rowNo, v);
+      return jsonOutput({ status: 'success', message: 'Laporan disimpan', id: v['ID'], kemaskini: now, row: rowNo });
+    }
 
-    return jsonOutput({ status: 'success', message: 'Laporan disimpan', row: rowNo, version: SERVER_VERSION });
+    // ---- UPDATE ----
+    const id = String(p.id || '').trim();
+    if (!id) return jsonOutput({ status: 'error', message: 'ID laporan tiada' });
+    const rowNo = findRowById(sheet, map, id);
+    if (!rowNo) return jsonOutput({ status: 'error', message: 'Laporan tidak dijumpai (mungkin telah dipadam dari Sheet)' });
+
+    const tz = Session.getScriptTimeZone();
+    const old = sheet.getRange(rowNo, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const oldVer = old[map['Kemaskini'] - 1];
+    const oldVerStr = oldVer instanceof Date ? oldVer.toISOString() : String(oldVer || '');
+    // Elak tindih: jika orang lain dah edit selepas borang ini dibuka, tolak
+    if (String(p.kemaskini || '') !== oldVerStr) {
+      return jsonOutput({ status: 'conflict', message: 'Laporan ini telah dikemas kini oleh orang lain. Sync semula dan cuba lagi.' });
+    }
+
+    // Log perubahan (medan yang berubah sahaja)
+    const changes = [];
+    HEADERS.forEach(h => {
+      if (!map[h]) return;
+      const before = cellText(old[map[h] - 1], tz).trim();
+      const after = String(v[h]).replace(/^'/, '');
+      if (before !== after) changes.push([new Date(), id, rowNo, h, before, after]);
+    });
+    if (!changes.length) return jsonOutput({ status: 'success', message: 'Tiada perubahan', id: id, kemaskini: oldVerStr, row: rowNo });
+
+    writeRow(sheet, map, rowNo, v);
+    const log = getOrCreateLogSheet();
+    log.getRange(log.getLastRow() + 1, 1, changes.length, LOG_HEADERS.length).setValues(changes);
+
+    return jsonOutput({ status: 'success', message: 'Laporan dikemas kini', id: id, kemaskini: now, row: rowNo, changed: changes.length });
   } catch (err) {
-    return jsonOutput({ status: 'error', message: String(err) });
+    return jsonOutput({ status: 'error', message: String(err.message || err) });
   } finally {
     lock.releaseLock();
   }
@@ -564,10 +656,12 @@ function doPost(e) {
 // MANUAL (jalankan dari editor Apps Script)
 // ============================================================================
 
-/** Run sekali dari editor untuk bina tab & header, dan beri kebenaran (authorize) skrip. */
+/** Run sekali untuk bina tab & header, isi ID rekod lama, dan authorize skrip. */
 function setup() {
   const sheet = getOrCreateSheet();
-  Logger.log('Tab sedia: ' + sheet.getName() + ' | ' + (sheet.getLastRow() - 1) + ' rekod');
+  ensureIds(sheet, getColumnMap(sheet));
+  getOrCreateLogSheet();
+  Logger.log('Tab sedia: ' + sheet.getName() + ' | ' + Math.max(0, sheet.getLastRow() - 1) + ' rekod');
 }
 </script>
 
@@ -655,6 +749,8 @@ function setup() {
     const chip = j => `<span class="chip chip-${j.s}" title="${esc(j.t)}"><i class="fa-solid ${ICON[j.s]}"></i>${esc(j.t)}</span>`;
 
     let DATA = [];
+    const canEdit = r => LIVE && r._id && !r._pending;
+    const editBtn = (r, cls) => canEdit(r) ? `<button type="button" data-edit="${esc(r._id)}" class="${cls || ''} text-xs font-semibold text-jm-blue hover:text-jm-navy bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5"><i class="fa-solid fa-pen-to-square"></i>Edit</button>` : '';
 
     /* Lengkapkan rekod dengan medan terbitan (tarikh, odometer, status semakan) */
     function makeRec(o) {
@@ -741,9 +837,12 @@ function setup() {
                 const idx = {}, missing = [];
                 COLS.forEach(c => { const i = head.indexOf(norm(c.h)); idx[c.key] = i; if (i < 0) missing.push(c.h); });
                 if (missing.length) banner('Header tidak dijumpai dalam Sheet: ' + missing.join(', ') + '. Kolum ini akan dipapar kosong.', 'warn');
+                const iId = head.indexOf('id'), iVer = head.indexOf(norm('Kemaskini'));
                 DATA = rows.slice(1).map((r, n) => {
                     const o = { _row: n + 2 };
                     COLS.forEach(c => { o[c.key] = idx[c.key] >= 0 ? String(r[idx[c.key]] || '').trim() : ''; });
+                    o._id = iId >= 0 ? String(r[iId] || '').trim() : '';
+                    o._ver = iVer >= 0 ? String(r[iVer] || '').trim() : '';
                     return makeRec(o);
                 }).filter(o => o.plat || o.nama || o.tarikh);
                 DATA = DATA.concat(pendingNotInCsv(DATA));
@@ -833,12 +932,14 @@ function setup() {
                     <div><p class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Tarikh Servis</p><p class="font-bold text-slate-700">${esc(sv ? dmy(sv) : r.servis || '–')}</p></div>
                     <div class="col-span-2 min-w-0"><p class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Tujuan</p><p class="text-slate-700 break-words">${esc(r.tujuan || '–')}</p></div>
                 </div>
+                ${canEdit(r) ? `<div class="mt-3 flex justify-end">${editBtn(r)}</div>` : ''}
             </div>`;
         }).join('') : '<div class="bg-white rounded-2xl p-8 border border-slate-200 text-sm text-slate-400 text-center md:col-span-2 xl:col-span-3">Tiada rekod untuk penapis ini.</div>';
 
         // Jadual penuh ikut susunan header Sheet
         $('#rekodCount').textContent = rows.length + ' rekod';
-        $('#tblHead').innerHTML = COLS.map(c => `<th class="py-2 pr-4">${esc(c.h)}</th>`).join('');
+        const showAct = LIVE;
+        $('#tblHead').innerHTML = COLS.map(c => `<th class="py-2 pr-4">${esc(c.h)}</th>`).join('') + (showAct ? '<th class="py-2 pr-2">Tindakan</th>' : '');
         const cell = (r, c) => {
             if (c.chk) return chip(r._j[c.key]);
             if (c.key === 'tarikh') return esc(r._d ? dmy(r._d) : r.tarikh);
@@ -847,14 +948,15 @@ function setup() {
             if (c.key === 'plat') return `<b class="text-jm-navy">${esc(r.plat || '–')}</b>${r._pending ? ' <span class="chip chip-mute"><i class="fa-regular fa-clock"></i>Menunggu</span>' : ''}`;
             return esc(r[c.key] || '–');
         };
-        $('#tblBody').innerHTML = rows.length ? rows.map(r => `<tr class="border-b border-slate-100 align-top hover:bg-slate-50">${COLS.map(c => `<td class="py-2.5 pr-4${c.key === 'tujuan' ? ' wrap' : ''}">${cell(r, c)}</td>`).join('')}</tr>`).join('')
-            : `<tr><td colspan="${COLS.length}" class="py-8 text-center text-slate-400">Tiada rekod.</td></tr>`;
+        $('#tblBody').innerHTML = rows.length ? rows.map(r => `<tr class="border-b border-slate-100 align-top hover:bg-slate-50">${COLS.map(c => `<td class="py-2.5 pr-4${c.key === 'tujuan' ? ' wrap' : ''}">${cell(r, c)}</td>`).join('')}${showAct ? `<td class="py-2 pr-2">${editBtn(r)}</td>` : ''}</tr>`).join('')
+            : `<tr><td colspan="${COLS.length + (showAct ? 1 : 0)}" class="py-8 text-center text-slate-400">Tiada rekod.</td></tr>`;
         $('#cardList').innerHTML = rows.length ? rows.map(r => `
             <div class="border border-slate-200 rounded-xl p-3 space-y-2 min-w-0">
                 <div class="flex items-center justify-between gap-2"><b class="text-jm-navy">${esc(r.plat || '–')}</b><span class="text-xs text-slate-500">${esc(r._d ? dmy(r._d) : r.tarikh)}</span></div>
                 <p class="text-xs text-slate-500">${esc(r.nama || '–')}${r.tujuan ? ' · ' + esc(r.tujuan) : ''}</p>
                 <div class="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs">${CHECKS.map(c => `<div class="flex items-center justify-between gap-1 min-w-0"><span class="text-slate-500 truncate">${esc(c.h)}</span>${chip(r._j[c.key])}</div>`).join('')}</div>
                 <div class="flex justify-between text-xs pt-1.5 border-t border-slate-100"><span>Odo: ${r._odo != null ? r._odo.toLocaleString('en-MY') + ' km' : esc(r.odometer || '–')}</span><span>Servis: ${esc((d => d ? dmy(d) : r.servis || '–')(parseDate(r.servis)))}</span></div>
+                ${canEdit(r) ? `<div class="flex justify-end">${editBtn(r)}</div>` : ''}
             </div>`).join('') : '<p class="text-sm text-slate-400 text-center py-8">Tiada rekod.</p>';
     }
 
@@ -890,12 +992,60 @@ function setup() {
     F('plat').addEventListener('change', onPlat);
     F('plat').addEventListener('blur', onPlat);
 
+    /* ---------- Mod EDIT ---------- */
+    let EDIT = null;      // { id, ver, plat, tarikh } bila sedang edit
+    function setEditMode(on) {
+        $('#frmEyebrow').textContent = on ? 'Edit Laporan' : 'Laporan Baharu';
+        $('#frmTitle').textContent = on ? `${EDIT.plat} · ${EDIT.tarikh}` : 'Semakan Kenderaan';
+        $('#frmIcon').className = 'fa-solid ' + (on ? 'fa-pen-to-square' : 'fa-car');
+        $('#btnSimpanLbl').textContent = on ? 'Simpan Perubahan' : 'Hantar Laporan';
+        $('#btnSimpanIcon').className = 'fa-solid ' + (on ? 'fa-floppy-disk' : 'fa-paper-plane');
+        $('#btnBatalEdit').classList.toggle('hidden', !on);
+        $('#btnReset').classList.toggle('hidden', on);
+        $('#frmMsg').textContent = '';
+    }
+    window.newReport = function () {
+        if (EDIT) { EDIT = null; resetForm(); setEditMode(false); }
+        switchView('hantar');
+    };
+    window.cancelEdit = function () {
+        EDIT = null; resetForm(); setEditMode(false); switchView('rekod');
+    };
+    function openEdit(id) {
+        const r = DATA.find(x => x._id === id);
+        if (!r) return banner('Laporan tidak dijumpai — cuba Sync semula.', 'warn');
+        resetForm();
+        EDIT = { id: r._id, ver: r._ver, plat: r.plat, tarikh: r._d ? dmy(r._d) : r.tarikh };
+        F('tarikh').value = toIso(r._d) || '';
+        F('nama').value = r.nama || '';
+        F('plat').value = r.plat || '';
+        F('roadtax').value = toIso(parseDate(r.roadtax));
+        F('servis').value = toIso(parseDate(r.servis));
+        F('odometer').value = r._odo != null ? Math.round(r._odo) : '';
+        F('tujuan').value = r.tujuan || '';
+        const unknown = [];
+        FORM_CHECKS.forEach(c => {
+            const v = r[c.key];
+            const i = c.opts.findIndex(o => o.toLowerCase() === String(v || '').toLowerCase());
+            if (i >= 0) $(`#c_${c.key}_${i}`).checked = true;
+            else if (v) unknown.push(`${c.h}: "${v}"`);
+        });
+        setEditMode(true);
+        switchView('hantar');
+        $('#viewTitle').textContent = 'Edit Laporan Kenderaan';
+        if (unknown.length) { $('#frmMsg').className = 'text-sm font-medium text-amber-700'; $('#frmMsg').textContent = 'Nilai lama tak sepadan pilihan borang, sila pilih semula — ' + unknown.join(', '); }
+    }
+    document.addEventListener('click', ev => {
+        const b = ev.target.closest('[data-edit]');
+        if (b) openEdit(b.getAttribute('data-edit'));
+    });
+
     function resetForm() {
         $('#frm').reset();
         F('tarikh').value = isoToday();
         lastOdo = null; $('#odoHint').textContent = '';
     }
-    $('#frm').addEventListener('reset', () => setTimeout(() => { F('tarikh').value = isoToday(); lastOdo = null; $('#odoHint').textContent = ''; $('#frmMsg').textContent = ''; }, 0));
+    $('#frm').addEventListener('reset', () => setTimeout(() => { if (EDIT) return; F('tarikh').value = isoToday(); lastOdo = null; $('#odoHint').textContent = ''; $('#frmMsg').textContent = ''; }, 0));
 
     $('#frm').addEventListener('submit', async ev => {
         ev.preventDefault();
@@ -913,8 +1063,10 @@ function setup() {
             odometer: F('odometer').value.trim(),
             servis: F('servis').value,
             tujuan: F('tujuan').value.trim(),
-            check
+            check,
+            action: EDIT ? 'update' : 'create'
         };
+        if (EDIT) { rec.id = EDIT.id; rec.kemaskini = EDIT.ver; }
         const missing = FORM_CHECKS.filter(c => !check[c.h]).map(c => c.h);
         const odo = Number(rec.odometer);
         const err = !rec.tarikh ? 'Tarikh wajib diisi.'
@@ -926,7 +1078,7 @@ function setup() {
             : !rec.tujuan ? 'Tujuan wajib diisi.'
             : '';
         if (err) return fail(err);
-        if (lastOdo != null && odo < lastOdo && !window.confirm(`Odometer ${odo.toLocaleString('en-MY')} km lebih rendah dari laporan terakhir (${lastOdo.toLocaleString('en-MY')} km). Teruskan hantar?`)) return;
+        if (!EDIT && lastOdo != null && odo < lastOdo && !window.confirm(`Odometer ${odo.toLocaleString('en-MY')} km lebih rendah dari laporan terakhir (${lastOdo.toLocaleString('en-MY')} km). Teruskan hantar?`)) return;
 
         const btn = $('#btnSimpan');
         btn.disabled = true; msg.className = 'text-sm font-medium text-slate-500'; msg.textContent = 'Menghantar...';
@@ -934,7 +1086,17 @@ function setup() {
             // text/plain elak CORS preflight (Apps Script tak sokong OPTIONS)
             const res = await fetch(MACRO_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(rec) });
             const j = await res.json();
+            if (j.status === 'conflict') { fail(j.message); fetchData(false); return; }
             if (j.status !== 'success') throw new Error(j.message || 'Gagal hantar');
+
+            if (EDIT) {
+                const label = `${EDIT.plat} (${EDIT.tarikh})`;
+                EDIT = null; resetForm(); setEditMode(false);
+                banner(j.message === 'Tiada perubahan' ? `Tiada perubahan pada laporan ${label}.` : `Laporan ${label} dikemas kini${j.changed ? ` (${j.changed} medan)` : ''}.`, 'ok');
+                switchView('rekod');
+                fetchData(false);
+                return;
+            }
 
             // Simpan sementara sehingga muncul dalam CSV
             const dm = iso => iso ? iso.split('-').reverse().join('/') : '';
@@ -950,7 +1112,7 @@ function setup() {
             switchView('ringkasan');
             setTimeout(() => fetchData(false), 800);
         } catch (e) {
-            fail('Gagal hantar: ' + e.message + '. Laporan BELUM disimpan — cuba lagi.');
+            fail((EDIT ? 'Gagal simpan: ' : 'Gagal hantar: ') + e.message + (EDIT ? '. Perubahan BELUM disimpan.' : '. Laporan BELUM disimpan — cuba lagi.'));
         } finally {
             btn.disabled = false;
         }
