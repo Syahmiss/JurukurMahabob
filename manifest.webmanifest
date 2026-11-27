@@ -22,6 +22,7 @@
   "shortcuts": [
     { "name": "Laporan Harian", "url": "./HOD%20Site/Laporan%20Harian/index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Status Site", "url": "./HOD%20Site/Status%20Site/index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Laporan Kenderaan", "url": "./HOD%20Site/Laporan%20Kenderaan/index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Inventori Peralatan", "url": "./Inventori%20Peralatan/index.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }
