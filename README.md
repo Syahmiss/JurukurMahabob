@@ -25,6 +25,7 @@ Kesemua aplikasi dibangunkan sebagai fail HTML statik tanpa proses *build*. Data
 |---|---|---|---|
 | **Dashboard Utama** | `index.html` | Hub utama dan ringkasan operasi semua jabatan | Data daripada semua modul |
 | **Laporan Harian Tapak** | `HOD Site/Laporan Harian/` | Merekod dan menganalisis laporan harian kerja lapangan, termasuk KPI kemajuan dan jam kerja krew | Apps Script Web App, Google Sheets |
+| **Laporan Kenderaan** | `HOD Site/Laporan Kenderaan/` | Semakan harian kenderaan syarikat (air, minyak hitam, tayar, lampu, roadtax, odometer) dengan borang hantar & edit | Apps Script Web App, Google Sheets |
 | **Status Site** | `HOD Site/Status Site/` | Memantau kemajuan kerja ukur mengikut nombor fail serta merekod kerja lapangan baharu | Google Sheets (CSV), Apps Script |
 | **Status Pelan** | `HOD Pelan/Status Pelan/` | Pengurusan pelan dan lukisan, prestasi pelukis pelan, isu tapak dan arkib projek | Apps Script Web App, localStorage |
 | **Kualiti Pelan (QC)** | `HOD Pelan/Kualiti Pelan/` | Semakan data kawalan kualiti mengikut bidang beserta paparan carta | Google Sheets (CSV) |
@@ -49,6 +50,7 @@ JurukurMahabob/
 ├── HOD BIM/index.html
 ├── HOD Site/
 │   ├── Laporan Harian/index.html
+│   ├── Laporan Kenderaan/index.html
 │   └── Status Site/index.html
 └── HOD Pelan/
     ├── Status Pelan/index.html
@@ -118,6 +120,7 @@ URL Google Sheets dan Web App ditetapkan secara terus dalam setiap fail HTML mel
 | `index.html` | Objek sumber data (`inv`, `qc`, `lh` dan lain-lain) bagi Dashboard Utama |
 | `HOD Site/Status Site/index.html` | `CSV_REKOD_URL`, `CSV_LAPORAN_URL`, `APPS_SCRIPT_URL` |
 | `HOD Site/Laporan Harian/index.html` | `MACRO_URL` |
+| `HOD Site/Laporan Kenderaan/index.html` | `MACRO_URL`, `CSV_URL` |
 | `HOD Pelan/Checklist Plan/index.html` | `PUBLISHED_BASE_URL`, `GAS_API_URL` |
 | `HOD Pelan/Status Pelan/index.html` | `CFG.API_URL` |
 | `Inventori Peralatan/index.html` | URL Web App dalam bahagian konfigurasi |
@@ -153,7 +156,7 @@ Perkara berikut perlu diambil kira sebelum sistem digunakan untuk data sebenar:
 - **Web App dengan akses "Anyone" tidak memerlukan log masuk.** Sesiapa yang mengetahui URL `/exec` boleh menghantar data. Bagi penggunaan yang lebih selamat, tambahkan pengesahan token dalam `doPost` atau hadkan akses kepada akaun Google Workspace syarikat.
 - **URL terdedah dalam repositori awam.** Sekiranya repositori ini bersifat awam, semua URL Google Sheets dan Web App dalam kod boleh dilihat. Pertimbangkan untuk menjadikan repositori ini persendirian (GitHub Pages bagi repositori persendirian memerlukan pelan berbayar) atau memindahkan URL ke fail konfigurasi yang tidak dimasukkan ke dalam repositori.
 - **localStorage bukan pangkalan data berpusat.** Tiada penyelarasan data antara pengguna atau peranti. Data yang direkod oleh seorang pengguna tidak akan dipaparkan pada komputer pengguna lain.
-- **Modul `ops` (`modules/ops.html`)** dirujuk dalam `index.html` tetapi fail tersebut belum terdapat dalam repositori. Bahagian Operasi HOD dalam hub tidak akan dimuatkan sehingga fail ini ditambah.
+- **Modul `ops` (`modules/ops.html`)** dirujuk dalam `index.html` tetapi fail tersebut belum terdapat dalam repositori. Selagi fail ini tiada, menu HOD HR dan Data & Sync disorok secara automatik; ia akan muncul semula sebaik sahaja fail ditambah.
 - Sistem bergantung kepada CDN luaran (Tailwind CSS, Chart.js, PapaParse, Lucide, Bootstrap dan Font Awesome) dan memerlukan sambungan internet untuk berfungsi.
 
 ---
