@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Laporan Kenderaan | Jurukur Mahabob</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse (versi dipin, sama dengan modul lain) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        if (window.tailwind) tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        jm: {
+                            navy: '#0A2540', blue: '#1E40AF', royal: '#1D4ED8', light: '#EFF6FF',
+                            gold: '#FACC15', amber: '#EAB308', goldDark: '#CA8A04'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body { overflow-x: hidden; }
+        .hidden { display: none !important; } /* sandaran jika Tailwind CDN gagal dimuat */
+        .form-input { width: 100%; padding: .6rem .85rem; font-size: .875rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: #fff; transition: all .15s; }
+        .form-input:focus { outline: none; border-color: #1E40AF; box-shadow: 0 0 0 3px rgba(30,64,175,.18); }
+        .lbl { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin-bottom: .35rem; }
+        .view-tab-btn.active { background: #FACC15; color: #0A2540; }
+        .chip { display: inline-flex; align-items: center; gap: .3rem; font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 9999px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+        .chip-ok { background: #ecfdf5; color: #047857; }
+        .chip-warn { background: #fef9c3; color: #a16207; }
+        .chip-bad { background: #fee2e2; color: #dc2626; }
+        .chip-mute { background: #f1f5f9; color: #475569; }
+        .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tbl th, .tbl td { white-space: nowrap; }
+        .tbl td.wrap { white-space: normal; min-width: 180px; }
+        .form-input[readonly] { background: #f1f5f9; color: #475569; }
+        /* Pilihan semakan (radio dalam bentuk butang) */
+        .seg { display: flex; flex-wrap: wrap; gap: .4rem; }
+        .seg input { position: absolute; opacity: 0; pointer-events: none; }
+        .seg label { cursor: pointer; font-size: .8rem; font-weight: 600; padding: .45rem .8rem; border-radius: .65rem; border: 1px solid #cbd5e1; background: #fff; color: #475569; transition: all .12s; user-select: none; }
+        .seg input:focus-visible + label { outline: 2px solid #FACC15; outline-offset: 2px; }
+        .seg input:checked + label.v-ok { background: #ecfdf5; border-color: #10b981; color: #047857; }
+        .seg input:checked + label.v-warn { background: #fef9c3; border-color: #eab308; color: #a16207; }
+        .seg input:checked + label.v-bad { background: #fee2e2; border-color: #ef4444; color: #dc2626; }
+        .chk-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; padding: .7rem 0; border-bottom: 1px solid #f1f5f9; }
+        .chk-row:last-child { border-bottom: 0; }
+        pre.code { white-space: pre; overflow: auto; max-height: 60vh; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-jm-gold selection:text-jm-navy">
+
+    <!-- Toolbar: Tab Paparan & Sync -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Paparan">
+                <button type="button" onclick="switchView('ringkasan')" id="view-tab-ringkasan" class="view-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-car-side"></i><span>Status Kenderaan</span>
+                </button>
+                <button type="button" onclick="switchView('rekod')" id="view-tab-rekod" class="view-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-table-list"></i><span>Semua Rekod</span>
+                </button>
+                <button type="button" onclick="switchView('kod')" id="view-tab-kod" class="view-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-100 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-code"></i><span>Kod Apps Script</span>
+                </button>
+            </nav>
+            <div class="flex flex-wrap items-center gap-2 justify-end">
+                <div class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                    <span id="syncDot" class="w-2 h-2 rounded-full bg-yellow-300 animate-pulse"></span>
+                    <span id="syncStatus">Menyambung data...</span>
+                </div>
+                <button type="button" onclick="fetchData(true)" title="Sync Data Sheet" class="bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i><span>Sync</span>
+                </button>
+                <button type="button" onclick="switchView('hantar')" id="btnHantarLaporan" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-paper-plane"></i><span>Hantar Laporan</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+        <!-- Sub-header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-jm-blue ring-4 ring-blue-100"></span>
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">HOD Site / Tapak</span>
+                    <h2 id="viewTitle" class="text-base sm:text-lg font-extrabold text-jm-navy">Laporan Kenderaan</h2>
+                </div>
+            </div>
+            <div class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto flex items-center gap-1.5">
+                <i class="fa-solid fa-database text-jm-blue"></i><span>Sumber: Google Sheets (CSV)</span>
+            </div>
+        </div>
+
+        <!-- Banner -->
+        <div id="banner" class="hidden rounded-xl p-4 border text-sm flex items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-3"><i id="bannerIcon" class="fa-solid fa-circle-info text-lg"></i><span id="bannerMsg" class="font-medium"></span></div>
+            <button type="button" onclick="hideBanner()" class="opacity-70 hover:opacity-100 p-1" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Penapis + KPI: dipapar untuk tab Status & Rekod sahaja -->
+        <div id="dashTop" class="space-y-6">
+        <!-- Penapis -->
+        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+                <label class="lbl" for="fBulan">Bulan</label>
+                <select id="fBulan" class="form-input"><option value="">Semua bulan</option></select>
+            </div>
+            <div>
+                <label class="lbl" for="fKenderaan">No Pendaftaran</label>
+                <select id="fKenderaan" class="form-input"><option value="">Semua kenderaan</option></select>
+            </div>
+            <div>
+                <label class="lbl" for="fCari">Cari</label>
+                <input id="fCari" type="search" class="form-input" placeholder="Nama, tujuan, no pendaftaran...">
+            </div>
+        </section>
+
+        <!-- 4 KPI -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-gradient-to-br from-jm-navy to-jm-blue text-white rounded-2xl p-5 shadow-md border border-blue-900 relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-jm-gold/10 group-hover:scale-110 transition-transform"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Jumlah Semakan</p>
+                        <h2 id="kpiSemakan" class="text-2xl sm:text-3xl font-extrabold text-white mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-jm-gold text-jm-navy rounded-xl shadow"><i class="fa-solid fa-clipboard-check text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-blue-100">
+                    <span>Kenderaan disemak</span>
+                    <span id="kpiKenderaan" class="font-bold bg-white/15 px-2.5 py-0.5 rounded-full text-jm-gold">0 kenderaan</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-red-500 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kenderaan Ada Isu</p>
+                        <h2 id="kpiIsu" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-red-50 text-red-600 rounded-xl"><i class="fa-solid fa-triangle-exclamation text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
+                    <span class="text-slate-500 font-medium">Semakan terkini:</span>
+                    <span id="kpiIsuSub" class="font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded-lg truncate">–</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-gold hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Roadtax Perlu Perhatian</p>
+                        <h2 id="kpiRoadtax" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-yellow-50 text-jm-goldDark rounded-xl"><i class="fa-solid fa-id-card text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
+                    <span class="text-slate-500 font-medium">Tamat / ≤ 30 hari:</span>
+                    <span id="kpiRoadtaxSub" class="font-bold text-amber-800 bg-yellow-100 px-2.5 py-1 rounded-lg truncate">–</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 border-t-jm-royal hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Item Bermasalah</p>
+                        <h2 id="kpiItem" class="text-2xl sm:text-3xl font-extrabold text-jm-navy mt-2 tracking-tight">0</h2>
+                    </div>
+                    <div class="p-3 bg-blue-50 text-jm-royal rounded-xl"><i class="fa-solid fa-screwdriver-wrench text-lg"></i></div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
+                    <span class="text-slate-500 font-medium">Paling kerap:</span>
+                    <span id="kpiItemSub" class="font-bold text-jm-royal bg-blue-50 px-2.5 py-1 rounded-lg truncate">–</span>
+                </div>
+            </div>
+        </section>
+        </div>
+
+        <!-- ===================== PAPARAN: STATUS KENDERAAN ===================== -->
+        <div id="viewRingkasan">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-bold text-jm-navy text-base">Status Terkini Setiap Kenderaan</h3>
+                <span class="text-xs font-medium text-slate-400">Ikut semakan terakhir</span>
+            </div>
+            <div id="perKenderaan" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+        </div>
+
+        <!-- ===================== PAPARAN: SEMUA REKOD ===================== -->
+        <div id="viewRekod" class="hidden">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 min-w-0">
+                <div class="flex items-center justify-between mb-3 gap-2">
+                    <h3 class="font-bold text-jm-navy text-base">Rekod Semakan Kenderaan</h3>
+                    <span id="rekodCount" class="text-xs font-medium text-slate-400">0 rekod</span>
+                </div>
+                <!-- Desktop: jadual (scroll dalam kotak sahaja, bukan page) -->
+                <div class="hidden md:block tbl-wrap">
+                    <table class="tbl w-full text-sm">
+                        <thead><tr id="tblHead" class="text-left text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200"></tr></thead>
+                        <tbody id="tblBody"></tbody>
+                    </table>
+                </div>
+                <!-- Mobile: kad -->
+                <div id="cardList" class="md:hidden space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- ===================== PAPARAN: HANTAR LAPORAN ===================== -->
+        <div id="viewHantar" class="hidden">
+            <div id="noMacro" class="hidden mb-4 rounded-xl p-4 border text-sm bg-yellow-50 border-yellow-200 text-amber-800 flex items-start gap-3">
+                <i class="fa-solid fa-plug-circle-exclamation text-lg mt-0.5"></i>
+                <span><b>Borang belum disambung ke Google Sheets.</b> Deploy Apps Script dalam tab <b>Kod Apps Script</b>, kemudian isi <code>MACRO_URL</code> dalam fail ini dan push ke GitHub.</span>
+            </div>
+            <form id="frm" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" novalidate>
+                <div class="bg-jm-navy px-5 py-4 flex items-center gap-3 border-b-4 border-jm-gold">
+                    <div class="p-2.5 bg-jm-gold text-jm-navy rounded-xl shadow"><i class="fa-solid fa-car"></i></div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-blue-200 font-semibold">Laporan Baharu</p>
+                        <h3 class="text-white font-extrabold text-base leading-tight">Semakan Kenderaan</h3>
+                    </div>
+                </div>
+
+                <div class="p-5 space-y-6">
+                    <!-- Maklumat asas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="lbl" for="f_tarikh">Tarikh *</label>
+                            <input id="f_tarikh" type="date" class="form-input" required>
+                        </div>
+                        <div>
+                            <label class="lbl" for="f_nama">Nama *</label>
+                            <input id="f_nama" list="dlNama" class="form-input" maxlength="60" required autocomplete="off">
+                            <datalist id="dlNama"></datalist>
+                        </div>
+                        <div>
+                            <label class="lbl" for="f_plat">No Pendaftaran *</label>
+                            <input id="f_plat" list="dlPlat" class="form-input uppercase" maxlength="12" placeholder="cth: WXY 1234" required autocomplete="off">
+                            <datalist id="dlPlat"></datalist>
+                        </div>
+                    </div>
+
+                    <!-- Senarai semak -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="font-bold text-jm-navy text-sm">Senarai Semak</h4>
+                            <button type="button" id="btnAllOk" class="text-xs font-semibold text-jm-blue hover:text-jm-navy"><i class="fa-solid fa-check-double mr-1"></i>Tanda semua OK</button>
+                        </div>
+                        <div id="chkList" class="border border-slate-200 rounded-xl px-4"></div>
+                    </div>
+
+                    <!-- Roadtax, odometer, servis, tujuan -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="lbl" for="f_roadtax">Roadtax (tarikh tamat) *</label>
+                            <input id="f_roadtax" type="date" class="form-input" required>
+                        </div>
+                        <div>
+                            <label class="lbl" for="f_odometer">Odometer (km) *</label>
+                            <input id="f_odometer" type="number" inputmode="numeric" min="0" step="1" class="form-input" required>
+                            <p id="odoHint" class="text-[11px] text-slate-500 mt-1"></p>
+                        </div>
+                        <div>
+                            <label class="lbl" for="f_servis">Tarikh servis</label>
+                            <input id="f_servis" type="date" class="form-input">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="lbl" for="f_tujuan">Tujuan *</label>
+                            <input id="f_tujuan" class="form-input" maxlength="150" placeholder="cth: Ke tapak MCP 001/26 Kajang" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-5 pb-5 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
+                    <p id="frmMsg" class="text-sm font-medium text-slate-500"></p>
+                    <div class="flex gap-2">
+                        <button type="reset" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all">Kosongkan</button>
+                        <button id="btnSimpan" type="submit" class="bg-jm-gold hover:bg-jm-amber text-jm-navy font-bold text-sm px-5 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-[0.98] disabled:opacity-60">
+                            <i class="fa-solid fa-paper-plane"></i><span>Hantar Laporan</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- ===================== PAPARAN: KOD APPS SCRIPT ===================== -->
+        <div id="viewKod" class="hidden space-y-4">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-3 text-sm text-slate-600">
+                <h3 class="font-bold text-jm-navy text-base">Cara pasang (sekali sahaja)</h3>
+                <ol class="list-decimal pl-5 space-y-1">
+                    <li>Buka Google Sheet yang sama dengan link CSV → <b>Extensions → Apps Script</b>.</li>
+                    <li>Padam kod sedia ada, tampal kod di bawah, kemudian <b>Save</b>.</li>
+                    <li><b>Deploy → New deployment → Web app</b>. Execute as: <b>Me</b>. Who has access: <b>Anyone</b>.</li>
+                    <li>Salin URL <code>/exec</code>, letak dalam <code>MACRO_URL</code> dalam fail <code>HOD Site/Laporan Kenderaan/index.html</code>, kemudian push ke GitHub.</li>
+                </ol>
+                <p class="text-xs">Laporan ditulis ke tab pertama (gid=0, sama dengan link CSV). Header dibina auto jika tab kosong, dan header yang tiada ditambah di hujung.
+                Link CSV "Publish to web" lambat kemas kini (biasanya sehingga 5 minit) — laporan yang baru dihantar dipapar dulu dari pelayar sehingga muncul dalam CSV.</p>
+            </div>
+            <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-800">
+                    <span class="text-xs font-mono text-slate-400">Code.gs</span>
+                    <button type="button" onclick="copyCode()" class="text-xs font-semibold text-jm-gold hover:text-white flex items-center gap-1.5"><i class="fa-regular fa-copy"></i><span id="copyLbl">Salin kod</span></button>
+                </div>
+                <pre id="codeView" class="code p-4 text-[12px] leading-relaxed text-slate-200 font-mono"></pre>
+            </div>
+        </div>
+    </main>
+
+<!-- ======================================================================
+     KOD APPS SCRIPT (Code.gs) — dipaparkan dalam tab "Kod Apps Script"
+     ====================================================================== -->
+<script type="text/plain" id="gsCode">
+/**
+ * Laporan Kenderaan — Jurukur Mahabob (HOD Site)
+ * Web App untuk butang "Hantar Laporan".
+ * - Guna active spreadsheet (skrip terikat pada Sheet yang sama dengan link CSV).
+ * - Tulis ke tab gid=0 (tab yang di-publish sebagai CSV). Jika tiada, bina tab baharu.
+ * - Header dibina auto jika kosong; header yang tiada ditambah di hujung.
+ * - Tarikh disimpan sebagai TEKS DD/MM/YYYY supaya CSV sentiasa format Malaysia
+ *   (tak terikut locale Sheet yang mungkin MM/DD/YYYY).
+ */
+
+const TARGET_GID = 0;
+const FALLBACK_SHEET_NAME = 'Laporan Kenderaan';
+const HEADERS = ['Tarikh', 'Nama', 'No Pendaftaran', 'Air', 'Minyak hitam', 'Tayar', 'Angin', 'Roadtax',
+                 'Lampu depan', 'Lampu Belakang', 'Lampu brake', 'Signal', 'Odometer', 'Tarikh servis', 'Tujuan'];
+const DATE_COLS = ['Tarikh', 'Roadtax', 'Tarikh servis'];
+
+/* Nilai yang dibenarkan untuk setiap item semakan — mesti sama dengan borang */
+const ALLOWED = {
+  'Air':            ['OK', 'Kurang'],
+  'Minyak hitam':   ['OK', 'Kurang'],
+  'Tayar':          ['OK', 'Botak', 'Bocor'],
+  'Angin':          ['OK', 'Kurang'],
+  'Lampu depan':    ['OK', 'Rosak'],
+  'Lampu Belakang': ['OK', 'Rosak'],
+  'Lampu brake':    ['OK', 'Rosak'],
+  'Signal':         ['OK', 'Rosak']
+};
+
+function getSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheets().filter(s => s.getSheetId() === TARGET_GID)[0]
+           || ss.getSheetByName(FALLBACK_SHEET_NAME)
+           || ss.insertSheet(FALLBACK_SHEET_NAME);
+
+  if (sheet.getLastRow() === 0) {
+    const r = sheet.getRange(1, 1, 1, HEADERS.length);
+    r.setValues([HEADERS]).setFontWeight('bold').setBackground('#0A2540').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+  } else {
+    const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cur = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0].map(norm);
+    HEADERS.forEach(h => {
+      if (cur.indexOf(norm(h)) === -1) {
+        sheet.getRange(1, sheet.getLastColumn() + 1).setValue(h)
+             .setFontWeight('bold').setBackground('#0A2540').setFontColor('#FFFFFF');
+        cur.push(norm(h));
+      }
+    });
+  }
+  return sheet;
+}
+
+function jsonOutput(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Buang aksara kawalan, hadkan panjang, elak formula injection (= + - @). */
+function safeText(v, max) {
+  let s = String(v == null ? '' : v).replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, max || 150);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return s;
+}
+
+/** Terima YYYY-MM-DD dari borang → 'DD/MM/YYYY'. Pulangkan '' jika tak sah. */
+function toDmy(v) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ''));
+  if (!m) return '';
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  if (d.getMonth() !== +m[2] - 1) return '';
+  return m[3] + '/' + m[2] + '/' + m[1];
+}
+
+/** Ujian ringkas dari URL /exec dalam browser */
+function doGet() {
+  return jsonOutput({ status: 'success', message: 'Laporan Kenderaan Web App aktif' });
+}
+
+function doPost(e) {
+  let p;
+  try {
+    p = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+  } catch (err) {
+    return jsonOutput({ status: 'error', message: 'Payload tidak sah' });
+  }
+
+  // ---- Validasi di server (jangan percaya browser) ----
+  const v = {};
+  v['Tarikh'] = toDmy(p.tarikh);
+  v['Nama'] = safeText(p.nama, 60);
+  v['No Pendaftaran'] = safeText(p.plat, 12).toUpperCase().replace(/\s+/g, ' ');
+  v['Roadtax'] = toDmy(p.roadtax);
+  v['Tarikh servis'] = p.servis ? toDmy(p.servis) : '';
+  v['Tujuan'] = safeText(p.tujuan, 150);
+  const odo = Number(p.odometer);
+
+  if (!v['Tarikh']) return jsonOutput({ status: 'error', message: 'Tarikh tidak sah' });
+  if (!v['Nama'] || !v['No Pendaftaran'] || !v['Tujuan']) return jsonOutput({ status: 'error', message: 'Nama, No Pendaftaran dan Tujuan wajib diisi' });
+  if (!v['Roadtax']) return jsonOutput({ status: 'error', message: 'Tarikh tamat roadtax tidak sah' });
+  if (p.servis && !v['Tarikh servis']) return jsonOutput({ status: 'error', message: 'Tarikh servis tidak sah' });
+  if (!isFinite(odo) || odo < 0 || odo > 2000000) return jsonOutput({ status: 'error', message: 'Odometer tidak sah' });
+  v['Odometer'] = Math.round(odo);
+
+  for (const h in ALLOWED) {
+    const val = String((p.check || {})[h] || '');
+    if (ALLOWED[h].indexOf(val) === -1) return jsonOutput({ status: 'error', message: 'Nilai tidak sah untuk ' + h });
+    v[h] = val;
+  }
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return jsonOutput({ status: 'error', message: 'Server sibuk, cuba lagi sebentar.' });
+  try {
+    const sheet = getSheet();
+    const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const byNorm = {};
+    HEADERS.forEach(h => { byNorm[norm(h)] = h; });
+    const row = head.map(h => { const k = byNorm[norm(h)]; return k ? v[k] : ''; });
+
+    const rowNo = sheet.getLastRow() + 1;
+    const range = sheet.getRange(rowNo, 1, 1, row.length);
+    // Kolum tarikh = teks biasa, supaya tak ditukar ikut locale Sheet
+    head.forEach((h, i) => {
+      const k = byNorm[norm(h)];
+      if (DATE_COLS.indexOf(k) >= 0) sheet.getRange(rowNo, i + 1).setNumberFormat('@');
+    });
+    range.setValues([row]);
+    return jsonOutput({ status: 'success', message: 'Laporan disimpan', row: rowNo });
+  } catch (err) {
+    return jsonOutput({ status: 'error', message: String(err) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+</script>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ================= CONFIG ================= */
+    /* MACRO_URL = URL Web App Apps Script (/exec) untuk butang "Hantar Laporan".
+       Kosong = borang dipapar tapi tak boleh hantar. Lihat tab "Kod Apps Script". */
+    const MACRO_URL = "";
+    const LIVE = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(MACRO_URL);
+    const PENDING_KEY = 'jm_kenderaan_pending_v1';
+    const PENDING_TTL = 30 * 60 * 1000; // buang laporan tertunda selepas 30 minit walau tak jumpa dalam CSV
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRYjQ4YkCTv_ACiPFQ1ET0uIcZoZ-Wlta0Rx9_dCdUTr4Yf7vXsE0pVe7HH9VrwgLhritvvGCyq8E08/pub?gid=0&single=true&output=csv";
+
+    /* Susunan header ikut Sheet. key = nama dalaman, h = nama header dalam Sheet. */
+    const COLS = [
+        { key: 'tarikh',   h: 'Tarikh' },
+        { key: 'nama',     h: 'Nama' },
+        { key: 'plat',     h: 'No Pendaftaran' },
+        { key: 'air',      h: 'Air',            chk: true, opts: ['OK','Kurang'] },
+        { key: 'minyak',   h: 'Minyak hitam',   chk: true, opts: ['OK','Kurang'] },
+        { key: 'tayar',    h: 'Tayar',          chk: true, opts: ['OK','Botak','Bocor'] },
+        { key: 'angin',    h: 'Angin',          chk: true, opts: ['OK','Kurang'] },
+        { key: 'roadtax',  h: 'Roadtax',        chk: true, date: true },
+        { key: 'lDepan',   h: 'Lampu depan',    chk: true, opts: ['OK','Rosak'] },
+        { key: 'lBelakang',h: 'Lampu Belakang', chk: true, opts: ['OK','Rosak'] },
+        { key: 'lBrake',   h: 'Lampu brake',    chk: true, opts: ['OK','Rosak'] },
+        { key: 'signal',   h: 'Signal',         chk: true, opts: ['OK','Rosak'] },
+        { key: 'odometer', h: 'Odometer' },
+        { key: 'servis',   h: 'Tarikh servis' },
+        { key: 'tujuan',   h: 'Tujuan' }
+    ];
+    const CHECKS = COLS.filter(c => c.chk);
+    const ROADTAX_WARN_DAYS = 30;
+
+    /* ================= HELPERS ================= */
+    const $ = s => document.querySelector(s);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+    const dmy = d => d ? String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear() : '–';
+    const ymOf = d => d ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') : '';
+    const ymLabel = ym => { const [y, m] = ym.split('-'); return ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'][+m - 1] + ' ' + y; };
+    const daysTo = d => Math.round((d - today()) / 864e5);
+
+    /* Tarikh dari Sheet: DD/MM/YYYY (format Malaysia, termasuk timestamp Google Form), YYYY-MM-DD, atau "27 Nov 2026". */
+    const MON = { jan: 0, feb: 1, mac: 2, mar: 2, apr: 3, mei: 4, may: 4, jun: 5, jul: 6, ogo: 7, aug: 7, sep: 8, okt: 9, oct: 9, nov: 10, dis: 11, dec: 11 };
+    function parseDate(v) {
+        const s = String(v || '').trim(); if (!s) return null;
+        let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+        if (m) return mk(+m[1], +m[2], +m[3]);
+        m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/.exec(s);
+        if (m) { let y = +m[3]; if (y < 100) y += 2000; return mk(y, +m[2], +m[1]); }
+        m = /^(\d{1,2})\s+([a-z]{3})[a-z]*\.?\s+(\d{4})/i.exec(s);
+        if (m && MON[m[2].toLowerCase()] != null) return mk(+m[3], MON[m[2].toLowerCase()] + 1, +m[1]);
+        return null;
+    }
+    function mk(y, mo, d) { const x = new Date(y, mo - 1, d); return (x.getMonth() === mo - 1 && x.getDate() === d) ? x : null; }
+    const numOf = v => { const n = parseFloat(String(v || '').replace(/[^0-9.]/g, '')); return isFinite(n) ? n : null; };
+
+    /* Tafsir nilai semakan → ok / warn / bad / mute (tak dikenal pasti). Semak "bad" dulu supaya "Tidak OK" = bad. */
+    const RX_BAD  = /(tidak|^tak\b|\btak\b|rosak|tiada|takde|mati|pecah|bocor|botak|tamat|expired?|luput|habis|kosong|false|^x$|^✗|^✘|^no\b|^n$)/i;
+    const RX_WARN = /(perlu|kurang|rendah|lemah|hampir|nipis|tambah|tukar|servis|malap|warning)/i;
+    const RX_OK   = /(^ok|baik|bagus|elok|ada|penuh|cukup|normal|berfungsi|lulus|^ya\b|^yes|^y$|true|good|aktif|valid|^✓|^✔|cun|on$|^nyala)/i;
+    function judge(col, raw) {
+        const v = String(raw || '').trim();
+        if (!v || v === '-') return { s: 'mute', t: '–' };
+        if (col.date) {
+            const d = parseDate(v);
+            if (d) {
+                const n = daysTo(d);
+                if (n < 0) return { s: 'bad', t: 'Tamat ' + dmy(d), d };
+                if (n <= ROADTAX_WARN_DAYS) return { s: 'warn', t: n + ' hari lagi', d };
+                return { s: 'ok', t: 'Sah ' + dmy(d), d };
+            }
+        }
+        if (RX_BAD.test(v)) return { s: 'bad', t: v };
+        if (RX_WARN.test(v)) return { s: 'warn', t: v };
+        if (RX_OK.test(v)) return { s: 'ok', t: v };
+        return { s: 'mute', t: v };
+    }
+    const ICON = { ok: 'fa-check', warn: 'fa-wrench', bad: 'fa-triangle-exclamation', mute: 'fa-minus' };
+    const chip = j => `<span class="chip chip-${j.s}" title="${esc(j.t)}"><i class="fa-solid ${ICON[j.s]}"></i>${esc(j.t)}</span>`;
+
+    let DATA = [];
+
+    /* Lengkapkan rekod dengan medan terbitan (tarikh, odometer, status semakan) */
+    function makeRec(o) {
+        o.plat = String(o.plat || '').toUpperCase().replace(/\s+/g, ' ');
+        o._d = parseDate(o.tarikh);
+        o._odo = numOf(o.odometer);
+        o._j = {}; CHECKS.forEach(c => { o._j[c.key] = judge(c, o[c.key]); });
+        o._bad = CHECKS.filter(c => o._j[c.key].s === 'bad' || o._j[c.key].s === 'warn');
+        return o;
+    }
+
+    /* Laporan yang baru dihantar tapi belum muncul dalam CSV (Publish to web lambat ~5 minit) */
+    function pendingGet() { try { return JSON.parse(localStorage.getItem(PENDING_KEY)) || []; } catch (e) { return []; } }
+    function pendingSet(a) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(a)); } catch (e) { } }
+    const sig = o => [String(o.plat || '').toUpperCase().replace(/\s+/g, ' '), o.tarikh, String(numOf(o.odometer))].join('|');
+    function pendingNotInCsv(csvRows) {
+        const have = new Set(csvRows.map(r => [r.plat, r._d ? dmy(r._d) : r.tarikh, String(r._odo)].join('|')));
+        const now = Date.now();
+        const keep = pendingGet().filter(p => now - p._at < PENDING_TTL && !have.has(sig(p)));
+        pendingSet(keep);
+        return keep.map(p => makeRec(Object.assign({}, p, { _row: 1e9 + p._at, _pending: true })));
+    }
+
+    function banner(msg, type) {
+        const b = $('#banner');
+        const cls = { ok: 'bg-emerald-50 border-emerald-200 text-emerald-800', warn: 'bg-yellow-50 border-yellow-200 text-amber-800', bad: 'bg-red-50 border-red-200 text-red-700', info: 'bg-blue-50 border-blue-200 text-jm-blue' }[type || 'info'];
+        const ic = { ok: 'fa-circle-check', warn: 'fa-triangle-exclamation', bad: 'fa-circle-xmark', info: 'fa-circle-info' }[type || 'info'];
+        b.className = 'rounded-xl p-4 border text-sm flex items-center justify-between gap-3 shadow-sm ' + cls;
+        $('#bannerIcon').className = 'fa-solid ' + ic + ' text-lg';
+        $('#bannerMsg').textContent = msg;
+    }
+    window.hideBanner = () => $('#banner').classList.add('hidden');
+    function setSync(t, ok) {
+        $('#syncStatus').textContent = t;
+        $('#syncDot').className = 'w-2 h-2 rounded-full ' + (ok === false ? 'bg-red-400' : ok === null ? 'bg-yellow-300 animate-pulse' : 'bg-emerald-400');
+    }
+
+    /* ================= TAB ================= */
+    const TITLES = { ringkasan: 'Laporan Kenderaan', rekod: 'Rekod Semakan Kenderaan', hantar: 'Hantar Laporan Kenderaan', kod: 'Kod Apps Script' };
+    window.switchView = function (v) {
+        $('#dashTop').classList.toggle('hidden', v === 'hantar' || v === 'kod');
+        $('#btnHantarLaporan').classList.toggle('ring-2', v === 'hantar');
+        $('#btnHantarLaporan').classList.toggle('ring-white', v === 'hantar');
+        ['ringkasan', 'rekod', 'hantar', 'kod'].forEach(k => {
+            const tab = $('#view-tab-' + k);
+            $('#view' + k[0].toUpperCase() + k.slice(1)).classList.toggle('hidden', k !== v);
+            if (tab) tab.classList.toggle('active', k === v);
+        });
+        $('#viewTitle').textContent = TITLES[v];
+        if (v === 'hantar' || v === 'kod') window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    /* ================= DATA (CSV Publish to web) ================= */
+    async function fetchData(manual) {
+        const icon = $('#refreshIcon');
+        icon.classList.add('fa-spin'); setSync('Memuat...', null);
+        try {
+            if (!window.Papa) throw new Error('PapaParse gagal dimuat');
+            const sep = CSV_URL.includes('?') ? '&' : '?';
+            const res = await fetch(CSV_URL + sep + 't=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const text = await res.text();
+            if (/^\s*<!doctype html|<html/i.test(text)) throw new Error('Sheet belum "Publish to web" sebagai CSV');
+            const parsed = Papa.parse(text, { skipEmptyLines: 'greedy' });
+            const rows = parsed.data;
+            if (!rows.length) { DATA = []; }
+            else {
+                // Padankan header ikut nama (tak kisah huruf besar/kecil & jarak), bukan ikut kedudukan
+                const head = rows[0].map(norm);
+                const idx = {}, missing = [];
+                COLS.forEach(c => { const i = head.indexOf(norm(c.h)); idx[c.key] = i; if (i < 0) missing.push(c.h); });
+                if (missing.length) banner('Header tidak dijumpai dalam Sheet: ' + missing.join(', ') + '. Kolum ini akan dipapar kosong.', 'warn');
+                DATA = rows.slice(1).map((r, n) => {
+                    const o = { _row: n + 2 };
+                    COLS.forEach(c => { o[c.key] = idx[c.key] >= 0 ? String(r[idx[c.key]] || '').trim() : ''; });
+                    return makeRec(o);
+                }).filter(o => o.plat || o.nama || o.tarikh);
+                DATA = DATA.concat(pendingNotInCsv(DATA));
+                if (!missing.length && manual) banner(DATA.length + ' rekod dimuat dari Google Sheets.', 'ok');
+                else if (!missing.length) hideBanner();
+            }
+            setSync('Live ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), true);
+        } catch (err) {
+            setSync('Gagal sync', false);
+            banner('Gagal muat data: ' + err.message + '. Semak link CSV (File → Share → Publish to web → CSV).', 'bad');
+        } finally {
+            icon.classList.remove('fa-spin');
+            buildFilters(); render();
+        }
+    }
+    window.fetchData = fetchData;
+
+    function buildFilters() {
+        const fb = $('#fBulan'), fk = $('#fKenderaan');
+        const prevB = fb.value, prevK = fk.value;
+        const months = [...new Set(DATA.map(r => ymOf(r._d)).filter(Boolean))].sort().reverse();
+        fb.innerHTML = '<option value="">Semua bulan</option>' + months.map(m => `<option value="${esc(m)}">${esc(ymLabel(m))}</option>`).join('');
+        if (months.includes(prevB)) fb.value = prevB;
+        const plats = [...new Set(DATA.map(r => r.plat).filter(Boolean))].sort();
+        fk.innerHTML = '<option value="">Semua kenderaan</option>' + plats.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+        if (plats.includes(prevK)) fk.value = prevK;
+        $('#dlPlat').innerHTML = plats.map(v => `<option value="${esc(v)}">`).join('');
+        const names = [...new Set(DATA.map(r => r.nama).filter(Boolean))].sort();
+        $('#dlNama').innerHTML = names.map(v => `<option value="${esc(v)}">`).join('');
+    }
+
+    const byNewest = (a, b) => ((b._d ? b._d.getTime() : 0) - (a._d ? a._d.getTime() : 0)) || ((b._odo || 0) - (a._odo || 0)) || (b._row - a._row);
+
+    function filtered() {
+        const b = $('#fBulan').value, k = $('#fKenderaan').value, q = $('#fCari').value.trim().toLowerCase();
+        return DATA.filter(r => (!b || ymOf(r._d) === b)
+            && (!k || r.plat === k)
+            && (!q || COLS.map(c => r[c.key]).join(' ').toLowerCase().includes(q))).sort(byNewest);
+    }
+
+    /* Semakan terakhir setiap kenderaan (ikut rekod yang ditapis) */
+    function latestPerPlat(rows) {
+        const m = {};
+        rows.forEach(r => { if (r.plat && !m[r.plat]) m[r.plat] = r; }); // rows dah disusun terbaru dahulu
+        return Object.values(m);
+    }
+
+    function render() {
+        const rows = filtered();
+        const latest = latestPerPlat(rows);
+
+        // KPI
+        $('#kpiSemakan').textContent = rows.length;
+        $('#kpiKenderaan').textContent = latest.length + ' kenderaan';
+        const isu = latest.filter(r => r._bad.length);
+        $('#kpiIsu').textContent = isu.length;
+        $('#kpiIsuSub').textContent = isu.length ? isu.map(r => r.plat).slice(0, 3).join(', ') + (isu.length > 3 ? ` +${isu.length - 3}` : '') : 'Semua OK';
+        const rt = latest.filter(r => ['bad', 'warn'].includes(r._j.roadtax.s));
+        $('#kpiRoadtax').textContent = rt.length;
+        $('#kpiRoadtaxSub').textContent = rt.length ? rt.map(r => r.plat).slice(0, 3).join(', ') + (rt.length > 3 ? ` +${rt.length - 3}` : '') : 'Tiada';
+        const cnt = {}; let tot = 0;
+        latest.forEach(r => r._bad.forEach(c => { cnt[c.h] = (cnt[c.h] || 0) + 1; tot++; }));
+        $('#kpiItem').textContent = tot;
+        const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+        $('#kpiItemSub').textContent = top ? `${top[0]} (${top[1]})` : 'Tiada';
+
+        // Kad status setiap kenderaan — yang ada isu di atas
+        const cards = latest.slice().sort((a, b) => b._bad.length - a._bad.length || a.plat.localeCompare(b.plat));
+        $('#perKenderaan').innerHTML = cards.length ? cards.map(r => {
+            const nBad = r._bad.length;
+            const border = CHECKS.some(c => r._j[c.key].s === 'bad') ? 'border-t-red-500' : nBad ? 'border-t-jm-gold' : 'border-t-emerald-500';
+            const sv = parseDate(r.servis);
+            return `
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 border-t-4 ${border} min-w-0">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="font-extrabold text-jm-navy text-lg truncate">${esc(r.plat || '–')}${r._pending ? ' <span class="chip chip-mute align-middle"><i class="fa-regular fa-clock"></i>Menunggu Sheet</span>' : ''}</p>
+                        <p class="text-xs text-slate-500 truncate"><i class="fa-regular fa-user mr-1"></i>${esc(r.nama || '–')} · ${esc(r._d ? dmy(r._d) : r.tarikh || '–')}</p>
+                    </div>
+                    ${nBad ? `<span class="chip chip-${border === 'border-t-red-500' ? 'bad' : 'warn'}">${nBad} isu</span>` : '<span class="chip chip-ok"><i class="fa-solid fa-check"></i>Semua OK</span>'}
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                    ${CHECKS.map(c => `<div class="flex items-center justify-between gap-2 min-w-0"><span class="text-slate-500 truncate">${esc(c.h)}</span>${chip(r._j[c.key])}</div>`).join('')}
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
+                    <div><p class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Odometer</p><p class="font-bold text-slate-700">${r._odo != null ? r._odo.toLocaleString('en-MY') + ' km' : esc(r.odometer || '–')}</p></div>
+                    <div><p class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Tarikh Servis</p><p class="font-bold text-slate-700">${esc(sv ? dmy(sv) : r.servis || '–')}</p></div>
+                    <div class="col-span-2 min-w-0"><p class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Tujuan</p><p class="text-slate-700 break-words">${esc(r.tujuan || '–')}</p></div>
+                </div>
+            </div>`;
+        }).join('') : '<div class="bg-white rounded-2xl p-8 border border-slate-200 text-sm text-slate-400 text-center md:col-span-2 xl:col-span-3">Tiada rekod untuk penapis ini.</div>';
+
+        // Jadual penuh ikut susunan header Sheet
+        $('#rekodCount').textContent = rows.length + ' rekod';
+        $('#tblHead').innerHTML = COLS.map(c => `<th class="py-2 pr-4">${esc(c.h)}</th>`).join('');
+        const cell = (r, c) => {
+            if (c.chk) return chip(r._j[c.key]);
+            if (c.key === 'tarikh') return esc(r._d ? dmy(r._d) : r.tarikh);
+            if (c.key === 'servis') { const d = parseDate(r.servis); return esc(d ? dmy(d) : r.servis || '–'); }
+            if (c.key === 'odometer') return r._odo != null ? r._odo.toLocaleString('en-MY') : esc(r.odometer || '–');
+            if (c.key === 'plat') return `<b class="text-jm-navy">${esc(r.plat || '–')}</b>${r._pending ? ' <span class="chip chip-mute"><i class="fa-regular fa-clock"></i>Menunggu</span>' : ''}`;
+            return esc(r[c.key] || '–');
+        };
+        $('#tblBody').innerHTML = rows.length ? rows.map(r => `<tr class="border-b border-slate-100 align-top hover:bg-slate-50">${COLS.map(c => `<td class="py-2.5 pr-4${c.key === 'tujuan' ? ' wrap' : ''}">${cell(r, c)}</td>`).join('')}</tr>`).join('')
+            : `<tr><td colspan="${COLS.length}" class="py-8 text-center text-slate-400">Tiada rekod.</td></tr>`;
+        $('#cardList').innerHTML = rows.length ? rows.map(r => `
+            <div class="border border-slate-200 rounded-xl p-3 space-y-2 min-w-0">
+                <div class="flex items-center justify-between gap-2"><b class="text-jm-navy">${esc(r.plat || '–')}</b><span class="text-xs text-slate-500">${esc(r._d ? dmy(r._d) : r.tarikh)}</span></div>
+                <p class="text-xs text-slate-500">${esc(r.nama || '–')}${r.tujuan ? ' · ' + esc(r.tujuan) : ''}</p>
+                <div class="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs">${CHECKS.map(c => `<div class="flex items-center justify-between gap-1 min-w-0"><span class="text-slate-500 truncate">${esc(c.h)}</span>${chip(r._j[c.key])}</div>`).join('')}</div>
+                <div class="flex justify-between text-xs pt-1.5 border-t border-slate-100"><span>Odo: ${r._odo != null ? r._odo.toLocaleString('en-MY') + ' km' : esc(r.odometer || '–')}</span><span>Servis: ${esc((d => d ? dmy(d) : r.servis || '–')(parseDate(r.servis)))}</span></div>
+            </div>`).join('') : '<p class="text-sm text-slate-400 text-center py-8">Tiada rekod.</p>';
+    }
+
+    /* ================= BORANG HANTAR LAPORAN ================= */
+    const F = id => $('#f_' + id);
+    const isoToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+    const toIso = d => d ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') : '';
+    const FORM_CHECKS = CHECKS.filter(c => c.opts);
+    const tone = v => v === 'OK' ? 'v-ok' : (v === 'Kurang' ? 'v-warn' : 'v-bad');
+
+    $('#chkList').innerHTML = FORM_CHECKS.map(c => `
+        <div class="chk-row">
+            <span class="text-sm font-semibold text-slate-700">${esc(c.h)} *</span>
+            <div class="seg" role="radiogroup" aria-label="${esc(c.h)}">
+                ${c.opts.map((o, i) => `<input type="radio" name="c_${c.key}" id="c_${c.key}_${i}" value="${esc(o)}"><label for="c_${c.key}_${i}" class="${tone(o)}">${esc(o)}</label>`).join('')}
+            </div>
+        </div>`).join('');
+    $('#btnAllOk').addEventListener('click', () => FORM_CHECKS.forEach(c => { const r = $(`#c_${c.key}_0`); if (r) r.checked = true; }));
+
+    let lastOdo = null;
+    function onPlat() {
+        const p = F('plat').value.trim().toUpperCase().replace(/\s+/g, ' ');
+        const last = DATA.filter(r => r.plat === p).sort(byNewest)[0];
+        lastOdo = last && last._odo != null ? last._odo : null;
+        $('#odoHint').textContent = lastOdo != null ? `Odometer terakhir: ${lastOdo.toLocaleString('en-MY')} km` : '';
+        if (last) {
+            // Auto isi roadtax & tarikh servis dari laporan terakhir kenderaan ini (boleh ubah)
+            const rt = parseDate(last.roadtax), sv = parseDate(last.servis);
+            if (!F('roadtax').value && rt) F('roadtax').value = toIso(rt);
+            if (!F('servis').value && sv) F('servis').value = toIso(sv);
+        }
+    }
+    F('plat').addEventListener('change', onPlat);
+    F('plat').addEventListener('blur', onPlat);
+
+    function resetForm() {
+        $('#frm').reset();
+        F('tarikh').value = isoToday();
+        lastOdo = null; $('#odoHint').textContent = '';
+    }
+    $('#frm').addEventListener('reset', () => setTimeout(() => { F('tarikh').value = isoToday(); lastOdo = null; $('#odoHint').textContent = ''; $('#frmMsg').textContent = ''; }, 0));
+
+    $('#frm').addEventListener('submit', async ev => {
+        ev.preventDefault();
+        const msg = $('#frmMsg');
+        const fail = t => { msg.className = 'text-sm font-medium text-red-600'; msg.textContent = t; };
+        if (!LIVE) return fail('Borang belum disambung ke Google Sheets (MACRO_URL kosong).');
+
+        const check = {};
+        FORM_CHECKS.forEach(c => { const r = document.querySelector(`input[name="c_${c.key}"]:checked`); check[c.h] = r ? r.value : ''; });
+        const rec = {
+            tarikh: F('tarikh').value,
+            nama: F('nama').value.trim(),
+            plat: F('plat').value.trim().toUpperCase().replace(/\s+/g, ' '),
+            roadtax: F('roadtax').value,
+            odometer: F('odometer').value.trim(),
+            servis: F('servis').value,
+            tujuan: F('tujuan').value.trim(),
+            check
+        };
+        const missing = FORM_CHECKS.filter(c => !check[c.h]).map(c => c.h);
+        const odo = Number(rec.odometer);
+        const err = !rec.tarikh ? 'Tarikh wajib diisi.'
+            : !rec.nama ? 'Nama wajib diisi.'
+            : !rec.plat ? 'No Pendaftaran wajib diisi.'
+            : missing.length ? 'Sila tanda: ' + missing.join(', ') + '.'
+            : !rec.roadtax ? 'Tarikh tamat roadtax wajib diisi.'
+            : rec.odometer === '' || !isFinite(odo) || odo < 0 ? 'Odometer tidak sah.'
+            : !rec.tujuan ? 'Tujuan wajib diisi.'
+            : '';
+        if (err) return fail(err);
+        if (lastOdo != null && odo < lastOdo && !window.confirm(`Odometer ${odo.toLocaleString('en-MY')} km lebih rendah dari laporan terakhir (${lastOdo.toLocaleString('en-MY')} km). Teruskan hantar?`)) return;
+
+        const btn = $('#btnSimpan');
+        btn.disabled = true; msg.className = 'text-sm font-medium text-slate-500'; msg.textContent = 'Menghantar...';
+        try {
+            // text/plain elak CORS preflight (Apps Script tak sokong OPTIONS)
+            const res = await fetch(MACRO_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(rec) });
+            const j = await res.json();
+            if (j.status !== 'success') throw new Error(j.message || 'Gagal hantar');
+
+            // Simpan sementara sehingga muncul dalam CSV
+            const dm = iso => iso ? iso.split('-').reverse().join('/') : '';
+            const pend = { tarikh: dm(rec.tarikh), nama: rec.nama, plat: rec.plat, roadtax: dm(rec.roadtax), odometer: String(Math.round(odo)), servis: dm(rec.servis), tujuan: rec.tujuan, _at: Date.now() };
+            FORM_CHECKS.forEach(c => { pend[c.key] = check[c.h]; });
+            const all = pendingGet(); all.push(pend); pendingSet(all);
+            DATA.push(makeRec(Object.assign({}, pend, { _row: 1e9 + pend._at, _pending: true })));
+
+            resetForm();
+            msg.className = 'text-sm font-medium text-emerald-700'; msg.textContent = 'Laporan dihantar.';
+            buildFilters(); render();
+            banner(`Laporan ${pend.plat} (${pend.tarikh}) dihantar ke Google Sheets. Link CSV mungkin ambil masa sehingga 5 minit untuk kemas kini.`, 'ok');
+            switchView('ringkasan');
+        } catch (e) {
+            fail('Gagal hantar: ' + e.message + '. Laporan BELUM disimpan — cuba lagi.');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    /* ================= KOD APPS SCRIPT ================= */
+    const GS = $('#gsCode').textContent.replace(/^\n/, '');
+    $('#codeView').textContent = GS;
+    window.copyCode = async function () {
+        try { await navigator.clipboard.writeText(GS); $('#copyLbl').textContent = 'Disalin!'; }
+        catch (e) { $('#copyLbl').textContent = 'Gagal — salin manual'; }
+        setTimeout(() => { $('#copyLbl').textContent = 'Salin kod'; }, 2000);
+    };
+
+    /* ================= INIT ================= */
+    F('tarikh').value = isoToday();
+    if (!LIVE) { $('#noMacro').classList.remove('hidden'); $('#btnSimpan').disabled = true; }
+    ['#fBulan', '#fKenderaan'].forEach(s => $(s).addEventListener('change', render));
+    $('#fCari').addEventListener('input', render);
+    switchView('ringkasan');
+    fetchData(false);
+})();
+</script>
+</body>
+</html>
