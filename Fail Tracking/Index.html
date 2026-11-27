@@ -283,7 +283,8 @@ function openCard(id){setTimeout(()=>{const el=document.getElementById('card-'+i
 function exportData(){
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='survey-tracker-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  a.download='survey-tracker-backup-'+ymd+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 function importData(ev){
   const file=ev.target.files[0];if(!file)return;
