@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JMC Operations Hub</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0A2540">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JMC Hub">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
@@ -391,6 +398,7 @@ tr:last-child td{border-bottom:0}
       <div class="sub" id="sub-site"><div><div class="inner">
         <button data-v="app:site" title="Laporan Harian"><span class="tx">Laporan Harian</span></button>
         <button data-v="app:site-status" title="Status Site"><span class="tx">Status Site</span></button>
+        <button data-v="app:site-kenderaan" title="Laporan Kenderaan"><span class="tx">Laporan Kenderaan</span></button>
       </div></div></div>
     </div>
     <div class="ngrp" data-g="pelan">
@@ -489,6 +497,7 @@ const MOD_TITLES={tracking:['Fail Tracking','Jejak fail dari kutipan data hingga
 const APPS={
   'site':{url:'HOD Site/Laporan Harian/index.html',t:'Laporan Harian Tapak',c:'HOD Site · Google Sheets'},
   'site-status':{url:'HOD Site/Status Site/index.html',t:'Status Site',c:'HOD Site · Status tapak'},
+  'site-kenderaan':{url:'HOD Site/Laporan Kenderaan/index.html',t:'Laporan Kenderaan',c:'HOD Site · Semakan kenderaan'},
   'pelan-status':{url:'HOD Pelan/Status Pelan/index.html',t:'Status Pelan',c:'HOD Pelan · Laporan pelukis pelan'},
   'pelan-qc':{url:'HOD Pelan/Kualiti Pelan/index.html',t:'Kualiti Pelan (QC)',c:'HOD Pelan · Semakan QC dari Google Sheets'},
   'pelan-checklist':{url:'HOD Pelan/Checklist Plan/index.html',t:'Checklist Plan',c:'HOD Pelan · Senarai semak digital pelan'},
@@ -547,7 +556,14 @@ function makeApp(k){
   f.src=appUrl(k);$('#content').appendChild(f);frames[key]=f;
 }
 function win(id){try{const w=frames[id]&&ready[id]?frames[id].contentWindow:null;if(w)void w.document;return w;}catch(e){return null;}}
+/* opsOk: null = belum tahu, false = modules/ops.html tiada (404) → sorok menu & pautan Operasi HOD */
+let opsOk=null;
 function onFrameReady(id){
+  if(id==='ops'){
+    let w=null;try{w=win('ops');opsOk=!!(w&&typeof w.go==='function');}catch(e){opsOk=false;}
+    document.querySelectorAll('#nav [data-v^="ops:"]').forEach(b=>{b.hidden=!opsOk;});
+    if(!opsOk){pendingOps=null;if(current.startsWith('ops:'))show('home');}
+  }
   if(id==='ops')try{
     const w=win('ops');
     if(w&&typeof w.go==='function'&&!w.go._jm){
@@ -577,6 +593,7 @@ function setActive(v,fromFrame){
   if(location.hash.slice(1)!==v.replace(':','-'))history.replaceState(null,'','#'+v.replace(':','-'));
 }
 function show(v){
+  if(opsOk===false&&String(v).startsWith('ops:')){toast('Modul Operasi HOD belum dipasang (modules/ops.html tiada)');if(!current.startsWith('ops:'))return;v='home';}
   let [mod,sub]=v.split(':');
   if(mod==='app'&&!APPS[sub]){v='home';mod='home';}
   setActive(v);
@@ -1590,6 +1607,10 @@ render();
 const h0=location.hash.slice(1).replace('-',':');
 const valid=[...document.querySelectorAll('#nav button[data-v]')].map(b=>b.dataset.v);
 show(valid.includes(h0)?h0:'home');
+/* PWA: daftar service worker (hanya http/https, bukan file://) */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(err=>console.warn('SW gagal didaftar:',err));});
+}
 })();
 </script>
 </body>
