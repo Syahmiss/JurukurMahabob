@@ -57,9 +57,9 @@
 
     <!-- Toolbar: Tab Bidang QC & Kemaskini Data -->
     <div class="no-print max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-7 pt-6">
-        <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <nav id="nav" class="flex space-x-1 sm:space-x-2 overflow-x-auto" aria-label="Bidang QC"></nav>
-            <div class="flex items-center space-x-3 justify-end shrink-0">
+        <div class="bg-jm-navy rounded-2xl shadow-md px-3 py-2 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <nav id="nav" class="flex flex-wrap gap-1.5 sm:gap-2 min-w-0 flex-1" aria-label="Bidang QC"></nav>
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 justify-end shrink-0">
                 <div class="text-xs text-blue-200 bg-white/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5 whitespace-nowrap" title="Sumber: Google Sheets (CSV terbitan)">
                     <span id="syncDot" class="w-2 h-2 rounded-full bg-blue-300 animate-pulse"></span>
                     <span id="syncStatusText">Menyambung data...</span>
@@ -200,16 +200,19 @@
                 </div>
             </div>
 
-            <div class="w-full overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[1100px] text-xs">
+            <!-- Paparan kad (bawah 1280px) -->
+            <div id="cardList" class="xl:hidden no-print divide-y divide-slate-200"></div>
+            <!-- Paparan jadual (1280px ke atas & cetakan) -->
+            <div class="w-full hidden xl:block print:block">
+                <table class="w-full text-left border-collapse text-xs table-auto">
                     <thead>
                         <tr class="bg-jm-navy text-white uppercase tracking-wider">
                             <th class="px-3 py-3.5 font-semibold">Bil</th>
                             <th class="px-3 py-3.5 font-semibold">Kategori</th>
                             <th class="px-3 py-3.5 font-semibold">Tarikh Fail</th>
                             <th class="px-3 py-3.5 font-semibold">No. Fail</th>
-                            <th class="px-3 py-3.5 font-semibold min-w-[220px]">Perkara / Projek</th>
-                            <th class="px-3 py-3.5 font-semibold min-w-[170px]">Tetuan / Pelanggan</th>
+                            <th class="px-3 py-3.5 font-semibold">Perkara / Projek</th>
+                            <th class="px-3 py-3.5 font-semibold">Tetuan / Pelanggan</th>
                             <th class="px-3 py-3.5 font-semibold">Surveyor</th>
                             <th class="px-3 py-3.5 font-semibold">Tempoh</th>
                             <th class="px-3 py-3.5 font-semibold text-center">Status QC</th>
@@ -279,13 +282,41 @@
 (function () {
     'use strict';
     /* ================= CONFIG ================= */
-    const SHEET_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSu5gATXzC5n6KzCNO5mk54h2EORGalqNs0XrGcxEeUXdIINtUZZfA2f7kNhAnFVPFnWFYXumEnx4FC/pub?output=csv';
-    /* Satu sumber: tab pertama sheet. Kategori (tab) diambil dari column MAKLUMAT / BIDANG / KATEGORI.
-       Kalau data dipecah ikut tab dalam Google Sheet, tambah satu baris setiap tab:
-       {name:'TITLE', url:`${SHEET_BASE_URL}&gid=XXXX`, defaultCategory:'TITLE'} */
-    const CSV_SOURCES = [
-        { name: 'QC', url: SHEET_BASE_URL, defaultCategory: 'UMUM' }
+    const SHEET_PUB_ID = '2PACX-1vSu5gATXzC5n6KzCNO5mk54h2EORGalqNs0XrGcxEeUXdIINtUZZfA2f7kNhAnFVPFnWFYXumEnx4FC';
+    const pubURL = gid => `https://docs.google.com/spreadsheets/d/e/${SHEET_PUB_ID}/pub?${gid ? `gid=${encodeURIComponent(gid)}&single=true&` : ''}output=csv`;
+    /* KATEGORI QC — cara kategori ditentukan (ikut keutamaan):
+       1. Nama tab dalam QC_TABS (data dipecah ikut tab)
+       2. Column MAKLUMAT / BIDANG / KATEGORI dalam sheet
+       3. Baris tajuk seksyen dalam sheet (cth satu baris "ENGINEERING" sahaja, rekod di bawahnya ikut seksyen tu)
+       4. Auto-kesan dari kod No. Fail / Perkara (CAT_RULES)
+       5. FALLBACK_CATEGORY
+       Kalau data dipecah ikut tab: buka Sheet, klik tab, salin nombor selepas "#gid=" dalam URL dan isi di bawah.
+       Tab dengan gid kosong diabaikan. Kalau semua kosong, baca tab pertama sahaja. */
+    const QC_TABS = [
+        { name: 'ENGINEERING', gid: '399274151' },
+        { name: 'TITLE', gid: '1201764382' },
+        { name: 'UMAP', gid: '421455856' },
+        { name: 'FOC & AMAL', gid: '1388053727' }
     ];
+    const FALLBACK_CATEGORY = 'UMUM';
+    const CSV_SOURCES = QC_TABS.some(t => t.gid)
+        ? QC_TABS.filter(t => t.gid).map(t => ({ name: t.name, url: pubURL(t.gid), defaultCategory: t.name }))
+        : [{ name: 'QC', url: pubURL(''), defaultCategory: '' }];
+    /* Auto-kesan kategori. Urutan penting: rule pertama yang padan menang. */
+    const CAT_RULES = [
+        ['LASER SCANNING', /\b(TLS|LIDAR|LASER|SCAN|SCANNING|POINT ?CLOUD)\b/],
+        ['UMAP', /\b(UMP|UMAP|GIS|UTILITI|UTILITY|PAIP|KABEL)\b/],
+        ['TITLE', /\b(TTL|TITLE|HAKMILIK|SEMPADAN|STRATA|KADASTER|CADASTRAL)\b/],
+        ['ENGINEERING', /\b(ENG|ENGINEERING|KEJURUTERAAN|TOPO|TOPOGRAFI|ARAS|KONTUR|AS[- ]?BUILT|SETTING ?OUT)\b/]
+    ];
+    function inferCategory(noFail, perkara) {
+        /* No. Fail dahulu (kod paling tepat, cth JMB/ENG/2026/005), kemudian Perkara */
+        for (const txt of [String(noFail || '').toUpperCase().replace(/[\/_\-.]/g, ' '), String(perkara || '').toUpperCase()]) {
+            if (!txt.trim()) continue;
+            for (const [cat, re] of CAT_RULES) if (re.test(txt)) return cat;
+        }
+        return '';
+    }
     const SAMPLE_DATA = [
         { MAKLUMAT: 'ENGINEERING', TARIKH: '2026-02-03', 'NO. FAIL': 'JMB/ENG/2026/005', PERKARA: 'Ukur Aras Terperinci & Topografi Tapak Projek', TETUAN: 'Jabatan Kerja Raya (JKR)', 'NAMA SURVEYOR': 'Sr. Ahmad Zaki', 'TARIKH MULA': '2026-02-04', 'TARIKH AKHIR': '2026-02-11', STATUS: 'LULUS', REWORK: 'TIADA' },
         { MAKLUMAT: 'TITLE', TARIKH: '2026-01-15', 'NO. FAIL': 'JMB/TTL/2026/014', PERKARA: 'Ukur Penentuan Sempadan Lot 40822 Mukim Pekan', TETUAN: 'Perbadanan Kemajuan Negeri Pahang', 'NAMA SURVEYOR': 'Sr. Khairul Anuar', 'TARIKH MULA': '2026-01-16', 'TARIKH AKHIR': '2026-01-22', STATUS: 'LULUS', REWORK: 'TIADA' },
@@ -294,7 +325,8 @@
         { MAKLUMAT: 'TITLE', TARIKH: '2026-02-04', 'NO. FAIL': 'JMB/TTL/2026/029', PERKARA: 'Ukur Penandaan Sempadan Lot Industri Gebeng', TETUAN: 'BASF Petronas Chemicals', 'NAMA SURVEYOR': 'Sr. Khairul Anuar', 'TARIKH MULA': '2026-02-05', 'TARIKH AKHIR': '2026-02-12', STATUS: 'LULUS', REWORK: 'TIADA' },
         { MAKLUMAT: 'UMAP', TARIKH: '2026-02-08', 'NO. FAIL': 'JMB/UMP/2026/003', PERKARA: 'Pengumpulan Data Spasial & Pemetaan GIS UMAP', TETUAN: 'Pihak Berkuasa Tempatan', 'NAMA SURVEYOR': 'Siti Nurhaliza QC', 'TARIKH MULA': '2026-02-09', 'TARIKH AKHIR': '2026-02-18', STATUS: 'DALAM PROSES QC', REWORK: 'TIADA' }
     ];
-    const PREFERRED_TAB_ORDER = ['ENGINEERING', 'TITLE', 'UMAP'];
+    const PREFERRED_TAB_ORDER = ['ENGINEERING', 'TITLE', 'UMAP', 'FOC & AMAL', 'LASER SCANNING'];
+    const CAT_SRC_LABEL = { col: 'Dari column sheet', section: 'Dari tajuk seksyen sheet', tab: 'Dari tab sheet', auto: 'Dikesan auto dari No. Fail / Perkara', none: 'Kategori tidak dapat dikesan' };
     // [label, kelas chip Tailwind, warna carta, kelas kotak modal]
     const ST_META = {
         'LULUS': ['Lulus / Selesai', 'bg-blue-100 text-jm-royal', '#1D4ED8', 'bg-blue-50 text-jm-royal'],
@@ -375,7 +407,11 @@
         res.forEach((r, i) => { if (r.status === 'fulfilled') combined = combined.concat(r.value); else { fails.push(CSV_SOURCES[i].name); console.error('Fetch error for tab ' + CSV_SOURCES[i].name + ':', r.reason); } });
         const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         if (combined.length && !fails.length) {
-            rawData = combined; showWarning('');
+            rawData = combined;
+            const noCat = rawData.filter(i => i.CAT_SRC === 'none').length;
+            showWarning(noCat
+                ? `${noCat} rekod tiada kategori dan dipapar bawah "${FALLBACK_CATEGORY}". Tambah column MAKLUMAT / BIDANG / KATEGORI dalam Google Sheet, atau isi gid tab dalam QC_TABS.`
+                : '');
             setSync('ok', `Dikemaskini: ${timeStr}`);
             showToast(`${rawData.length} rekod dimuatkan daripada Google Sheets.`, 'success');
         } else if (combined.length) {
@@ -383,7 +419,7 @@
             showWarning(`Hanya sebahagian data berjaya dimuatkan (${rawData.length} rekod). Tab gagal: ${fails.join(', ')}.`);
             setSync('warn', 'Sebahagian data sahaja');
         } else {
-            rawData = cleanData(SAMPLE_DATA, 'ENGINEERING', 'SAMPLE');
+            rawData = cleanData(SAMPLE_DATA, '', 'SAMPLE');
             showWarning(fails.length === CSV_SOURCES.length
                 ? 'Sambungan ke Google Sheets gagal. Angka di bawah ialah DATA SAMPEL, bukan data sebenar.'
                 : 'Google Sheet kosong atau belum diterbitkan. Angka di bawah ialah DATA SAMPEL, bukan data sebenar.');
@@ -397,7 +433,9 @@
 
     /* ================= CLEAN ================= */
     function cleanData(data, defaultCat, srcName) {
-        return data.map((item, idx) => {
+        let section = '';
+        const out = [];
+        data.forEach((item, idx) => {
             const keys = Object.keys(item);
             const getVal = possible => {
                 for (const p of possible) {
@@ -407,7 +445,23 @@
                 }
                 return '';
             };
-            const maklumat = (getVal(['MAKLUMAT', 'BIDANG', 'KATEGORI']) || defaultCat).trim().toUpperCase();
+            /* Baris tajuk seksyen: satu sel sahaja berisi, di column 1-2, tiada nombor (cth "ENGINEERING") */
+            const filled = keys.map((k, j) => [j, String(item[k] == null ? '' : item[k]).trim()]).filter(x => x[1]);
+            if (!filled.length) return;
+            if (filled.length === 1 && filled[0][0] < 2 && !/\d/.test(filled[0][1]) && filled[0][1].length <= 40) {
+                section = filled[0][1].toUpperCase();
+                return;
+            }
+            const noFail = getVal(['NOFAIL', 'NO. FAIL', 'NO_FAIL', 'FILE NO', 'NO REF']);
+            const perkara = getVal(['PERKARA', 'PROJEK', 'TAJUK', 'DESCRIPTION', 'PROJECT']);
+            const colCat = getVal(['MAKLUMAT', 'BIDANG', 'KATEGORI']);
+            const autoCat = inferCategory(noFail, perkara);
+            const [maklumatRaw, catSrc] = defaultCat ? [defaultCat, 'tab']
+                : colCat ? [colCat, 'col']
+                : section ? [section, 'section']
+                : autoCat ? [autoCat, 'auto']
+                : [FALLBACK_CATEGORY, 'none'];
+            const maklumat = maklumatRaw.trim().toUpperCase();
 
             let status = getVal(['STATUS', 'STATUS QC', 'KEPUTUSAN', 'STATE']) || 'DALAM PROSES QC';
             const sl = status.toLowerCase();
@@ -423,20 +477,22 @@
             else rework = 'TIADA';
 
             /* Medan kosong dibiarkan kosong (papar "-"), bukan diisi tarikh/nama rekaan */
-            return {
+            out.push({
                 id: srcName + '-' + idx,
                 MAKLUMAT: maklumat,
+                CAT_SRC: catSrc,
                 TARIKH: getVal(['TARIKH', 'DATE', 'TARIKH FAIL']),
-                'NO. FAIL': getVal(['NOFAIL', 'NO. FAIL', 'NO_FAIL', 'FILE NO', 'NO REF']) || '-',
-                PERKARA: getVal(['PERKARA', 'PROJEK', 'TAJUK', 'DESCRIPTION', 'PROJECT']) || '-',
+                'NO. FAIL': noFail || '-',
+                PERKARA: perkara || '-',
                 TETUAN: getVal(['TETUAN', 'PELANGGAN', 'CLIENT', 'PEMOHON']) || '-',
                 'NAMA SURVEYOR': getVal(['NAMASURVEYOR', 'NAMA SURVEYOR', 'SURVEYOR', 'PEGAWAI']) || NO_SURVEYOR,
                 'TARIKH MULA': getVal(['TARIKHMULA', 'TARIKH MULA', 'START DATE']),
                 'TARIKH AKHIR': getVal(['TARIKHAKHIR', 'TARIKH AKHIR', 'END DATE']),
                 STATUS: status,
                 REWORK: rework
-            };
+            });
         });
+        return out;
     }
 
     /* ================= TAB ================= */
@@ -456,10 +512,13 @@
         if (n.includes('TITLE') || n.includes('HAKMILIK')) return 'fa-file-contract';
         if (n.includes('UMAP') || n.includes('GIS')) return 'fa-map-location-dot';
         if (n.includes('ENGINEERING') || n.includes('KEJURUTERAAN')) return 'fa-ruler-combined';
+        if (n.includes('FOC') || n.includes('AMAL')) return 'fa-hand-holding-heart';
+        if (n.includes('LASER') || n.includes('TLS') || n.includes('LIDAR') || n.includes('SCAN')) return 'fa-cube';
+        if (n === FALLBACK_CATEGORY) return 'fa-circle-question';
         return 'fa-folder-open';
     }
     function renderNav() {
-        const btn = (id, label, icon, n) => `<button type="button" data-tab="${esc(id)}" aria-pressed="${currentTab === id}" class="main-tab-btn ${currentTab === id ? 'active' : ''} px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap"><i class="fa-solid ${icon}"></i><span>${esc(label)}</span><span class="cnt">${n}</span></button>`;
+        const btn = (id, label, icon, n) => `<button type="button" data-tab="${esc(id)}" aria-pressed="${currentTab === id}" class="main-tab-btn ${currentTab === id ? 'active' : ''} px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"><i class="fa-solid ${icon}"></i><span>${esc(label)}</span><span class="cnt">${n}</span></button>`;
         $('#nav').innerHTML = btn('main', 'Semua Bidang', 'fa-gauge-high', rawData.length)
             + dynamicTabs.map(t => btn(t, t, tabIcon(t), rawData.filter(i => i.MAKLUMAT === t).length)).join('');
     }
@@ -527,10 +586,34 @@
     function renderTable() {
         const tb = $('#tableBody');
         $('#recordsCount').textContent = `Papar ${filteredData.length} daripada ${rawData.length} rekod`;
+        const cl = $('#cardList');
         if (!filteredData.length) {
-            tb.innerHTML = `<tr><td colspan="11" class="text-center py-10 text-slate-400"><i class="fa-solid fa-folder-open text-2xl text-slate-300 mb-2 block"></i>Tiada rekod dijumpai. Cuba set semula penapis atau tukar bidang.<br><button type="button" data-reset class="mt-3 px-4 py-2 rounded-xl bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs">Reset Penapis</button></td></tr>`;
+            const empty = `<i class="fa-solid fa-folder-open text-2xl text-slate-300 mb-2 block"></i>Tiada rekod dijumpai. Cuba set semula penapis atau tukar bidang.<br><button type="button" data-reset class="mt-3 px-4 py-2 rounded-xl bg-jm-gold hover:bg-jm-amber text-jm-navy font-semibold text-xs">Reset Penapis</button>`;
+            tb.innerHTML = `<tr><td colspan="11" class="text-center py-10 text-slate-400">${empty}</td></tr>`;
+            cl.innerHTML = `<div class="text-center py-10 px-4 text-sm text-slate-400">${empty}</div>`;
             return;
         }
+        const catChip = i => `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold inline-flex items-center gap-1 ${i.CAT_SRC === 'none' ? 'bg-slate-100 text-slate-500' : 'bg-blue-100 text-jm-royal'}" title="${esc(CAT_SRC_LABEL[i.CAT_SRC] || '')}">${i.CAT_SRC === 'auto' ? '<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i>' : ''}${esc(i.MAKLUMAT)}</span>`;
+        cl.innerHTML = filteredData.map(i => {
+            const m = ST_META[i.STATUS] || ST_META['DALAM PROSES QC'];
+            const rw = hasRework(i) ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i>Rework</span>' : '';
+            return `<div class="p-4 hover:bg-blue-50/50 transition">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5 mb-1">${catChip(i)}<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold inline-block ${m[1]}">${esc(i.STATUS)}</span>${rw}</div>
+                        <p class="font-bold text-jm-navy text-sm break-words">${esc(i['NO. FAIL'])}</p>
+                    </div>
+                    <button type="button" data-view="${esc(i.id)}" class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-jm-blue/10 text-jm-blue hover:bg-jm-blue/20 font-semibold text-[11px] transition" aria-label="Papar perincian ${esc(i['NO. FAIL'])}"><i class="fa-solid fa-eye"></i> Lihat</button>
+                </div>
+                <p class="text-xs text-slate-800 font-medium mt-1.5 break-words">${esc(i.PERKARA)}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2 text-[11px] text-slate-500">
+                    <p class="break-words"><i class="fa-solid fa-building w-4 text-slate-400"></i>${esc(i.TETUAN)}</p>
+                    <p class="break-words"><i class="fa-solid fa-user w-4 text-slate-400"></i>${esc(i['NAMA SURVEYOR'])}</p>
+                    <p><i class="fa-regular fa-calendar w-4 text-slate-400"></i>${esc(fmtDate(i.TARIKH))}</p>
+                    <p><i class="fa-solid fa-clock w-4 text-slate-400"></i>${esc(tempoh(i, ' – '))}</p>
+                </div>
+            </div>`;
+        }).join('');
         tb.innerHTML = filteredData.map((i, n) => {
             const m = ST_META[i.STATUS] || ST_META['DALAM PROSES QC'];
             const rwTitle = i.REWORK !== 'TIADA' ? i.REWORK : 'Status QC: Rework Required';
@@ -539,23 +622,25 @@
                 : '<span class="text-slate-400">Tiada</span>';
             return `<tr class="hover:bg-blue-50/50 transition">
                 <td class="px-3 py-3 text-slate-400">${n + 1}</td>
-                <td class="px-3 py-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-jm-royal inline-block">${esc(i.MAKLUMAT)}</span></td>
+                <td class="px-3 py-3">${catChip(i)}</td>
                 <td class="px-3 py-3 text-slate-600 whitespace-nowrap">${esc(fmtDate(i.TARIKH))}</td>
-                <td class="px-3 py-3 font-bold text-jm-navy whitespace-nowrap">${esc(i['NO. FAIL'])}</td>
+                <td class="px-3 py-3 font-bold text-jm-navy break-words">${esc(i['NO. FAIL'])}</td>
                 <td class="px-3 py-3 text-slate-800 font-medium">${esc(i.PERKARA)}</td>
                 <td class="px-3 py-3 text-slate-600">${esc(i.TETUAN)}</td>
                 <td class="px-3 py-3 text-slate-800 font-semibold whitespace-nowrap">${esc(i['NAMA SURVEYOR'])}</td>
-                <td class="px-3 py-3 text-slate-500 whitespace-nowrap">${esc(tempoh(i, ' – '))}</td>
+                <td class="px-3 py-3 text-slate-500">${esc(tempoh(i, ' – '))}</td>
                 <td class="px-3 py-3 text-center whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold inline-block ${m[1]}">${esc(i.STATUS)}</span></td>
                 <td class="px-3 py-3 text-center whitespace-nowrap">${rw}</td>
                 <td class="px-3 py-3 text-center"><button type="button" data-view="${esc(i.id)}" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-jm-blue/10 text-jm-blue hover:bg-jm-blue/20 font-semibold text-[11px] transition" aria-label="Papar perincian ${esc(i['NO. FAIL'])}"><i class="fa-solid fa-eye"></i> Lihat</button></td>
             </tr>`;
         }).join('');
     }
-    $('#tableBody').addEventListener('click', e => {
+    const onListClick = e => {
         const v = e.target.closest('[data-view]'); if (v) return openModal(v.dataset.view);
         if (e.target.closest('[data-reset]')) resetFilters();
-    });
+    };
+    $('#tableBody').addEventListener('click', onListClick);
+    $('#cardList').addEventListener('click', onListClick);
 
     /* ================= CARTA (Chart.js) ================= */
     function renderCharts() {
@@ -617,7 +702,7 @@
         lastFocus = document.activeElement;
         const m = ST_META[r.STATUS] || ST_META['DALAM PROSES QC'];
         $('#mFileNo').textContent = r['NO. FAIL'];
-        $('#mCategory').textContent = `Bidang: Ukur ${r.MAKLUMAT} (Kategori QC)`;
+        $('#mCategory').textContent = `Bidang: Ukur ${r.MAKLUMAT} · ${CAT_SRC_LABEL[r.CAT_SRC] || 'Kategori QC'}`;
         $('#mTetuan').textContent = r.TETUAN;
         $('#mSurveyor').textContent = r['NAMA SURVEYOR'];
         $('#mTarikh').textContent = fmtDate(r.TARIKH);
