@@ -1881,7 +1881,7 @@
                 <div>
                     <h1 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
                         Laporan Harian Kerja Lapangan
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v3.2</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-jm-gold">FIELD v3.5</span>
                     </h1>
                     <p class="text-xs text-blue-200">Borang laporan harian &amp; pantau kemajuan kerja ukur tapak</p>
                 </div>
@@ -2402,20 +2402,6 @@
             </div>
 
             <form id="editForm" onsubmit="event.preventDefault(); saveEdit();" class="p-5 overflow-y-auto flex-1 space-y-5">
-                <!-- Teks Asal + Hurai Semula -->
-                <div class="p-4 rounded-xl bg-jm-light border border-blue-100 space-y-2">
-                    <div class="flex items-center justify-between gap-2">
-                        <label for="edit_rawText" class="text-xs font-semibold text-jm-navy flex items-center gap-1.5">
-                            <i class="fa-solid fa-paste text-jm-blue"></i> Teks Asal Laporan
-                        </label>
-                        <button type="button" onclick="reparseEditText()" class="text-xs px-3 py-1.5 rounded-lg bg-white hover:bg-blue-50 text-jm-navy border border-slate-300 font-semibold transition-colors flex items-center gap-1.5">
-                            <i class="fa-solid fa-wand-magic-sparkles text-jm-blue"></i> Hurai Semula ke Medan
-                        </button>
-                    </div>
-                    <textarea id="edit_rawText" rows="5" class="w-full rounded-xl bg-white border border-slate-300 focus:outline-none focus:ring-2 focus:ring-jm-blue focus:border-jm-blue text-xs font-mono text-slate-700 p-3 transition-all leading-relaxed"></textarea>
-                    <p class="text-[11px] text-slate-500">Edit teks ni kemudian tekan "Hurai Semula" untuk isi semua medan, atau terus edit medan di bawah.</p>
-                </div>
-
                 <!-- Medan berstruktur -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="editFieldsGrid"></div>
 
@@ -2457,7 +2443,7 @@
                         <i class="fa-solid fa-file-code"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v3.2 (Auto-Tab, Edit &amp; Google Drive)</h3>
+                        <h3 class="text-sm font-bold text-white">Full Code Google Apps Script v3.5 (Auto-Tab, Edit &amp; Google Drive)</h3>
                         <p class="text-[11px] text-blue-200">Guna Active Spreadsheet • Tetapkan MACRO_URL dalam index.html sebelum push ke GitHub</p>
                     </div>
                 </div>
@@ -2499,6 +2485,15 @@
  * v2.8: Gambar disimpan sebagai fail dalam Google Drive. Sheet hanya simpan link.
  *       Jalankan migrateImagesToDrive() sekali untuk pindah gambar lama (Base64) ke Drive.
  * v2.9: Lajur 'Edit Token' supaya dashboard boleh sahkan simpanan SENDIRI yang masuk.
+ * v3.5: Lajur 'Teks Asal' tidak digunakan lagi (tidak ditulis / dibaca). Data lama dalam
+ *       lajur tu tidak dipadam; boleh dipadam sendiri jika tak perlu.
+ * v3.4: Tab laporan dikesan automatik: jika tab 'Laporan_Lapangan' tiada (contoh data disalin
+ *       sendiri ke tab "Sheet1"), tab yang header-nya ada ID + Tarikh + No File digunakan.
+ *       checkSetup(): semak tab, header, ID, folder gambar &amp; locale selepas pasang/pindah.
+ * v3.3: Pindah database ke Sheet lain. Tampal kod ini dalam Apps Script Sheet BARU,
+ *       isi SOURCE_SPREADSHEET_ID dengan ID/URL Sheet lama, kemudian jalankan
+ *       importFromSpreadsheet(). Selamat dijalankan berulang kali (ikut ID laporan).
+ *       Folder gambar Drive sedia ada dicari ikut nama, bukan bina folder baru.
  * v3.2: Sync (GET) TIDAK lagi ubah Sheet. Header dipadankan tanpa kira tanda baca
  *       ("No. File" = "No File"). Respons ada 'version' &amp; 'missingHeaders' supaya
  *       dashboard boleh beri amaran jika web app belum di-deploy versi baru / header tak dikenali.
@@ -2517,6 +2512,10 @@ const DRIVE_FOLDER_NAME = 'Gambar_Laporan_Lapangan';
 
 // true = fail dikongsi "Anyone with the link (Viewer)" supaya gambar boleh dipapar di dashboard
 const SHARE_IMAGES_PUBLIC = true;
+
+// Untuk pindah database sahaja: ID atau URL (docs.google.com/spreadsheets/d/&lt;ID&gt;/edit) Sheet LAMA.
+// Jalankan importFromSpreadsheet() dari Sheet BARU. Biarkan kosong jika tidak pindah.
+const SOURCE_SPREADSHEET_ID = '';
 
 // Susunan lajur dalam Sheet (ikut Borang Laporan Harian).
 // aliases = nama header versi lama, supaya sheet lama masih dikenali sebelum reorderColumns().
@@ -2543,14 +2542,13 @@ const COLUMNS = [
   { key: 'maklumat',        header: 'Maklumat Tambahan' },
   // --- Sistem ---
   { key: 'timestamp',       header: 'Timestamp' },
-  { key: 'rawText',         header: 'Teks Asal' },
   { key: 'id',              header: 'ID' },
   { key: 'versi',           header: 'Versi' },
   { key: 'kemaskini',       header: 'Kemaskini Terakhir' },
   { key: 'editToken',       header: 'Edit Token' }
 ];
 const HEADERS = COLUMNS.map(c =&gt; c.header);
-const SERVER_VERSION = '3.2';
+const SERVER_VERSION = '3.5';
 const LOG_HEADERS = ['Masa Edit', 'ID', 'Versi Lama', 'Data Lama (JSON)'];
 
 // Medan teks laporan yang ditulis dari payload dashboard
@@ -2606,6 +2604,12 @@ function getColumnMap(sheet, readOnly) {
  * - Elak formula injection (nilai bermula dengan = + - @)
  * - Elak Sheets auto-tukar tarikh (12/11/2026) atau peratus (8%) ikut locale
  */
+// Salin nilai sel: Date &amp; nombor kekal jenis asal; teks diberi awalan ' supaya Sheets tak tukar
+// tarikh/peratus ikut locale (contoh "12/11/2026" kekal teks, bukan jadi 11 Dis)
+function keepCellValue(v) {
+  return (v instanceof Date || typeof v === 'number' || typeof v === 'boolean') ? v : asText(v);
+}
+
 function asText(value) {
   const s = String(value === undefined || value === null ? '' : value);
   return s === '' ? '' : "'" + s;
@@ -2643,6 +2647,17 @@ function getImageRootFolder() {
       if (!folder.isTrashed()) return folder;
     } catch (e) {
       // Folder dipadam atau tiada akses, bina semula di bawah
+    }
+  }
+
+  // Projek Apps Script baru (contoh lepas pindah Sheet) belum simpan ID folder:
+  // guna folder sedia ada dengan nama sama supaya gambar tak berpecah ke folder baru
+  const existing = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
+  while (existing.hasNext()) {
+    const f = existing.next();
+    if (!f.isTrashed()) {
+      props.setProperty('IMG_FOLDER_ID', f.getId());
+      return f;
     }
   }
 
@@ -2758,9 +2773,27 @@ function imageUrlsForClient(cell) {
 /**
  * Dapatkan Sheet utama. Bina Tab &amp; Header (susunan COLUMNS) jika tiada.
  */
+/**
+ * Cari tab laporan: ikut nama SHEET_NAME dahulu. Jika tiada (contoh data disalin sendiri ke
+ * tab lain), guna tab yang header-nya ada ID + Tarikh + No File. Pulangkan null jika tiada.
+ */
+function findReportSheet(ss) {
+  const byName = ss.getSheetByName(SHEET_NAME);
+  if (byName) return byName;
+  const sheets = ss.getSheets();
+  for (let i = 0; i &lt; sheets.length; i++) {
+    const sh = sheets[i];
+    if (sh.getName() === LOG_SHEET_NAME || sh.getLastColumn() &lt; 3) continue;
+    const header = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(normHeader);
+    const has = names =&gt; names.some(n =&gt; header.indexOf(normHeader(n)) !== -1);
+    if (has(['ID']) &amp;&amp; has(['Tarikh']) &amp;&amp; has(['No File', 'No Fail'])) return sh;
+  }
+  return null;
+}
+
 function getOrCreateSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
+  let sheet = findReportSheet(ss);
 
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -2830,7 +2863,6 @@ function createReport(sheet, payload, imageCell) {
   FIELD_KEYS.forEach(k =&gt; set(k, asText(payload[k] || FIELD_DEFAULTS[k] || '-')));
   set('gambar', asText(imageCell || ''));
   set('timestamp', new Date());
-  set('rawText', asText(payload.rawText || ''));
   set('id', id);
   set('versi', 1);
   set('kemaskini', '');
@@ -2882,7 +2914,6 @@ function updateReport(sheet, payload, imageCell) {
     if (payload[k] !== undefined) set(k, asText(payload[k] || FIELD_DEFAULTS[k] || '-'));
   });
   if (payload.imageChanged) set('gambar', asText(imageCell || ''));
-  if (payload.rawText !== undefined) set('rawText', asText(payload.rawText || ''));
   set('versi', currentVersi + 1);
   set('kemaskini', new Date());
   set('editToken', asText(payload.editToken || ''));
@@ -2971,7 +3002,6 @@ function doGet(e) {
         image: img.image,
         imageThumb: img.imageThumb,
         imageLink: img.imageLink,
-        rawText: get('rawText'),
         id: get('id'),
         versi: Number(get('versi')) || 1,
         updatedAt: get('kemaskini'),
@@ -3085,7 +3115,7 @@ function reorderColumns() {
     // 2. Bina semula data. Teks diletak semula dengan awalan ' supaya Sheets tak tukar
     //    tarikh/peratus ikut locale. Date (Timestamp, Kemaskini) dan nombor (Versi) kekal jenis asal.
     const values = lastRow &gt;= 2 ? sheet.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
-    const keep = v =&gt; (v instanceof Date || typeof v === 'number' || typeof v === 'boolean') ? v : asText(v);
+    const keep = keepCellValue;
     const newHeader = HEADERS.concat(otherCols.map(c =&gt; header[c - 1]));
     const newRows = values.map(r =&gt;
       COLUMNS.map(c =&gt; keep(r[map[c.key] - 1])).concat(otherCols.map(c =&gt; keep(r[c - 1])))
@@ -3108,6 +3138,191 @@ function reorderColumns() {
     lock.releaseLock();
   }
 }
+
+// ============================================================================
+// PINDAH DATABASE: SALIN LAPORAN DARI SHEET LAMA KE SHEET INI
+// ============================================================================
+
+function spreadsheetIdFrom(value) {
+  const v = String(value || '').trim();
+  if (!v) return '';
+  if (/\/d\/e\//.test(v)) {
+    throw new Error('Itu link "Publish to web" (/d/e/...). Guna link biasa Sheet lama: docs.google.com/spreadsheets/d/&lt;ID&gt;/edit');
+  }
+  const m = v.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return m ? m[1] : v;
+}
+
+/**
+ * Jalankan dari editor Apps Script Sheet BARU (pilih importFromSpreadsheet &gt; Run).
+ * - Laporan disalin ikut ID. Laporan yang dah ada (ID sama) tidak ditambah semula.
+ * - Laporan yang diedit di Sheet lama selepas import (Versi lebih tinggi) dikemas kini.
+ * - Lajur dipadankan ikut NAMA HEADER, jadi Sheet lama susunan apa pun boleh.
+ * - Log_Edit disalin (baris yang sama tidak diulang).
+ * - Sheet lama TIDAK diubah, kecuali ID/Versi diisi untuk rekod lama yang belum ada.
+ * Selamat dijalankan berulang kali: jalankan sekali lagi selepas tukar MACRO_URL untuk
+ * ambil laporan yang masuk ke Sheet lama semasa peralihan.
+ */
+function importFromSpreadsheet() {
+  const srcId = spreadsheetIdFrom(SOURCE_SPREADSHEET_ID);
+  if (!srcId) throw new Error('Isi SOURCE_SPREADSHEET_ID dengan ID atau URL Sheet lama dahulu.');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (srcId === ss.getId()) throw new Error('SOURCE_SPREADSHEET_ID ialah Sheet ini sendiri. Jalankan dari Sheet BARU.');
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) throw new Error('Server sibuk. Cuba lagi sebentar.');
+
+  try {
+    const src = SpreadsheetApp.openById(srcId);
+    const srcSheet = findReportSheet(src);
+    if (!srcSheet) throw new Error('Tab laporan ("' + SHEET_NAME + '" atau tab dengan header ID, Tarikh, No File) tiada dalam Sheet lama.');
+
+    const srcMap = getColumnMap(srcSheet, true);
+    if (!srcMap.id || !srcMap.versi) {
+      throw new Error('Sheet lama tiada lajur ID / Versi. Deploy Code.gs v2.7+ pada Sheet lama dan Sync sekali dahulu.');
+    }
+    ensureIds(srcSheet, srcMap);
+
+    const target = getOrCreateSheet();
+    const tMap = getColumnMap(target);
+    const srcLast = srcSheet.getLastRow();
+    const srcValues = srcLast &gt;= 2 ? srcSheet.getRange(2, 1, srcLast - 1, srcSheet.getLastColumn()).getValues() : [];
+
+    // Rekod sedia ada dalam Sheet ini: ID -&gt; { baris, versi }
+    const existing = {};
+    const tLast = target.getLastRow();
+    if (tLast &gt;= 2) {
+      const ids = target.getRange(2, tMap.id, tLast - 1, 1).getDisplayValues();
+      const vers = target.getRange(2, tMap.versi, tLast - 1, 1).getValues();
+      ids.forEach((r, i) =&gt; { if (r[0]) existing[r[0]] = { row: i + 2, versi: Number(vers[i][0]) || 1 }; });
+    }
+
+    const buildRow = r =&gt; {
+      const row = new Array(tMap._width).fill('');
+      COLUMNS.forEach(c =&gt; {
+        if (srcMap[c.key]) row[tMap[c.key] - 1] = keepCellValue(r[srcMap[c.key] - 1]);
+      });
+      return row;
+    };
+
+    const toAppend = [];
+    let updated = 0, unchanged = 0, noId = 0;
+    const seen = {};
+    srcValues.forEach(r =&gt; {
+      const id = String(r[srcMap.id - 1] || '').trim();
+      if (!id) { noId++; return; }
+      if (seen[id]) return;            // ID berulang dalam Sheet lama: ambil yang pertama
+      seen[id] = true;
+      const versi = Number(r[srcMap.versi - 1]) || 1;
+      const ex = existing[id];
+      if (!ex) {
+        toAppend.push(buildRow(r));
+      } else if (versi &gt; ex.versi) {
+        target.getRange(ex.row, 1, 1, tMap._width).setValues([buildRow(r)]);
+        updated++;
+      } else {
+        unchanged++;
+      }
+    });
+
+    if (toAppend.length) {
+      target.getRange(target.getLastRow() + 1, 1, toAppend.length, tMap._width).setValues(toAppend);
+    }
+
+    // Log_Edit
+    let logCopied = 0;
+    const srcLog = src.getSheetByName(LOG_SHEET_NAME);
+    if (srcLog &amp;&amp; srcLog.getLastRow() &gt;= 2) {
+      const logSheet = getOrCreateLogSheet();
+      const width = LOG_HEADERS.length;
+      const key = r =&gt; r.slice(0, 3).map(v =&gt; v instanceof Date ? v.getTime() : String(v)).join('|');
+      const have = {};
+      if (logSheet.getLastRow() &gt;= 2) {
+        logSheet.getRange(2, 1, logSheet.getLastRow() - 1, width).getValues().forEach(r =&gt; { have[key(r)] = true; });
+      }
+      const rows = srcLog.getRange(2, 1, srcLog.getLastRow() - 1, width).getValues()
+        .filter(r =&gt; !have[key(r)])
+        .map(r =&gt; r.map(keepCellValue));
+      if (rows.length) {
+        logSheet.getRange(logSheet.getLastRow() + 1, 1, rows.length, width).setValues(rows);
+        logCopied = rows.length;
+      }
+    }
+
+    // Semakan: semua ID Sheet lama mesti ada dalam Sheet ini
+    const finalIds = {};
+    if (target.getLastRow() &gt;= 2) {
+      target.getRange(2, tMap.id, target.getLastRow() - 1, 1).getDisplayValues().forEach(r =&gt; { finalIds[r[0]] = true; });
+    }
+    const missing = Object.keys(seen).filter(id =&gt; !finalIds[id]).length;
+
+    const msg = 'Import siap dari "' + src.getName() + '": ' + toAppend.length + ' laporan baru, ' +
+      updated + ' dikemas kini, ' + unchanged + ' sama. Log_Edit: ' + logCopied + ' baris. ' +
+      (noId ? noId + ' baris tanpa ID dilangkau. ' : '') +
+      (missing ? 'AMARAN: ' + missing + ' ID tidak masuk!' : 'Semakan: semua ' + Object.keys(seen).length + ' laporan ada dalam Sheet ini.');
+    console.log(msg);
+    return msg;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============================================================================
+// SEMAKAN PEMASANGAN
+// ============================================================================
+
+/**
+ * Jalankan dari editor (pilih checkSetup &gt; Run) selepas pasang skrip pada Sheet baru.
+ * Tidak mengubah apa-apa. Hasil dalam Execution log.
+ */
+function checkSetup() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const out = [];
+  out.push('Spreadsheet: ' + ss.getName() + ' (' + ss.getId() + ')');
+
+  const tz = ss.getSpreadsheetTimeZone();
+  out.push('Locale: ' + ss.getSpreadsheetLocale() + ' | Zon masa: ' + tz +
+    (tz !== 'Asia/Kuala_Lumpur' ? '  &lt;- CADANG: File &gt; Settings &gt; Time zone (GMT+08:00) Kuala Lumpur' : ''));
+
+  const sheet = findReportSheet(ss);
+  if (!sheet) {
+    out.push('Tab laporan TIDAK dijumpai. Tab "' + SHEET_NAME + '" akan dibina bila laporan pertama dihantar.');
+  } else {
+    const map = getColumnMap(sheet, true);
+    const rows = Math.max(sheet.getLastRow() - 1, 0);
+    out.push('Tab laporan: "' + sheet.getName() + '" | ' + rows + ' baris laporan' +
+      (sheet.getName() !== SHEET_NAME ? ' (bukan nama "' + SHEET_NAME + '", tapi dikesan ikut header: OK)' : ''));
+    out.push(map._missing.length
+      ? 'Header TIADA (akan ditambah di hujung bila laporan pertama dihantar): ' + map._missing.join(', ')
+      : 'Semua ' + HEADERS.length + ' header dijumpai.');
+    if (map.id &amp;&amp; rows) {
+      const ids = sheet.getRange(2, map.id, rows, 1).getDisplayValues().map(r =&gt; String(r[0]).trim());
+      const kosong = ids.filter(v =&gt; !v).length;
+      const seen = {}; let ulang = 0;
+      ids.forEach(v =&gt; { if (v) { if (seen[v]) ulang++; seen[v] = true; } });
+      out.push('ID kosong: ' + kosong + (kosong ? ' (akan diisi automatik bila dashboard Sync)' : '') +
+        ' | ID berulang: ' + ulang + (ulang ? '  &lt;- SEMAK: baris mungkin disalin dua kali' : ''));
+    }
+  }
+
+  const log = ss.getSheetByName(LOG_SHEET_NAME);
+  out.push('Log_Edit: ' + (log ? Math.max(log.getLastRow() - 1, 0) + ' baris' : 'tiada (akan dibina bila edit pertama)'));
+
+  if (DRIVE_FOLDER_ID) {
+    out.push('Folder gambar: DRIVE_FOLDER_ID ditetapkan (' + DRIVE_FOLDER_ID + ')');
+  } else {
+    const it = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
+    let n = 0, first = null;
+    while (it.hasNext()) { const f = it.next(); if (!f.isTrashed()) { n++; if (!first) first = f; } }
+    out.push(n === 0 ? 'Folder gambar: tiada "' + DRIVE_FOLDER_NAME + '", akan dibina bila gambar pertama dihantar.'
+      : n === 1 ? 'Folder gambar: guna "' + DRIVE_FOLDER_NAME + '" sedia ada (' + first.getId() + ')'
+      : 'Folder gambar: ' + n + ' folder bernama "' + DRIVE_FOLDER_NAME + '"  &lt;- tetapkan DRIVE_FOLDER_ID supaya pasti folder yang betul');
+  }
+
+  const msg = out.join('\n');
+  console.log(msg);
+  return msg;
+}
 </pre>
                 </div>
             </div>
@@ -3120,8 +3335,8 @@ function reorderColumns() {
         // ============================================================================
         // Versi Code.gs yang dashboard ni perlukan. Jika web app pulangkan versi lain,
         // dashboard beri amaran (biasanya: kod dah ditampal tapi belum Deploy > New version).
-        const EXPECTED_SERVER_VERSION = '3.2';
-        const MACRO_URL = "https://script.google.com/macros/s/AKfycbw9Sc1U6MjhLYOpEh0ztWtiwrm2PiDV_ZtsLbRqdPe8snK3pYB9qDg3tByfiPDmdzTM/exec";
+        const EXPECTED_SERVER_VERSION = '3.5';
+        const MACRO_URL = "https://script.google.com/macros/s/AKfycbzu234tM0u-2HvyWmrFoNQsjv7clAORvnP5ssRD4Zbw6MRghG66PozhVI9pyV4_QQjL/exec";
 
         // URL CSV Fallback (bacaan sandaran)
         const currentSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRF-BgmNrwBZVwf0ZWrePsiV2pCBo22Ud7_-m6KDIjSYVkOlvoKvzSeq0AzDUj5Hyx19FEVwyMtKIk8/pub?gid=0&single=true&output=csv";
@@ -4003,7 +4218,7 @@ function reorderColumns() {
         // ============================================================================
         // CONTOH LAPORAN IKUT NAMA
         // Laporan terakhir yang DIHANTAR oleh setiap surveyor jadi contoh untuk nama tu.
-        // Sumber: reportsData (Teks Asal dari Sheet + laporan pending), jadi contoh ikut ke
+        // Sumber: reportsData (data Sheet + laporan pending), jadi contoh ikut ke
         // semua peranti selepas Sync. Nama terakhir yang dipilih/dihantar diingat dalam pelayar.
         // ============================================================================
         const TEMPLATE_PREF_KEY = 'drafter_template_name';
@@ -4035,32 +4250,6 @@ function reorderColumns() {
                 map.set(key, r);
             });
             return map;
-        }
-
-        // Bina teks laporan (disimpan dalam lajur Teks Asal, dan boleh disalin ke WhatsApp)
-        function buildReportText(r) {
-            const v = k => clean(r[k]) || '-';
-            const bullet = k => clean(r[k]).split('\n').map(l => l.trim()).filter(Boolean).map(l => `- ${l}`).join('\n') || '-';
-            const lines = [
-                'Laporan Harian',
-                '',
-                `TARIKH : ${v('tarikh')}`,
-                `NO FILE : ${v('noFile')}`,
-                `KAWASAN : ${v('kawasan')}`,
-                `NAMA : ${v('nama')}`,
-                '',
-                'WAKTU :',
-                `Mula kerja : ${v('waktuMula')}`,
-                `Tamat : ${v('waktuTamat')}`,
-                '',
-                'TUGAS :',
-                ...(reportTasks(r).map(t => `- ${t.tugas}${t.kuantiti ? ` — ${t.kuantiti} ${t.unit}`.trimEnd() : ''}`)),
-            ];
-            if (!reportTasks(r).length) lines.push('-');
-            lines.push('', 'DATELINE PROJEK :', `- Jangka siap asal : ${v('jangkaAsal')}`, `- Jangka siap semasa : ${v('jangkaSemasa')}`);
-            lines.push('', 'ISU / HALANGAN :', bullet('isu'));
-            lines.push('', 'PERANCANGAN :', bullet('perancangan'));
-            return lines.join('\n');
         }
 
         // Dropdown Contoh Laporan Saya: lima nama ikut susunan dropdown Nama.
@@ -4326,58 +4515,6 @@ function reorderColumns() {
             document.getElementById('imageModal').classList.add('hidden');
         }
 
-        // Hurai Teks Asal (format buildReportText) kepada medan laporan.
-        // Dipakai oleh butang "Hurai Semula" dalam Edit Laporan.
-        // "Topo sungai — 350 m" -> { tugas, kuantiti, unit }
-        function parseTaskLines(text) {
-            const tasks = String(clean(text) || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-                const i = l.lastIndexOf(' — ');
-                if (i === -1) return { tugas: l, kuantiti: '', unit: '' };
-                const m = l.slice(i + 3).trim().match(/^([\d.,]+)\s*(.*)$/);
-                return m ? { tugas: l.slice(0, i).trim(), kuantiti: m[1], unit: m[2].trim() } : { tugas: l, kuantiti: '', unit: '' };
-            });
-            return tasksToFields(tasks);
-        }
-
-        function parseReportText(rawText) {
-            const clean = String(rawText || '').replace(/\r\n/g, '\n').trim();
-
-            const line = (label) => {
-                const m = clean.match(new RegExp('^[ \\t\\-•]*' + label + '[ \\t]*:[ \\t]*([^\\n]*)', 'im'));
-                const v = m ? m[1].trim() : '';
-                return v || '-';
-            };
-
-            // Seksyen berbilang baris: dari header hingga header seterusnya (mesti di awal baris)
-            const NEXT_HDR = /^[ \t]*(TARIKH|NO FILE|KAWASAN|NAMA|WAKTU|TUGAS|DATELINE PROJEK|ISU \/ HALANGAN|PERANCANGAN)[ \t]*:/im;
-            const section = (headerRegex) => {
-                const start = clean.match(headerRegex);
-                if (!start) return '-';
-                const rest = clean.slice(start.index + start[0].length);
-                const end = rest.match(NEXT_HDR);
-                return (end ? rest.slice(0, end.index) : rest)
-                    .split('\n')
-                    .map(l => l.replace(/^[-•\s]+/, '').trim())
-                    .filter(Boolean)
-                    .join('\n') || '-';
-            };
-
-            return {
-                tarikh: line('TARIKH'),
-                noFile: line('NO FILE'),
-                kawasan: line('KAWASAN'),
-                nama: line('NAMA'),
-                waktuMula: line('Mula kerja'),
-                waktuTamat: line('Tamat'),
-                ...parseTaskLines(section(/^[ \t]*TUGAS[ \t]*:/im)),
-                jangkaAsal: line('Jangka siap asal'),
-                jangkaSemasa: line('Jangka siap semasa'),
-                isu: section(/^[ \t]*ISU \/ HALANGAN[ \t]*:/im),
-                perancangan: section(/^[ \t]*PERANCANGAN[ \t]*:/im),
-                rawText: rawText
-            };
-        }
-
         function setSubmitting(isBusy, label) {
             const btn = document.getElementById('submitReportBtn');
             const text = document.getElementById('submitBtnText');
@@ -4408,7 +4545,6 @@ function reorderColumns() {
             }
 
             const record = collectReportForm();
-            record.rawText = buildReportText(record);
             record.image = attachedImageData || '';
             record.id = generateId();
             record.versi = 1;
@@ -4529,7 +4665,6 @@ function reorderColumns() {
         function buildCreatePayload(rec) {
             const payload = { action: 'create', id: rec.id, editToken: rec.editToken || generateId() };
             EDIT_FIELDS.forEach(f => { payload[f.key] = rec[f.key]; });
-            payload.rawText = rec.rawText || '';
             payload.image = safeImageSrc(rec.image);
             return payload;
         }
@@ -4630,7 +4765,6 @@ function reorderColumns() {
 
             document.getElementById('editModalSub').textContent =
                 `${item.nama || '-'} • ${item.noFile || '-'} • Versi ${item.versi || 1}`;
-            document.getElementById('edit_rawText').value = item.rawText || '';
             buildEditFields(item);
 
             document.getElementById('editImageFile').value = '';
@@ -4661,22 +4795,6 @@ function reorderColumns() {
             editingId = null;
             editImageData = '';
             editImageChanged = false;
-        }
-
-        // Hurai semula Teks Asal dan isi medan (gambar tidak disentuh)
-        function reparseEditText() {
-            const raw = document.getElementById('edit_rawText').value;
-            if (!raw.trim()) {
-                showToast('warning', 'Teks Kosong', 'Tiada teks untuk dihurai.');
-                return;
-            }
-            const parsed = parseReportText(raw);
-
-            EDIT_FIELDS.forEach(f => {
-                const el = document.getElementById(`edit_${f.key}`);
-                if (el) el.value = parsed[f.key] && parsed[f.key] !== '-' ? parsed[f.key] : '';
-            });
-            showToast('info', 'Medan Dikemaskini', 'Semua medan diisi semula dari Teks Asal. Semak sebelum simpan.');
         }
 
         function refreshEditImagePreview() {
@@ -4766,10 +4884,6 @@ function reorderColumns() {
                 const el = document.getElementById(`edit_${f.key}`);
                 updated[f.key] = el && el.value.trim() ? el.value.trim() : '-';
             });
-            const rawEdited = document.getElementById('edit_rawText').value;
-            const fieldsChanged = EDIT_FIELDS.some(f => clean(updated[f.key]) !== clean(original[f.key]));
-            const rawUntouched = rawEdited.trim() === String(original.rawText || '').trim();
-            updated.rawText = fieldsChanged && rawUntouched ? buildReportText(updated) : rawEdited;
 
             if (updated.nama === '-' && updated.noFile === '-') {
                 showToast('warning', 'Medan Wajib', 'Sekurang-kurangnya Nama atau No File perlu diisi.');
@@ -4822,7 +4936,6 @@ function reorderColumns() {
                 action: 'update',
                 id: updated.id,
                 baseVersi: baseVersi,
-                rawText: updated.rawText,
                 imageChanged: editImageChanged,
                 editToken: editToken
             };
@@ -5657,7 +5770,8 @@ function reorderColumns() {
         // Gambar rekod PENDING cuba disimpan supaya boleh dihantar semula selepas refresh.
         // Jika localStorage penuh (had ~5MB), gambar pending dibuang dan ditanda imageDropped.
         function saveStoredData() {
-            const build = (keepPendingImages) => reportsData.map(r => {
+            const build = (keepPendingImages) => reportsData.map(r0 => {
+                const { rawText, ...r } = r0;   // Teks Asal tak digunakan lagi
                 if (!/^data:/i.test(String(r.image || ''))) return r;
                 if (keepPendingImages && isPendingLocal(r)) return r;
                 return { ...r, image: '', imageThumb: '', imageDropped: isPendingLocal(r) ? true : r.imageDropped };
@@ -5754,8 +5868,8 @@ function reorderColumns() {
                 }
             }
 
-            // 2. Fallback ke Published CSV
-            if (typeof Papa === 'undefined') {
+            // 2. Fallback ke Published CSV (kosongkan currentSheetUrl untuk matikan fallback)
+            if (typeof Papa === 'undefined' || !currentSheetUrl) {
                 setSyncStatus('Offline');
                 setRefreshing(false);
                 return;
